@@ -159,6 +159,45 @@ def create_exercise():
                     'words': words
                 }
                 
+            elif exercise_type == 'drag_and_drop':
+                # Traitement pour glisser-déposer
+                drag_items = request.form.getlist('drag_items[]')
+                drop_zones = request.form.getlist('drop_zones[]')
+                correct_order_str = request.form.get('correct_order', '')
+                
+                # Filtrer les éléments vides
+                filtered_drag_items = [item.strip() for item in drag_items if item.strip()]
+                filtered_drop_zones = [zone.strip() for zone in drop_zones if zone.strip()]
+                
+                # Validation
+                if not filtered_drag_items:
+                    flash('Au moins un élément à glisser est requis pour un exercice "Glisser-déposer".', 'error')
+                    return redirect(request.url)
+                
+                if not filtered_drop_zones:
+                    flash('Au moins une zone de dépôt est requise pour un exercice "Glisser-déposer".', 'error')
+                    return redirect(request.url)
+                
+                if len(filtered_drag_items) != len(filtered_drop_zones):
+                    flash('Le nombre d\'éléments à glisser doit être égal au nombre de zones de dépôt.', 'error')
+                    return redirect(request.url)
+                
+                # Parser l'ordre correct
+                try:
+                    correct_order = [int(x.strip()) for x in correct_order_str.split(',') if x.strip()]
+                    if len(correct_order) != len(filtered_drag_items):
+                        flash('L\'ordre correct doit contenir autant d\'éléments que d\'éléments à glisser.', 'error')
+                        return redirect(request.url)
+                except (ValueError, AttributeError):
+                    flash('L\'ordre correct doit être une liste de nombres séparés par des virgules (ex: 1,0,2,3).', 'error')
+                    return redirect(request.url)
+                
+                content = {
+                    'draggable_items': filtered_drag_items,
+                    'drop_zones': filtered_drop_zones,
+                    'correct_order': correct_order
+                }
+                
             elif exercise_type == 'pairs':
                 pairs = []
                 pair_ids = set()
@@ -477,6 +516,47 @@ def edit_exercise(exercise_id):
                 
                 content['sentences'] = sentences
                 content['words'] = words
+                
+            elif exercise.exercise_type == 'drag_and_drop':
+                # Traitement pour glisser-déposer (édition)
+                drag_items = request.form.getlist('drag_items[]')
+                drop_zones = request.form.getlist('drop_zones[]')
+                correct_order_str = request.form.get('correct_order', '')
+                
+                # Filtrer les éléments vides
+                filtered_drag_items = [item.strip() for item in drag_items if item.strip()]
+                filtered_drop_zones = [zone.strip() for zone in drop_zones if zone.strip()]
+                
+                # Validation
+                if not filtered_drag_items:
+                    flash('Au moins un élément à glisser est requis.', 'error')
+                    return render_template('exercise_types/drag_and_drop_edit.html', exercise=exercise, content=exercise.get_content())
+                
+                if not filtered_drop_zones:
+                    flash('Au moins une zone de dépôt est requise.', 'error')
+                    return render_template('exercise_types/drag_and_drop_edit.html', exercise=exercise, content=exercise.get_content())
+                
+                if len(filtered_drag_items) != len(filtered_drop_zones):
+                    flash('Le nombre d\'éléments à glisser doit être égal au nombre de zones de dépôt.', 'error')
+                    return render_template('exercise_types/drag_and_drop_edit.html', exercise=exercise, content=exercise.get_content())
+                
+                # Parser l'ordre correct
+                try:
+                    if correct_order_str.strip():
+                        correct_order = [int(x.strip()) for x in correct_order_str.split(',') if x.strip()]
+                        if len(correct_order) != len(filtered_drag_items):
+                            flash('L\'ordre correct doit contenir autant d\'éléments que d\'éléments à glisser.', 'error')
+                            return render_template('exercise_types/drag_and_drop_edit.html', exercise=exercise, content=exercise.get_content())
+                    else:
+                        # Générer un ordre par défaut si vide
+                        correct_order = list(range(len(filtered_drag_items)))
+                except (ValueError, AttributeError):
+                    flash('L\'ordre correct doit être une liste de nombres séparés par des virgules (ex: 1,0,2,3).', 'error')
+                    return render_template('exercise_types/drag_and_drop_edit.html', exercise=exercise, content=exercise.get_content())
+                
+                content['draggable_items'] = filtered_drag_items
+                content['drop_zones'] = filtered_drop_zones
+                content['correct_order'] = correct_order
                 
             elif exercise.exercise_type == 'pairs':
                 pairs = []

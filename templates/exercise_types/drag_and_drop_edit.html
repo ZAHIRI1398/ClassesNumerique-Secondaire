@@ -1,100 +1,104 @@
 {% extends "edit_exercise.html" %}
 
 {% block exercise_content %}
-<div id="drag-and-drop-editor" class="mb-4">
-    <div id="items-container">
-        {% set items = content.items if content and content.items else [] %}
-        {% for item in items %}
-            <div class="item-block card mb-3">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="card-title mb-0">Élément {{ loop.index }}</h5>
-                        <button type="button" class="btn btn-danger btn-sm remove-item">
-                            <i class="fas fa-trash"></i>
+<div class="mb-4">
+    <h4>Glisser-déposer</h4>
+    <p class="text-muted">Modifiez les éléments à faire glisser et les zones de dépôt.</p>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <h5>Éléments à glisser</h5>
+            <div id="drag_items_container">
+                {% if content and content.draggable_items %}
+                    {% for item in content.draggable_items %}
+                        <div class="input-group mb-2">
+                            <input type="text" name="drag_items[]" class="form-control" value="{{ item }}" required>
+                            <button type="button" class="btn btn-danger" onclick="this.closest('.input-group').remove()">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="input-group mb-2">
+                        <input type="text" name="drag_items[]" class="form-control" placeholder="Entrez un élément à glisser" required>
+                        <button type="button" class="btn btn-danger" onclick="this.closest('.input-group').remove()">
+                            <i class="bi bi-trash"></i>
                         </button>
                     </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Texte de l'élément :</label>
-                                <input type="text" class="form-control" name="items[]" 
-                                       value="{{ item.text }}" required>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Zone de dépôt :</label>
-                                <input type="text" class="form-control" name="zones[]" 
-                                       value="{{ item.zone }}" required>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                {% endif %}
             </div>
-        {% endfor %}
+            <button type="button" class="btn btn-outline-primary btn-sm" onclick="addDragItem()">
+                <i class="bi bi-plus-circle"></i> Ajouter un élément
+            </button>
+        </div>
+        
+        <div class="col-md-6">
+            <h5>Zones de dépôt</h5>
+            <div id="drop_zones_container">
+                {% if content and content.drop_zones %}
+                    {% for zone in content.drop_zones %}
+                        <div class="input-group mb-2">
+                            <input type="text" name="drop_zones[]" class="form-control" value="{{ zone }}" required>
+                            <button type="button" class="btn btn-danger" onclick="this.closest('.input-group').remove()">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="input-group mb-2">
+                        <input type="text" name="drop_zones[]" class="form-control" placeholder="Entrez une zone de dépôt" required>
+                        <button type="button" class="btn btn-danger" onclick="this.closest('.input-group').remove()">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                {% endif %}
+            </div>
+            <button type="button" class="btn btn-outline-primary btn-sm" onclick="addDropZone()">
+                <i class="bi bi-plus-circle"></i> Ajouter une zone
+            </button>
+        </div>
     </div>
-
-    <button type="button" id="add-item" class="btn btn-primary">
-        <i class="fas fa-plus"></i> Ajouter un élément
-    </button>
+    
+    <div class="mt-4">
+        <h5>Ordre correct</h5>
+        <p class="text-muted">Spécifiez l'ordre correct des éléments (numérotation à partir de 0).</p>
+        <div id="correct_order_container">
+            {% set order_str = content.correct_order|join(',') if content and content.correct_order else '' %}
+            <input type="text" name="correct_order" class="form-control" value="{{ order_str }}" placeholder="Ex: 1,0,2,3 (ordre des éléments dans les zones)" required>
+        </div>
+    </div>
 </div>
 
 <script>
+// Fonctions pour Glisser-déposer (édition)
+function addDragItem() {
+    const container = document.getElementById('drag_items_container');
+    const newItemDiv = document.createElement('div');
+    newItemDiv.className = 'input-group mb-2';
+    newItemDiv.innerHTML = `
+        <input type="text" name="drag_items[]" class="form-control" placeholder="Entrez un élément à glisser" required>
+        <button type="button" class="btn btn-danger" onclick="this.closest('.input-group').remove()">
+            <i class="bi bi-trash"></i>
+        </button>
+    `;
+    container.appendChild(newItemDiv);
+}
+
+function addDropZone() {
+    const container = document.getElementById('drop_zones_container');
+    const newZoneDiv = document.createElement('div');
+    newZoneDiv.className = 'input-group mb-2';
+    newZoneDiv.innerHTML = `
+        <input type="text" name="drop_zones[]" class="form-control" placeholder="Entrez une zone de dépôt" required>
+        <button type="button" class="btn btn-danger" onclick="this.closest('.input-group').remove()">
+            <i class="bi bi-trash"></i>
+        </button>
+    `;
+    container.appendChild(newZoneDiv);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
-    const itemsContainer = document.getElementById('items-container');
-    const addItemBtn = document.getElementById('add-item');
-
-    // Ajouter un nouvel élément
-    addItemBtn.addEventListener('click', function() {
-        const itemCount = itemsContainer.children.length;
-        const itemBlock = document.createElement('div');
-        itemBlock.className = 'item-block card mb-3';
-        itemBlock.innerHTML = `
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="card-title mb-0">Élément ${itemCount + 1}</h5>
-                    <button type="button" class="btn btn-danger btn-sm remove-item">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label>Texte de l'élément :</label>
-                            <input type="text" class="form-control" name="items[]" required>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label>Zone de dépôt :</label>
-                            <input type="text" class="form-control" name="zones[]" required>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        itemsContainer.appendChild(itemBlock);
-        setupItemEvents(itemBlock);
-    });
-
-    // Configuration des événements pour les éléments existants
-    document.querySelectorAll('.item-block').forEach(setupItemEvents);
-
-    function setupItemEvents(itemBlock) {
-        // Supprimer un élément
-        itemBlock.querySelector('.remove-item').addEventListener('click', function() {
-            if (confirm('Êtes-vous sûr de vouloir supprimer cet élément ?')) {
-                itemBlock.remove();
-                updateItemNumbers();
-            }
-        });
-    }
-
-    function updateItemNumbers() {
-        document.querySelectorAll('.item-block').forEach((block, index) => {
-            block.querySelector('.card-title').textContent = `Élément ${index + 1}`;
-        });
-    }
+    console.log('Template drag-and-drop edit chargé et prêt');
 });
 </script>
 {% endblock %}

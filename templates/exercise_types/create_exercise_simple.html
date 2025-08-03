@@ -130,6 +130,52 @@
             </button>
         </div>
 
+        <!-- Section Glisser-déposer -->
+        <div id="drag_and_drop_section" class="exercise-type-section" style="display: none;">
+            <h3>Glisser-déposer</h3>
+            <p class="text-muted">Créez des éléments à faire glisser et des zones de dépôt.</p>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <h4>Éléments à glisser</h4>
+                    <div id="drag_items_container">
+                        <div class="input-group mb-2">
+                            <input type="text" name="drag_items[]" class="form-control" placeholder="Entrez un élément à glisser" required>
+                            <button type="button" class="btn btn-danger" onclick="this.closest('.input-group').remove()">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="addDragItem()">
+                        <i class="bi bi-plus-circle"></i> Ajouter un élément
+                    </button>
+                </div>
+                
+                <div class="col-md-6">
+                    <h4>Zones de dépôt</h4>
+                    <div id="drop_zones_container">
+                        <div class="input-group mb-2">
+                            <input type="text" name="drop_zones[]" class="form-control" placeholder="Entrez une zone de dépôt" required>
+                            <button type="button" class="btn btn-danger" onclick="this.closest('.input-group').remove()">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="addDropZone()">
+                        <i class="bi bi-plus-circle"></i> Ajouter une zone
+                    </button>
+                </div>
+            </div>
+            
+            <div class="mt-4">
+                <h4>Ordre correct</h4>
+                <p class="text-muted">Spécifiez l'ordre correct des éléments (numérotation à partir de 0).</p>
+                <div id="correct_order_container">
+                    <input type="text" name="correct_order" class="form-control" placeholder="Ex: 1,0,2,3 (ordre des éléments dans les zones)" required>
+                </div>
+            </div>
+        </div>
+
         <div class="text-center mt-4">
             <button type="submit" class="btn btn-success btn-lg">Créer l'exercice</button>
         </div>
@@ -409,5 +455,32 @@ document.addEventListener('DOMContentLoaded', function() {
         exerciseTypeSelect.addEventListener('change', showExerciseType);
     }
 });
+
+// Fonctions pour Glisser-déposer
+function addDragItem() {
+    const container = document.getElementById('drag_items_container');
+    const newItemDiv = document.createElement('div');
+    newItemDiv.className = 'input-group mb-2';
+    newItemDiv.innerHTML = `
+        <input type="text" name="drag_items[]" class="form-control" placeholder="Entrez un élément à glisser" required>
+        <button type="button" class="btn btn-danger" onclick="this.closest('.input-group').remove()">
+            <i class="bi bi-trash"></i>
+        </button>
+    `;
+    container.appendChild(newItemDiv);
+}
+
+function addDropZone() {
+    const container = document.getElementById('drop_zones_container');
+    const newZoneDiv = document.createElement('div');
+    newZoneDiv.className = 'input-group mb-2';
+    newZoneDiv.innerHTML = `
+        <input type="text" name="drop_zones[]" class="form-control" placeholder="Entrez une zone de dépôt" required>
+        <button type="button" class="btn btn-danger" onclick="this.closest('.input-group').remove()">
+            <i class="bi bi-trash"></i>
+        </button>
+    `;
+    container.appendChild(newZoneDiv);
+}
 </script>
 {% endblock content %}
