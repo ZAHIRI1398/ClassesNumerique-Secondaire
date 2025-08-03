@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Form</title>
+</head>
+<body>
+    <h1>Test Form Ultra Simple</h1>
+    
+    <form method="post" action="{{ url_for('create_exercise') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        
+        <label>Type d'exercice:</label>
+        <select name="exercise_type">
+            <option value="fill_in_blanks">Texte à trous</option>
+        </select><br><br>
+        
+        <label>Titre:</label>
+        <input type="text" name="title" value="Test exercice"><br><br>
+        
+        <label>Description:</label>
+        <input type="text" name="description" value="Test description"><br><br>
+        
+        <label>Phrase:</label>
+        <input type="text" name="fill_in_blanks_sentences[]" value="Le chat ___ sur le tapis"><br><br>
+        
+        <label>Mot:</label>
+        <input type="text" name="fill_in_blanks_words[]" value="dort"><br><br>
+        
+        <input type="submit" value="SUBMIT TEST">
+    </form>
+    
+    <script>
+        console.log('Test form loaded');
+    </script>
+</body>
+</html>

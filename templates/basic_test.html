@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Basic Test</title>
+</head>
+<body>
+    <h1>BASIC TEST FORM</h1>
+    
+    <form method="post" action="/exercise/create">
+        <input type="text" name="exercise_type" value="fill_in_blanks"><br>
+        <input type="text" name="title" value="Test"><br>
+        <input type="text" name="description" value="Test desc"><br>
+        <input type="text" name="fill_in_blanks_sentences[]" value="Test phrase"><br>
+        <input type="text" name="fill_in_blanks_words[]" value="test"><br>
+        <input type="submit" value="BASIC SUBMIT">
+    </form>
+    
+    <hr>
+    <h2>Manual Test</h2>
+    <button onclick="window.location.href='/exercise/create'">GET Test</button>
+</body>
+</html>

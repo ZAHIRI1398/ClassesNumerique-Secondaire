@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Soumission Simple</title>
+</head>
+<body>
+    <h1>Test de Soumission Ultra-Simple</h1>
+    
+    <form method="POST" action="/exercise/8/answer">
+        <input type="hidden" name="answer_0" value="1"/>
+        <input type="hidden" name="answer_1" value="2"/>
+        <input type="hidden" name="answer_2" value="3"/>
+        <input type="hidden" name="answer_3" value="0"/>
+        
+        <button type="submit">TEST SOUMISSION DIRECTE</button>
+    </form>
+    
+    <p>Ce formulaire teste directement la soumission sans JavaScript ni complexité.</p>
+    
+    <script>
+        console.log('Page de test chargée');
+        
+        document.querySelector('form').addEventListener('submit', function(e) {
+            console.log('SOUMISSION DÉTECTÉE !');
+            console.log('Action:', this.action);
+            console.log('Method:', this.method);
+        });
+    </script>
+</body>
+</html>

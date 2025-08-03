@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Formulaire Minimal</title>
+</head>
+<body>
+    <h1>Test Formulaire Ultra-Minimal</h1>
+    
+    <form method="POST" action="/exercise/8/answer">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <input type="hidden" name="answer_0" value="1"/>
+        <input type="hidden" name="answer_1" value="2"/>
+        <input type="hidden" name="answer_2" value="3"/>
+        <input type="hidden" name="answer_3" value="0"/>
+        
+        <button type="submit" style="padding: 20px; font-size: 20px; background: red; color: white;">
+            SOUMETTRE TEST MINIMAL
+        </button>
+    </form>
+    
+    <script>
+        console.log("Script chargé");
+        document.querySelector('form').addEventListener('submit', function(e) {
+            console.log("Formulaire soumis !");
+            console.log("Action:", this.action);
+            console.log("Method:", this.method);
+        });
+    </script>
+</body>
+</html>

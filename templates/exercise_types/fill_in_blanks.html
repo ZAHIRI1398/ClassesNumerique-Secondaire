@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}{{ exercise.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>{{ exercise.title }}</h2>
+    <p class="text-muted">{{ exercise.description or 'None' }}</p>
+
+    <div class="exercise-content">
+        {% if not content or not content.sentences or not content.words %}
+            <div class="alert alert-warning">
+                <h4 class="alert-heading">Contenu non disponible</h4>
+                <p>Le contenu de cet exercice n'est pas disponible ou est mal formé.</p>
+                {% if current_user.role == 'teacher' %}
+                    <hr>
+                    <p class="mb-0">
+                        <a href="{{ url_for('exercise.edit_exercise', exercise_id=exercise.id) }}" class="btn btn-warning">
+                            <i class="fas fa-edit"></i> Éditer l'exercice
+                        </a>
+                    </p>
+                {% endif %}
+            </div>
+        {% else %}
+            <form method="POST" action="{{ url_for('exercise.submit_answer', exercise_id=exercise.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                
+                <div class="mb-4">
+                    <h4>Mots disponibles :</h4>
+                    <div class="word-bank p-3 border rounded bg-light">
+                        {% for word in content.words %}
+                            <button type="button" class="btn btn-primary btn-sm me-2 mb-2 draggable-word">{{ word }}</button>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                {% for sentence in content.sentences %}
+                    <div class="mb-4 sentence-container">
+                        <div class="sentence-text mb-2">
+                            {% set parts = sentence.split('___') %}
+                            {% for part in parts %}
+                                {{ part }}
+                                {% if not loop.last %}
+                                    <span class="blank-space bg-light border rounded px-3 py-1 mx-1">_____</span>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        <input type="text" class="form-control" 
+                               name="answer_{{ loop.index0 }}" 
+                               required 
+                               placeholder="Écrivez votre réponse ici">
+                    </div>
+                {% endfor %}
+                
+                <button type="submit" class="btn btn-primary">Soumettre</button>
+            </form>
+
+            <style>
+                .word-bank {
+                    min-height: 60px;
+                }
+                .draggable-word {
+                    cursor: pointer;
+                }
+                .draggable-word:hover {
+                    opacity: 0.8;
+                }
+                .blank-space {
+                    display: inline-block;
+                    min-width: 80px;
+                }
+                .sentence-text {
+                    font-size: 1.1em;
+                    line-height: 1.8;
+                }
+            </style>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

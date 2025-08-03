@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Test</title>
+</head>
+<body>
+    <h1>DEBUG TEST FORM</h1>
+    
+    <form method="post" action="/exercise/create" onsubmit="console.log('FORM SUBMITTING!'); return true;">
+        <p>Exercise Type: <input type="text" name="exercise_type" value="fill_in_blanks"></p>
+        <p>Title: <input type="text" name="title" value="Debug Test"></p>
+        <p>Description: <input type="text" name="description" value="Debug description"></p>
+        <p>Sentence: <input type="text" name="fill_in_blanks_sentences[]" value="Debug phrase with ___ blank"></p>
+        <p>Word: <input type="text" name="fill_in_blanks_words[]" value="debug"></p>
+        <input type="submit" value="DEBUG SUBMIT">
+    </form>
+    
+    <script>
+        console.log('Debug form loaded');
+        document.querySelector('form').addEventListener('submit', function(e) {
+            console.log('Form submit event triggered!');
+            console.log('Form action:', this.action);
+            console.log('Form method:', this.method);
+        });
+    </script>
+</body>
+</html>

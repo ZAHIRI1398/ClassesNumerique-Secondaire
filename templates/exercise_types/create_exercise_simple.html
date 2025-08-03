@@ -1,0 +1,413 @@
+{% extends "base.html" %}
+
+{% block title %}Créer un exercice{% endblock title %}
+
+{% block content %}
+<div class="container py-4">
+    <h1>Créer un nouvel exercice</h1>
+    <form method="post" action="{{ url_for('create_exercise') }}" enctype="multipart/form-data">
+        {{ form.csrf_token }}
+        
+        <!-- Sélection du cours -->
+        <div class="mb-3">
+            <label for="course_id" class="form-label">Sélectionner un cours</label>
+            <select class="form-select" id="course_id" name="course_id">
+                <option value="">-- Choisir un cours (optionnel) --</option>
+                {% if current_user.is_teacher %}
+                    {% for class_obj in current_user.classes_teaching %}
+                        <optgroup label="{{ class_obj.name }}">
+                            {% for course in class_obj.courses %}
+                                <option value="{{ course.id }}">{{ course.title }}</option>
+                            {% endfor %}
+                        </optgroup>
+                    {% endfor %}
+                {% endif %}
+            </select>
+        </div>
+
+        <!-- Matière -->
+        <div class="mb-3">
+            <label for="subject" class="form-label">Matière</label>
+            <select class="form-select" id="subject" name="subject">
+                <option value="">-- Sélectionner une matière --</option>
+                <option value="Français">Français</option>
+                <option value="Mathématiques">Mathématiques</option>
+                <option value="Histoire">Histoire</option>
+                <option value="Géographie">Géographie</option>
+                <option value="Sciences">Sciences</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            {{ form.exercise_type.label(class="form-label") }}
+            {{ form.exercise_type(class="form-select", id="exercise_type", onchange="showExerciseType()") }}
+        </div>
+
+        <div class="mb-3">
+            {{ form.title.label(class="form-label") }}
+            {{ form.title(class="form-control") }}
+        </div>
+
+        <div class="mb-3">
+            {{ form.description.label(class="form-label") }}
+            {{ form.description(class="form-control", rows=3) }}
+        </div>
+
+        <!-- Section QCM -->
+        <div id="qcm_section" class="exercise-type-section" style="display: none;">
+            <h3>Questions à choix multiples</h3>
+            <div id="questions_container"></div>
+            <button type="button" class="btn btn-primary mb-3" onclick="addQuestion()">
+                <i class="bi bi-plus-circle"></i> Ajouter une question
+            </button>
+        </div>
+
+        <!-- Section Mots mêlés -->
+        <div id="word_search_section" class="exercise-type-section" style="display: none;">
+            <h3>Mots mêlés</h3>
+            <div id="words_container">
+                <div class="input-group mb-2">
+                    <input type="text" name="words[]" class="form-control" placeholder="Entrez un mot">
+                </div>
+            </div>
+            <button type="button" class="btn btn-primary mb-3" onclick="addWord()">
+                <i class="bi bi-plus-circle"></i> Ajouter un mot
+            </button>
+        </div>
+
+        <!-- Section Texte à trous -->
+        <div id="fill_in_blanks_section" class="exercise-type-section" style="display: none;">
+            <h3>Texte à trous</h3>
+            <p class="text-muted">Utilisez ___ (trois underscores) pour marquer les espaces à remplir.</p>
+            
+            <div id="fill_in_blanks_container">
+                <div class="sentence-block mb-3">
+                    <label class="form-label">Phrase 1</label>
+                    <input type="text" class="form-control" name="fill_in_blanks_sentences[]" 
+                           placeholder="Entrez une phrase avec des trous (ex: Le chat ___ sur le tapis)">
+                </div>
+            </div>
+            
+            <button type="button" class="btn btn-primary mb-3" onclick="addFillInBlanksSentence()">
+                <i class="bi bi-plus-circle"></i> Ajouter une phrase
+            </button>
+            
+            <h4 class="mt-4">Mots de réponse</h4>
+            <p class="text-muted">Ajoutez les mots qui peuvent remplir les trous.</p>
+            
+            <div id="fill_in_blanks_words_container">
+                <div class="input-group mb-2">
+                    <input type="text" name="fill_in_blanks_words[]" class="form-control" placeholder="Entrez un mot de réponse">
+                </div>
+            </div>
+            
+            <button type="button" class="btn btn-primary mb-3" onclick="addFillInBlanksWord()">
+                <i class="bi bi-plus-circle"></i> Ajouter un mot de réponse
+            </button>
+        </div>
+
+        <!-- Section Souligner les mots -->
+        <div id="underline_words_section" class="exercise-type-section" style="display: none;">
+            <h3>Souligner les mots</h3>
+            <div id="underline_sentences_container">
+                <div class="sentence-item mb-3">
+                    <label class="form-label">Phrase 1</label>
+                    <div class="row">
+                        <div class="col-md-8">
+                            <input type="text" class="form-control" name="underline_sentences[]" 
+                                   placeholder="Entrez une phrase">
+                        </div>
+                        <div class="col-md-4">
+                            <input type="text" class="form-control" name="underline_words[]" 
+                                   placeholder="Mots à souligner (séparés par des virgules)">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="button" class="btn btn-primary mb-3" onclick="addUnderlineSentence()">
+                <i class="bi bi-plus-circle"></i> Ajouter une phrase
+            </button>
+        </div>
+
+        <div class="text-center mt-4">
+            <button type="submit" class="btn btn-success btn-lg">Créer l'exercice</button>
+        </div>
+    </form>
+</div>
+
+<script>
+// Fonction pour afficher/masquer les sections selon le type d'exercice
+function showExerciseType() {
+    const exerciseType = document.getElementById('exercise_type').value;
+    const sections = document.querySelectorAll('.exercise-type-section');
+    
+    sections.forEach(section => section.style.display = 'none');
+
+    if (exerciseType) {
+        const targetSection = document.getElementById(exerciseType + '_section');
+        if (targetSection) {
+            targetSection.style.display = 'block';
+        }
+    }
+}
+
+// Fonction pour ajouter une question QCM
+function addQuestion() {
+    const container = document.getElementById('questions_container');
+    const questionCount = container.children.length;
+    
+    const questionDiv = document.createElement('div');
+    questionDiv.className = 'card mb-3 p-3';
+    questionDiv.innerHTML = `
+        <div class="mb-3">
+            <label class="form-label">Question ${questionCount + 1}</label>
+            <input type="text" class="form-control" name="question_${questionCount}" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Options</label>
+            <div style="background: yellow; padding: 5px; margin: 5px 0;">🔥 TEMPLATE SIMPLE CORRIGÉ - 3 OPTIONS AVEC RADIO 🔥</div>
+            <div class="options-container">
+                <div class="input-group mb-2">
+                    <div class="input-group-text">
+                        <input class="form-check-input" type="radio" name="correct_${questionCount}" value="0">
+                    </div>
+                    <input type="text" class="form-control" name="option_${questionCount}_0" placeholder="Option A" required>
+                </div>
+                <div class="input-group mb-2">
+                    <div class="input-group-text">
+                        <input class="form-check-input" type="radio" name="correct_${questionCount}" value="1">
+                    </div>
+                    <input type="text" class="form-control" name="option_${questionCount}_1" placeholder="Option B" required>
+                </div>
+                <div class="input-group mb-2">
+                    <div class="input-group-text">
+                        <input class="form-check-input" type="radio" name="correct_${questionCount}" value="2">
+                    </div>
+                    <input type="text" class="form-control" name="option_${questionCount}_2" placeholder="Option C" required>
+                </div>
+            </div>
+            <div class="mt-2">
+                <button type="button" class="btn btn-outline-primary btn-sm" onclick="addOption(this)">
+                    <i class="fas fa-plus"></i> Ajouter une option
+                </button>
+            </div>
+        </div>
+        <button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.card').remove()">
+            Supprimer cette question
+        </button>
+    `;
+    container.appendChild(questionDiv);
+}
+
+// Fonction pour ajouter un mot (Mots mêlés)
+function addWord() {
+    const container = document.getElementById('words_container');
+    const wordDiv = document.createElement('div');
+    wordDiv.className = 'input-group mb-2';
+    wordDiv.innerHTML = `
+        <input type="text" name="words[]" class="form-control" placeholder="Entrez un mot" required>
+        <button type="button" class="btn btn-danger" onclick="this.closest('.input-group').remove()">
+            <i class="bi bi-trash"></i>
+        </button>
+    `;
+    container.appendChild(wordDiv);
+}
+
+// Fonction pour ajouter une phrase (Texte à trous)
+function addFillInBlanksSentence() {
+    const container = document.getElementById('fill_in_blanks_container');
+    const sentenceCount = container.children.length;
+    
+    const sentenceDiv = document.createElement('div');
+    sentenceDiv.className = 'sentence-block mb-3';
+    sentenceDiv.innerHTML = `
+        <label class="form-label">Phrase ${sentenceCount + 1}</label>
+        <div class="input-group">
+            <input type="text" class="form-control" name="fill_in_blanks_sentences[]" 
+                   placeholder="Entrez une phrase avec des trous (ex: Le chat ___ sur le tapis)" required>
+            <button type="button" class="btn btn-danger" onclick="this.closest('.sentence-block').remove(); updateFillInBlanksLabels()">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    `;
+    container.appendChild(sentenceDiv);
+}
+
+// Fonction pour ajouter un mot de réponse (Texte à trous)
+function addFillInBlanksWord() {
+    const container = document.getElementById('fill_in_blanks_words_container');
+    const wordDiv = document.createElement('div');
+    wordDiv.className = 'input-group mb-2';
+    wordDiv.innerHTML = `
+        <input type="text" name="fill_in_blanks_words[]" class="form-control" placeholder="Entrez un mot de réponse" required>
+        <button type="button" class="btn btn-danger" onclick="this.closest('.input-group').remove()">
+            <i class="bi bi-trash"></i>
+        </button>
+    `;
+    container.appendChild(wordDiv);
+}
+
+// Fonction pour ajouter une phrase (Souligner les mots)
+function addUnderlineSentence() {
+    const container = document.getElementById('underline_sentences_container');
+    const sentenceCount = container.children.length;
+    
+    const sentenceDiv = document.createElement('div');
+    sentenceDiv.className = 'sentence-item mb-3';
+    sentenceDiv.innerHTML = `
+        <label class="form-label">Phrase ${sentenceCount + 1}</label>
+        <div class="row">
+            <div class="col-md-8">
+                <input type="text" class="form-control" name="underline_sentences[]" 
+                       placeholder="Entrez une phrase" required>
+            </div>
+            <div class="col-md-4">
+                <input type="text" class="form-control" name="underline_words[]" 
+                       placeholder="Mots à souligner (séparés par des virgules)" required>
+            </div>
+        </div>
+        <button type="button" class="btn btn-outline-danger btn-sm mt-2" onclick="this.closest('.sentence-item').remove(); updateUnderlineLabels()">
+            <i class="bi bi-trash"></i> Supprimer cette phrase
+        </button>
+    `;
+    container.appendChild(sentenceDiv);
+}
+
+// Fonction pour mettre à jour les labels des phrases (Texte à trous)
+function updateFillInBlanksLabels() {
+    const container = document.getElementById('fill_in_blanks_container');
+    const sentences = container.querySelectorAll('.sentence-block');
+    
+    sentences.forEach((sentence, index) => {
+        const label = sentence.querySelector('label');
+        label.textContent = `Phrase ${index + 1}`;
+    });
+}
+
+// Fonction pour mettre à jour les labels des phrases (Souligner les mots)
+function updateUnderlineLabels() {
+    const container = document.getElementById('underline_sentences_container');
+    const sentences = container.querySelectorAll('.sentence-item');
+    
+    sentences.forEach((sentence, index) => {
+        const label = sentence.querySelector('label');
+        label.textContent = `Phrase ${index + 1}`;
+    });
+}
+
+// Fonction pour ajouter une option dynamiquement (QCM)
+function addOption(button) {
+    const questionCard = button.closest('.card');
+    const optionsContainer = questionCard.querySelector('.options-container');
+    const questionIndex = Array.from(document.getElementById('questions_container').children).indexOf(questionCard);
+    
+    // Compter le nombre d'options existantes
+    const existingOptions = optionsContainer.querySelectorAll('.input-group');
+    const optionIndex = existingOptions.length;
+    
+    // Générer la lettre de l'option (A, B, C, D, E, F...)
+    const optionLetter = String.fromCharCode(65 + optionIndex); // A=65, B=66, etc.
+    
+    // Créer la nouvelle option
+    const newOptionDiv = document.createElement('div');
+    newOptionDiv.className = 'input-group mb-2';
+    newOptionDiv.innerHTML = `
+        <div class="input-group-text">
+            <input class="form-check-input" type="radio" name="correct_${questionIndex}" value="${optionIndex}">
+        </div>
+        <input type="text" class="form-control" name="option_${questionIndex}_${optionIndex}" placeholder="Option ${optionLetter}" required>
+        <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeOption(this)">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    // Ajouter la nouvelle option avant le bouton "Ajouter une option"
+    optionsContainer.appendChild(newOptionDiv);
+    
+    console.log(`Option ${optionLetter} ajoutée à la question ${questionIndex + 1}`);
+}
+
+// Fonction pour supprimer une option (QCM)
+function removeOption(button) {
+    const optionDiv = button.closest('.input-group');
+    const questionCard = button.closest('.card');
+    const optionsContainer = questionCard.querySelector('.options-container');
+    
+    // Vérifier qu'il reste au moins 2 options
+    const remainingOptions = optionsContainer.querySelectorAll('.input-group');
+    if (remainingOptions.length <= 2) {
+        alert('Une question doit avoir au moins 2 options.');
+        return;
+    }
+    
+    // Supprimer l'option
+    optionDiv.remove();
+    
+    // Mettre à jour les indices et placeholders des options restantes
+    updateOptionIndices(questionCard);
+}
+
+// Fonction pour mettre à jour les indices des options après suppression
+function updateOptionIndices(questionCard) {
+    const optionsContainer = questionCard.querySelector('.options-container');
+    const options = optionsContainer.querySelectorAll('.input-group');
+    const questionIndex = Array.from(document.getElementById('questions_container').children).indexOf(questionCard);
+    
+    options.forEach((option, index) => {
+        const radio = option.querySelector('input[type="radio"]');
+        const textInput = option.querySelector('input[type="text"]');
+        const optionLetter = String.fromCharCode(65 + index); // A, B, C, D...
+        
+        // Mettre à jour les attributs
+        radio.value = index;
+        textInput.name = `option_${questionIndex}_${index}`;
+        textInput.placeholder = `Option ${optionLetter}`;
+    });
+}
+
+// Fonction de test pour diagnostiquer la soumission du formulaire
+function testFormSubmission() {
+    console.log('=== TEST FORM SUBMISSION ===');
+    
+    const form = document.querySelector('form');
+    const exerciseType = document.getElementById('exercise_type').value;
+    const title = document.querySelector('input[name="title"]').value;
+    
+    console.log('Form element:', form);
+    console.log('Exercise type:', exerciseType);
+    console.log('Title:', title);
+    console.log('Form action:', form.action);
+    console.log('Form method:', form.method);
+    
+    // Test de validation basique
+    if (!exerciseType) {
+        alert('ERREUR: Aucun type d\'exercice sélectionné!');
+        return;
+    }
+    
+    if (!title) {
+        alert('ERREUR: Aucun titre saisi!');
+        return;
+    }
+    
+    console.log('Validation OK - Tentative de soumission...');
+    alert('Test OK! Le formulaire semble valide. Vérifiez la console pour les détails.');
+    
+    // Optionnel: soumettre réellement le formulaire
+    // form.submit();
+}
+
+// Initialiser l'affichage au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing simplified form...');
+    showExerciseType();
+    
+    // Écouter les changements de type d'exercice
+    const exerciseTypeSelect = document.getElementById('exercise_type');
+    if (exerciseTypeSelect) {
+        exerciseTypeSelect.addEventListener('change', showExerciseType);
+    }
+});
+</script>
+{% endblock content %}

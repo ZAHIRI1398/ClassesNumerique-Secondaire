@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Statistiques de l'exercice{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Statistiques pour l'exercice : {{ exercise.title }}</h2>
+
+    {% if stats is none %}
+        <div class="alert alert-info">
+            {{ get_flashed_messages()[0] if get_flashed_messages() else 'Aucune statistique disponible.' }}
+        </div>
+        <a href="{{ url_for('exercise.exercise_library') }}" class="btn btn-primary">Retour à la bibliothèque</a>
+    {% else %}
+        <div class="row mt-4">
+            <!-- Statistiques globales -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Statistiques globales</h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Nombre total de tentatives
+                                <span class="badge bg-primary rounded-pill">{{ stats.total_attempts }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Score moyen
+                                <span class="badge bg-success rounded-pill">{{ "%.1f"|format(stats.avg_score) }}%</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Score minimum
+                                <span class="badge bg-warning rounded-pill">{{ "%.1f"|format(stats.min_score) }}%</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Score maximum
+                                <span class="badge bg-success rounded-pill">{{ "%.1f"|format(stats.max_score) }}%</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Distribution des scores -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Distribution des scores</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="scoresDistribution" 
+                            data-distribution="{{ stats.distribution | tojson | e }}"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    <!-- Bouton de retour -->
+    <div class="mt-4">
+        <a href="{{ url_for('exercise.exercise_library') }}" class="btn btn-primary">
+            <i class="fas fa-arrow-left"></i> Retour à la bibliothèque
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+{% if stats and stats.distribution %}
+(() => {
+    'use strict';
+
+    const initScoresChart = () => {
+        const canvas = document.getElementById('scoresDistribution');
+        if (!canvas) return;
+
+        const SCORE_RANGES = ['0-20%', '20-40%', '40-60%', '60-80%', '80-100%'];
+        const COLORS = {
+            red: { bg: 'rgba(255, 99, 132, 0.5)', border: 'rgba(255, 99, 132, 1)' },
+            orange: { bg: 'rgba(255, 159, 64, 0.5)', border: 'rgba(255, 159, 64, 1)' },
+            yellow: { bg: 'rgba(255, 205, 86, 0.5)', border: 'rgba(255, 205, 86, 1)' },
+            green: { bg: 'rgba(75, 192, 192, 0.5)', border: 'rgba(75, 192, 192, 1)' },
+            blue: { bg: 'rgba(54, 162, 235, 0.5)', border: 'rgba(54, 162, 235, 1)' }
+        };
+
+        const distribution = JSON.parse(canvas.dataset.distribution);
+
+            try {
+                const config = {
+                    type: 'bar',
+                    data: {
+                        labels: SCORE_RANGES,
+                        datasets: [{
+                            label: 'Nombre d\'étudiants',
+                            data: Object.values(distribution),
+                            backgroundColor: [COLORS.red.bg, COLORS.orange.bg, COLORS.yellow.bg, COLORS.green.bg, COLORS.blue.bg],
+                            borderColor: [COLORS.red.border, COLORS.orange.border, COLORS.yellow.border, COLORS.green.border, COLORS.blue.border],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            }
+                        }
+                    }
+                };
+
+                new Chart(canvas, config);
+            } catch (error) {
+                console.error('Error initializing scores chart:', error);
+            }
+    };
+
+    // Initialize chart when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initScoresChart);
+    } else {
+        initScoresChart();
+    }
+})();
+{% endif %}
+</script>
+{% endblock %}

@@ -1,0 +1,170 @@
+{% extends "edit_exercise.html" %}
+
+{% block exercise_content %}
+<div id="pairs-editor" class="mb-4">
+    <input type="hidden" id="question_count" name="question_count" value="{{ content.pairs|length if content and content.pairs else 0 }}">
+    
+    <div id="pairs-container">
+        {% set pairs = content.pairs if content and content.pairs else [] %}
+        {% for pair in pairs %}
+            <div class="pair-block card mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">Paire {{ loop.index }}</h5>
+                        <button type="button" class="btn btn-danger btn-sm remove-pair">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="row">
+                        <!-- Élément de gauche -->
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Élément de gauche :</label>
+                                <select class="form-control mb-2" name="pair_left_type_{{ loop.index0 }}" onchange="togglePairInput('left', '{{ loop.index0 }}')">
+                                    <option value="text" {% if pair.left.type == 'text' %}selected{% endif %}>Texte</option>
+                                    <option value="image" {% if pair.left.type == 'image' %}selected{% endif %}>Image</option>
+                                </select>
+                                <input type="text" class="form-control" name="pair_left_{{ loop.index0 }}" 
+                                       value="{{ pair.left.content }}" placeholder="Texte ou URL de l'image" required>
+                                <input type="file" class="form-control mt-2" name="pair_left_image_{{ loop.index0 }}" accept="image/*" {% if pair.left.type == 'image' %}style="display: block;"{% else %}style="display: none;"{% endif %}>
+                            </div>
+                        </div>
+                        <!-- Élément de droite -->
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Élément de droite :</label>
+                                <select class="form-control mb-2" name="pair_right_type_{{ loop.index0 }}" onchange="togglePairInput('right', '{{ loop.index0 }}')">
+                                    <option value="text" {% if pair.right.type == 'text' %}selected{% endif %}>Texte</option>
+                                    <option value="image" {% if pair.right.type == 'image' %}selected{% endif %}>Image</option>
+                                </select>
+                                <input type="text" class="form-control" name="pair_right_{{ loop.index0 }}" 
+                                       value="{{ pair.right.content }}" placeholder="Texte ou URL de l'image" required>
+                                <input type="file" class="form-control mt-2" name="pair_right_image_{{ loop.index0 }}" accept="image/*" {% if pair.right.type == 'image' %}style="display: block;"{% else %}style="display: none;"{% endif %}>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <button type="button" id="add-pair" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Ajouter une paire
+    </button>
+</div>
+
+<script>
+// Fonction pour basculer entre texte et image
+function togglePairInput(side, index) {
+    const typeSelect = document.querySelector(`select[name="pair_${side}_type_${index}"]`);
+    const fileInput = document.querySelector(`input[name="pair_${side}_image_${index}"]`);
+    
+    if (typeSelect && fileInput) {
+        if (typeSelect.value === 'image') {
+            fileInput.style.display = 'block';
+        } else {
+            fileInput.style.display = 'none';
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const pairsContainer = document.getElementById('pairs-container');
+    const addPairBtn = document.getElementById('add-pair');
+    const questionCountInput = document.getElementById('question_count');
+
+    // Ajouter une nouvelle paire
+    addPairBtn.addEventListener('click', function() {
+        const pairCount = pairsContainer.children.length;
+        const pairBlock = document.createElement('div');
+        pairBlock.className = 'pair-block card mb-3';
+        pairBlock.innerHTML = `
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="card-title mb-0">Paire ${pairCount + 1}</h5>
+                    <button type="button" class="btn btn-danger btn-sm remove-pair">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                <div class="row">
+                    <!-- Élément de gauche -->
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Élément de gauche :</label>
+                            <select class="form-control mb-2" name="pair_left_type_${pairCount}" onchange="togglePairInput('left', '${pairCount}')">
+                                <option value="text">Texte</option>
+                                <option value="image">Image</option>
+                            </select>
+                            <input type="text" class="form-control" name="pair_left_${pairCount}" placeholder="Texte ou URL de l'image" required>
+                            <input type="file" class="form-control mt-2" name="pair_left_image_${pairCount}" accept="image/*" style="display: none;">
+                        </div>
+                    </div>
+                    <!-- Élément de droite -->
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Élément de droite :</label>
+                            <select class="form-control mb-2" name="pair_right_type_${pairCount}" onchange="togglePairInput('right', '${pairCount}')">
+                                <option value="text">Texte</option>
+                                <option value="image">Image</option>
+                            </select>
+                            <input type="text" class="form-control" name="pair_right_${pairCount}" placeholder="Texte ou URL de l'image" required>
+                            <input type="file" class="form-control mt-2" name="pair_right_image_${pairCount}" accept="image/*" style="display: none;">
+                        </div>
+                    </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        pairsContainer.appendChild(pairBlock);
+        updateQuestionCount();
+        setupPairEvents(pairBlock);
+    });
+
+    // Configuration des événements pour les paires existantes
+    document.querySelectorAll('.pair-block').forEach(setupPairEvents);
+
+    function setupPairEvents(pairBlock) {
+        // Supprimer une paire
+        pairBlock.querySelector('.remove-pair').addEventListener('click', function() {
+            if (confirm('Êtes-vous sûr de vouloir supprimer cette paire ?')) {
+                pairBlock.remove();
+                updatePairNumbers();
+                updateQuestionCount();
+            }
+        });
+    }
+
+    function updatePairNumbers() {
+        document.querySelectorAll('.pair-block').forEach((block, index) => {
+            block.querySelector('.card-title').textContent = `Paire ${index + 1}`;
+            block.querySelector('input[name^="pair_"][name$="_first"]').name = `pair_${index}_first`;
+            block.querySelector('input[name^="pair_"][name$="_second"]').name = `pair_${index}_second`;
+        });
+    }
+
+    function updateQuestionCount() {
+        questionCountInput.value = pairsContainer.children.length;
+    }
+    
+    // Fonction pour basculer entre texte et image
+    window.togglePairInput = function(side, pairId) {
+        const typeSelect = document.querySelector(`select[name="pair_${side}_type_${pairId}"]`);
+        const textInput = document.querySelector(`input[name="pair_${side}_${pairId}"]`);
+        const fileInput = document.querySelector(`input[name="pair_${side}_image_${pairId}"]`);
+        
+        if (typeSelect && textInput && fileInput) {
+            if (typeSelect.value === 'image') {
+                textInput.placeholder = 'URL de l\'image (optionnel si fichier uploadé)';
+                textInput.required = false;
+                fileInput.style.display = 'block';
+            } else {
+                textInput.placeholder = 'Texte';
+                textInput.required = true;
+                fileInput.style.display = 'none';
+            }
+        }
+    };
+});
+</script>
+{% endblock %}

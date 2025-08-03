@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">Bibliothèque d'exercices</h2>
+
+            <!-- Filtres -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="GET" action="{{ url_for('exercise.exercise_library') }}" class="row g-3">
+                        <div class="col-md-4">
+                            <div class="input-group">
+                                <input type="text" 
+                                       class="form-control" 
+                                       name="search" 
+                                       placeholder="Rechercher un exercice..."
+                                       value="{{ search_query if search_query else '' }}">
+                                <button class="btn btn-outline-secondary" type="submit">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" name="type">
+                                <option value="">Tous les types</option>
+                                {% for type_id, type_name in exercise_types %}
+                                    <option value="{{ type_id }}" {% if type_id == selected_type %}selected{% endif %}>
+                                        {{ type_name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" name="subject">
+                                <option value="">Toutes les matières</option>
+                                <option value="math" {% if selected_subject == 'math' %}selected{% endif %}>Mathématiques</option>
+                                <option value="french" {% if selected_subject == 'french' %}selected{% endif %}>Français</option>
+                                <option value="history" {% if selected_subject == 'history' %}selected{% endif %}>Histoire</option>
+                                <option value="geography" {% if selected_subject == 'geography' %}selected{% endif %}>Géographie</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-filter"></i> Filtrer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Liste des exercices -->
+            {% if exercises %}
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                {% for exercise in exercises %}
+                    <div class="col">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ exercise.title }}</h5>
+                                {% if exercise.description %}
+                                    <p class="card-text">{{ exercise.description }}</p>
+                                {% endif %}
+                                <div class="mb-2">
+                                    <span class="badge bg-primary">
+                                        {% if exercise.exercise_type == 'qcm' %}
+                                            QCM
+                                        {% elif exercise.exercise_type == 'word_search' %}
+                                            Mots mêlés
+                                        {% elif exercise.exercise_type == 'pairs' %}
+                                            Association de paires
+                                        {% elif exercise.exercise_type == 'fill_in_blanks' %}
+                                            Texte à trous
+                                        {% elif exercise.exercise_type == 'file' %}
+                                            Dépôt de fichier
+                                        {% else %}
+                                            {{ exercise.exercise_type }}
+                                        {% endif %}
+                                    </span>
+                                    {% if exercise.subject %}
+                                        <span class="badge bg-secondary">{{ exercise.subject }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="card-footer bg-transparent">
+                                <div class="d-flex gap-2">
+                                    <!-- Utilisation d'URL directe pour éviter les conflits de routage -->
+                                    <a href="/exercise/{{ exercise.id }}" class="btn btn-outline-primary">
+                                        <i class="fas fa-eye"></i> Voir
+                                    </a>
+                                    {% if current_user.is_teacher and exercise.teacher_id == current_user.id %}
+                                        <a href="{{ url_for('exercise.edit_exercise', exercise_id=exercise.id) }}" 
+                                           class="btn btn-outline-secondary">
+                                            <i class="fas fa-edit"></i> Modifier
+                                        </a>
+                                        
+                                        <!-- Bouton Supprimer -->
+                                        <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ exercise.id }}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                        
+                                        <!-- Modal de confirmation de suppression -->
+                                        <div class="modal fade" id="deleteModal{{ exercise.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ exercise.id }}" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="deleteModalLabel{{ exercise.id }}">Confirmer la suppression</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        Êtes-vous sûr de vouloir supprimer l'exercice "{{ exercise.title }}" ? Cette action est irréversible.
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                        <form method="POST" action="{{ url_for('exercise.delete_exercise', exercise_id=exercise.id) }}" style="display: inline;">
+                                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                            <button type="submit" class="btn btn-danger">Supprimer</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    {% if current_user.is_teacher %}
+                                        <div class="dropdown">
+                                            <button class="btn btn-outline-primary dropdown-toggle" type="button" id="addToClassDropdown{{ exercise.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <i class="fas fa-plus"></i> Ajouter à une classe
+                                            </button>
+                                            <ul class="dropdown-menu" aria-labelledby="addToClassDropdown{{ exercise.id }}">
+                                                {% for class in current_user.classes_created %}
+                                                    <li>
+                                                        <form action="{{ url_for('add_exercise_to_class', class_id=class.id, exercise_id=exercise.id) }}" method="POST" style="display: inline;">
+                                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                            <button type="submit" class="dropdown-item">
+                                                                <i class="fas fa-users"></i> {{ class.name }}
+                                                            </button>
+                                                        </form>
+                                                    </li>
+                                                {% else %}
+                                                    <li><span class="dropdown-item-text">Aucune classe créée</span></li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            {% else %}
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        Aucun exercice trouvé. {% if current_user.is_teacher %}<a href="{{ url_for('exercise.create_exercise') }}">Créer un exercice</a>{% endif %}
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if current_user.is_teacher %}
+                <div class="text-center mt-4">
+                    <a href="{{ url_for('exercise.create_exercise') }}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-plus"></i> Créer un nouvel exercice
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

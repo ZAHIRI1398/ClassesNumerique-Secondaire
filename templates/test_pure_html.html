@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test HTML Pur</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .big-button { 
+            padding: 20px 40px; 
+            font-size: 24px; 
+            background: #dc3545; 
+            color: white; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+        }
+        .big-button:hover { background: #c82333; }
+    </style>
+</head>
+<body>
+    <h1>Test Formulaire HTML Pur (Sans JavaScript)</h1>
+    
+    <form method="POST" action="/exercise/8/answer">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <input type="hidden" name="answer_0" value="1"/>
+        <input type="hidden" name="answer_1" value="2"/>
+        <input type="hidden" name="answer_2" value="3"/>
+        <input type="hidden" name="answer_3" value="0"/>
+        
+        <p><strong>Ce formulaire va soumettre les bonnes réponses directement :</strong></p>
+        <ul>
+            <li>answer_0 = 1 (Abeille en position 1)</li>
+            <li>answer_1 = 2 (Chat en position 2)</li>
+            <li>answer_2 = 3 (Éléphant en position 3)</li>
+            <li>answer_3 = 0 (Zèbre en position 4)</li>
+        </ul>
+        
+        <button type="submit" class="big-button">
+            🚀 SOUMETTRE SANS JAVASCRIPT
+        </button>
+    </form>
+    
+    <hr>
+    <p><em>Ce formulaire n'utilise AUCUN JavaScript - soumission HTML pure</em></p>
+</body>
+</html>
