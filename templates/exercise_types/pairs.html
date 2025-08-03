@@ -258,7 +258,7 @@
         <div class="header-content">
             <h2>{{ exercise.title }}</h2>
             <p class="exercise-description">{{ exercise.description }}</p>
-            {% if not content or not content.left_items or not content.right_items %}
+            {% if not content or (not content.left_items and not content.pairs) or (not content.shuffled_right_items and not content.pairs) %}
             <div class="alert alert-warning">
                 <h4 class="alert-heading">Contenu non disponible</h4>
                 <p>Le contenu de cet exercice n'est pas disponible ou est mal formé.</p>

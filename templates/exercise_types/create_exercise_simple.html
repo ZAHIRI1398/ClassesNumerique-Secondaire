@@ -106,6 +106,57 @@
             </button>
         </div>
 
+        <!-- Section Association de paires -->
+        <div id="pairs_section" class="exercise-type-section" style="display: none;">
+            <h3>Association de paires</h3>
+            <p class="text-muted">Créez des paires d'éléments à associer. Chaque élément peut être du texte ou une image.</p>
+            
+            <div id="pairs_container">
+                <div class="pair-item mb-4 border p-3 rounded" data-pair-id="1">
+                    <h5>Paire 1</h5>
+                    <div class="row">
+                        <!-- Élément de gauche -->
+                        <div class="col-md-6">
+                            <label class="form-label">Élément de gauche</label>
+                            <div class="mb-2">
+                                <select class="form-select pair-left-type" name="pair_left_type_1" onchange="togglePairInput(this, 'left')">
+                                    <option value="text">Texte</option>
+                                    <option value="image">Image</option>
+                                </select>
+                            </div>
+                            <div class="pair-left-text">
+                                <input type="text" class="form-control" name="pair_left_1" placeholder="Entrez le texte">
+                            </div>
+                            <div class="pair-left-image" style="display: none;">
+                                <input type="file" class="form-control" name="pair_left_image_1" accept="image/*">
+                            </div>
+                        </div>
+                        
+                        <!-- Élément de droite -->
+                        <div class="col-md-6">
+                            <label class="form-label">Élément de droite</label>
+                            <div class="mb-2">
+                                <select class="form-select pair-right-type" name="pair_right_type_1" onchange="togglePairInput(this, 'right')">
+                                    <option value="text">Texte</option>
+                                    <option value="image">Image</option>
+                                </select>
+                            </div>
+                            <div class="pair-right-text">
+                                <input type="text" class="form-control" name="pair_right_1" placeholder="Entrez le texte">
+                            </div>
+                            <div class="pair-right-image" style="display: none;">
+                                <input type="file" class="form-control" name="pair_right_image_1" accept="image/*">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="button" class="btn btn-primary mb-3" onclick="addPair()">
+                <i class="bi bi-plus-circle"></i> Ajouter une paire
+            </button>
+        </div>
+
         <!-- Section Souligner les mots -->
         <div id="underline_words_section" class="exercise-type-section" style="display: none;">
             <h3>Souligner les mots</h3>
@@ -178,6 +229,8 @@
 
         <div class="text-center mt-4">
             <button type="submit" class="btn btn-success btn-lg">Créer l'exercice</button>
+            <button type="button" class="btn btn-primary btn-lg ms-3" onclick="testFormSubmission()">Test Submit</button>
+            <button type="button" class="btn btn-warning btn-lg ms-3" onclick="directSubmit()">Submit Direct</button>
         </div>
     </form>
 </div>
@@ -482,5 +535,122 @@ function addDropZone() {
     `;
     container.appendChild(newZoneDiv);
 }
+
+// Fonctions pour Association de paires
+function addPair() {
+    const container = document.getElementById('pairs_container');
+    const pairCount = container.children.length + 1;
+    
+    const newPairDiv = document.createElement('div');
+    newPairDiv.className = 'pair-item mb-4 border p-3 rounded';
+    newPairDiv.setAttribute('data-pair-id', pairCount);
+    newPairDiv.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5>Paire ${pairCount}</h5>
+            <button type="button" class="btn btn-danger btn-sm" onclick="removePair(this)">
+                <i class="bi bi-trash"></i> Supprimer
+            </button>
+        </div>
+        <div class="row">
+            <!-- Élément de gauche -->
+            <div class="col-md-6">
+                <label class="form-label">Élément de gauche</label>
+                <div class="mb-2">
+                    <select class="form-select pair-left-type" name="pair_left_type_${pairCount}" onchange="togglePairInput(this, 'left')">
+                        <option value="text">Texte</option>
+                        <option value="image">Image</option>
+                    </select>
+                </div>
+                <div class="pair-left-text">
+                    <input type="text" class="form-control" name="pair_left_${pairCount}" placeholder="Entrez le texte">
+                </div>
+                <div class="pair-left-image" style="display: none;">
+                    <input type="file" class="form-control" name="pair_left_image_${pairCount}" accept="image/*">
+                </div>
+            </div>
+            
+            <!-- Élément de droite -->
+            <div class="col-md-6">
+                <label class="form-label">Élément de droite</label>
+                <div class="mb-2">
+                    <select class="form-select pair-right-type" name="pair_right_type_${pairCount}" onchange="togglePairInput(this, 'right')">
+                        <option value="text">Texte</option>
+                        <option value="image">Image</option>
+                    </select>
+                </div>
+                <div class="pair-right-text">
+                    <input type="text" class="form-control" name="pair_right_${pairCount}" placeholder="Entrez le texte">
+                </div>
+                <div class="pair-right-image" style="display: none;">
+                    <input type="file" class="form-control" name="pair_right_image_${pairCount}" accept="image/*">
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(newPairDiv);
+    updatePairLabels();
+}
+
+function removePair(button) {
+    const pairItem = button.closest('.pair-item');
+    pairItem.remove();
+    updatePairLabels();
+}
+
+function updatePairLabels() {
+    const pairItems = document.querySelectorAll('#pairs_container .pair-item');
+    pairItems.forEach((item, index) => {
+        const title = item.querySelector('h5');
+        title.textContent = `Paire ${index + 1}`;
+    });
+}
+
+function togglePairInput(selectElement, side) {
+    const pairItem = selectElement.closest('.pair-item');
+    const textDiv = pairItem.querySelector(`.pair-${side}-text`);
+    const imageDiv = pairItem.querySelector(`.pair-${side}-image`);
+    
+    if (selectElement.value === 'text') {
+        textDiv.style.display = 'block';
+        imageDiv.style.display = 'none';
+        // Vider le champ image
+        const imageInput = imageDiv.querySelector('input[type="file"]');
+        if (imageInput) imageInput.value = '';
+    } else {
+        textDiv.style.display = 'none';
+        imageDiv.style.display = 'block';
+        // Vider le champ texte
+        const textInput = textDiv.querySelector('input[type="text"]');
+        if (textInput) textInput.value = '';
+    }
+}
+
+// Fonction de soumission directe qui contourne toute validation
+function directSubmit() {
+    console.log('=== DIRECT SUBMIT - BYPASS ALL VALIDATION ===');
+    
+    const form = document.querySelector('form');
+    
+    if (!form) {
+        console.error('Formulaire non trouvé!');
+        alert('ERREUR: Formulaire non trouvé!');
+        return;
+    }
+    
+    console.log('Formulaire trouvé, soumission directe...');
+    console.log('Action:', form.action);
+    console.log('Method:', form.method);
+    
+    // Soumission directe sans validation
+    try {
+        form.submit();
+        console.log('Formulaire soumis avec succès!');
+    } catch (error) {
+        console.error('Erreur lors de la soumission:', error);
+        alert('ERREUR: ' + error.message);
+    }
+}
+
 </script>
 {% endblock content %}
