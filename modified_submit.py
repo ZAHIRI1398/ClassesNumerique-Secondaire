@@ -132,8 +132,8 @@ def create_exercise():
                 content['words'] = words
                 
             elif exercise_type == 'fill_in_blanks':
-                sentences = request.form.getlist('sentences[]')
-                words = request.form.getlist('words[]')
+                sentences = request.form.getlist('fill_in_blanks_sentences[]')
+                words = request.form.getlist('fill_in_blanks_words[]')
                 
                 if not sentences:
                     flash('Veuillez ajouter au moins une phrase.', 'error')
@@ -326,13 +326,20 @@ def create_exercise():
                     course = Course.query.get(int(course_id))
                     if course and course.class_obj.teacher_id == current_user.id:
                         # Vérifier que l'enseignant possède bien ce cours
-                        course.exercises.append(exercise)
-                        db.session.commit()
-                        print(f'Exercice associé au cours: {course.title}')
+                        # Vérifier si l'association existe déjà
+                        if exercise not in course.exercises:
+                            course.exercises.append(exercise)
+                            db.session.commit()
+                            print(f'Exercice associé au cours: {course.title}')
+                        else:
+                            print(f'Exercice déjà associé au cours: {course.title}')
                     else:
                         print('Cours non trouvé ou accès non autorisé')
                 except (ValueError, TypeError) as e:
                     print(f'Erreur lors de l\'association au cours: {e}')
+                except Exception as e:
+                    print(f'Erreur d\'association (contrainte unique): {e}')
+                    # L'exercice est créé, l'association échoue mais ce n'est pas grave
 
             flash('Exercice créé avec succès !', 'success')
             return redirect(url_for('exercise.exercise_library'))
