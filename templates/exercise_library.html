@@ -128,7 +128,7 @@
                                                 <i class="fas fa-plus"></i> Ajouter à une classe
                                             </button>
                                             <ul class="dropdown-menu" aria-labelledby="addToClassDropdown{{ exercise.id }}">
-                                                {% for class in current_user.classes_created %}
+                                                {% for class in current_user.classes_teaching %}
                                                     <li>
                                                         <form action="{{ url_for('add_exercise_to_class', class_id=class.id, exercise_id=exercise.id) }}" method="POST" style="display: inline;">
                                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

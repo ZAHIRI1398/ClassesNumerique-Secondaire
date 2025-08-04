@@ -1545,8 +1545,8 @@ def exercise_stats(exercise_id):
         students_to_show = course.class_obj.students
     else:
         # Sans cours spécifié, montrer tous les étudiants qui ont déjà fait l'exercice
-        attempts = ExerciseAttempt.query.filter_by(exercise_id=exercise.id).distinct(ExerciseAttempt.student_id).all()
-        student_ids = [a.student_id for a in attempts]
+        attempts = ExerciseAttempt.query.filter_by(exercise_id=exercise.id).all()
+        student_ids = list(set([a.student_id for a in attempts]))  # Utiliser set() pour éliminer les doublons
         students_to_show = User.query.filter(User.id.in_(student_ids), User.role=='student').all()
     
     for student in students_to_show:

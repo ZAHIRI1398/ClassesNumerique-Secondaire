@@ -1103,81 +1103,61 @@ def view_feedback(exercise_id, attempt_id):
 @bp.route('/stats/<int:exercise_id>')
 @login_required
 def exercise_stats(exercise_id):
-    try:
-        current_app.logger.info(f'Début du chargement des statistiques pour l\'exercice {exercise_id}')
-        exercise = Exercise.query.get_or_404(exercise_id)
-        current_app.logger.info(f'Exercice trouvé: {exercise.title} (type: {exercise.exercise_type})')
-
-        # Vérifier si le type d'exercice est supporté
-        supported_types = [t[0] for t in Exercise.EXERCISE_TYPES]
-        if exercise.exercise_type not in supported_types:
-            current_app.logger.error(f'Type d\'exercice non supporté: {exercise.exercise_type}')
-            flash(f'Le type d\'exercice {exercise.exercise_type} n\'est pas pris en charge.', 'error')
-            return redirect(url_for('exercise.exercise_library'))
-
-        # Vérifier les permissions
-        if not current_user.is_teacher or current_user.id != exercise.teacher_id:
-            current_app.logger.warning(f'Tentative d\'accès non autorisée aux statistiques par l\'utilisateur {current_user.id}')
-            flash('Vous n\'avez pas la permission de voir ces statistiques.', 'error')
-            return redirect(url_for('exercise.exercise_library'))
-
-        # Récupérer toutes les tentatives pour cet exercice
-        attempts = ExerciseAttempt.query.filter_by(exercise_id=exercise_id).all()
-        current_app.logger.info(f'Nombre total de tentatives récupérées: {len(attempts)}')
-
-        if not attempts:
-            current_app.logger.info('Aucune tentative trouvée pour cet exercice')
-            flash('Aucune tentative n\'a encore été faite pour cet exercice.', 'info')
-            return render_template('exercise_stats.html', exercise=exercise, stats=None)
-
-        # Calculer les statistiques
-        current_app.logger.info('Calcul des statistiques...')
-
-        # Filtrer les scores None
-        valid_scores = [attempt.score for attempt in attempts if attempt.score is not None]
-        current_app.logger.info(f'Nombre de scores valides: {len(valid_scores)}')
-
-        if not valid_scores:
-            current_app.logger.warning('Aucun score valide trouvé')
-            flash('Impossible de calculer les statistiques : aucun score valide.', 'warning')
-            return render_template('exercise_stats.html', exercise=exercise, stats=None)
-
-        # Calculer les statistiques de base
-        stats = {
-            'total_attempts': len(attempts),
-            'avg_score': sum(valid_scores) / len(valid_scores),
-            'min_score': min(valid_scores),
-            'max_score': max(valid_scores)
-        }
-
-        # Calculer la distribution des scores
-        score_ranges = [(0, 25), (25, 50), (50, 75), (75, 100)]
-        distribution = {f'{start}-{end}': 0 for start, end in score_ranges}
-
-        for score in valid_scores:
-            for start, end in score_ranges:
-                if start <= score < end or (end == 100 and start <= score <= end):
-                    distribution[f'{start}-{end}'] += 1
+    exercise = Exercise.query.get_or_404(exercise_id)
+    course_id = request.args.get('course_id', type=int)
+    
+    # Vérifier que l'enseignant a le droit d'accéder à ces statistiques
+    has_access = False
+    
+    # Vérifier si l'enseignant est le créateur de l'exercice
+    if exercise.teacher_id == current_user.id:
+        has_access = True
+    else:
+        # Vérifier si l'exercice est utilisé dans l'une des classes de l'enseignant
+        teacher_classes = Class.query.filter_by(teacher_id=current_user.id).all()
+        for class_obj in teacher_classes:
+            for course in class_obj.courses:
+                if exercise in course.exercises:
+                    has_access = True
                     break
-
-        stats['distribution'] = distribution
-        current_app.logger.info(f'Statistiques calculées avec succès: {stats}')
-
-        # Vérifier si le template existe
-        template_name = 'exercise_stats.html'
-        try:
-            current_app.jinja_env.get_template(template_name)
-        except Exception as e:
-            current_app.logger.error(f'Template manquant: {template_name}\nErreur: {str(e)}')
-            flash('Une erreur est survenue : le template de statistiques est manquant.', 'error')
-            return redirect(url_for('exercise.exercise_library'))
-
-        return render_template('exercise_stats.html', exercise=exercise, stats=stats)
-
-    except Exception as e:
-        current_app.logger.error(f'Erreur lors de l\'affichage des statistiques: {str(e)}\n{exc_info()}')
-        flash('Une erreur est survenue lors de l\'affichage des statistiques.', 'error')
-        return redirect(url_for('exercise.exercise_library'))
+            if has_access:
+                break
+    
+    if not has_access:
+        flash("Vous n'avez pas l'autorisation de voir ces statistiques.", "error")
+        return redirect(url_for('index'))
+    
+    # Récupérer les statistiques
+    stats = exercise.get_stats(course_id)
+    
+    # Récupérer les informations du cours si spécifié
+    course = Course.query.get(course_id) if course_id else None
+    
+    # Ajouter les informations de progression pour chaque étudiant
+    student_progress = []
+    
+    if course:
+        # Pour un cours spécifique, ne montrer que les étudiants de la classe associée
+        students_to_show = course.class_obj.students
+    else:
+        # Sans cours spécifié, montrer tous les étudiants qui ont déjà fait l'exercice
+        attempts = ExerciseAttempt.query.filter_by(exercise_id=exercise.id).all()
+        student_ids = list(set([a.student_id for a in attempts]))  # Utiliser set() pour éliminer les doublons
+        students_to_show = User.query.filter(User.id.in_(student_ids), User.role=='student').all()
+    
+    for student in students_to_show:
+        progress = exercise.get_student_progress(student.id)
+        if progress:
+            student_progress.append({
+                'student': student,
+                'progress': progress
+            })
+    
+    return render_template('exercise_stats.html',
+                         exercise=exercise,
+                         course=course,
+                         stats=stats,
+                         student_progress=student_progress)
 
 def init_app(app):
     app.register_blueprint(bp)
