@@ -116,6 +116,25 @@ def create_exercise():
                     return redirect(request.url)
                 
                 content['questions'] = questions_data
+                
+                # Gestion de l'image optionnelle pour QCM
+                if 'qcm_image' in request.files:
+                    image_file = request.files['qcm_image']
+                    if image_file and image_file.filename != '' and allowed_file(image_file.filename):
+                        filename = secure_filename(image_file.filename)
+                        unique_filename = generate_unique_filename(filename)
+                        
+                        # Créer le dossier uploads s'il n'existe pas
+                        upload_folder = os.path.join(current_app.root_path, 'static', 'uploads')
+                        os.makedirs(upload_folder, exist_ok=True)
+                        
+                        # Sauvegarder l'image
+                        image_path = os.path.join(upload_folder, unique_filename)
+                        image_file.save(image_path)
+                        
+                        # Ajouter le chemin de l'image au contenu
+                        content['image'] = f'static/uploads/{unique_filename}'
+                        current_app.logger.debug(f'Image QCM sauvegardée: {content["image"]}')
 
             elif exercise_type == 'word_search':
                 print(f'[WORD_SEARCH_CREATE_DEBUG] Form data: {dict(request.form)}')
@@ -223,6 +242,25 @@ def create_exercise():
                     'sentences': sentences,
                     'words': words
                 }
+                
+                # Gestion de l'image optionnelle pour Texte à trous
+                if 'fill_in_blanks_image' in request.files:
+                    image_file = request.files['fill_in_blanks_image']
+                    if image_file and image_file.filename != '' and allowed_file(image_file.filename):
+                        filename = secure_filename(image_file.filename)
+                        unique_filename = generate_unique_filename(filename)
+                        
+                        # Créer le dossier uploads s'il n'existe pas
+                        upload_folder = os.path.join(current_app.root_path, 'static', 'uploads')
+                        os.makedirs(upload_folder, exist_ok=True)
+                        
+                        # Sauvegarder l'image
+                        image_path = os.path.join(upload_folder, unique_filename)
+                        image_file.save(image_path)
+                        
+                        # Ajouter le chemin de l'image au contenu
+                        content['image'] = f'static/uploads/{unique_filename}'
+                        current_app.logger.debug(f'Image Texte à trous sauvegardée: {content["image"]}')
                 
             elif exercise_type == 'drag_and_drop':
                 # Traitement pour glisser-déposer
@@ -409,6 +447,25 @@ def create_exercise():
                 
                 content['instructions'] = instructions
                 content['words'] = words_data
+                
+                # Gestion de l'image optionnelle pour Souligner les mots
+                if 'underline_words_image' in request.files:
+                    image_file = request.files['underline_words_image']
+                    if image_file and image_file.filename != '' and allowed_file(image_file.filename):
+                        filename = secure_filename(image_file.filename)
+                        unique_filename = generate_unique_filename(filename)
+                        
+                        # Créer le dossier uploads s'il n'existe pas
+                        upload_folder = os.path.join(current_app.root_path, 'static', 'uploads')
+                        os.makedirs(upload_folder, exist_ok=True)
+                        
+                        # Sauvegarder l'image
+                        image_path = os.path.join(upload_folder, unique_filename)
+                        image_file.save(image_path)
+                        
+                        # Ajouter le chemin de l'image au contenu
+                        content['image'] = f'static/uploads/{unique_filename}'
+                        current_app.logger.debug(f'Image Souligner les mots sauvegardée: {content["image"]}')
 
             # Créer l'exercice
             exercise = Exercise(

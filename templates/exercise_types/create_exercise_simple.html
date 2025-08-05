@@ -56,6 +56,21 @@
         <!-- Section QCM -->
         <div id="qcm_section" class="exercise-type-section" style="display: none;">
             <h3>Questions à choix multiples</h3>
+            
+            <!-- Image optionnelle pour QCM -->
+            <div class="mb-4 p-3" style="border: 2px dashed #007bff; border-radius: 8px; background-color: #f8f9fa;">
+                <h5 class="text-primary"><i class="bi bi-image"></i> Image d'illustration (optionnel)</h5>
+                <p class="text-muted mb-3">Ajoutez une image pour illustrer vos questions (schéma, photo, graphique...)</p>
+                <div class="mb-3">
+                    <input type="file" class="form-control" name="qcm_image" accept="image/*" id="qcm_image_input">
+                    <small class="text-muted">Formats acceptés : JPG, PNG, GIF (max 5MB)</small>
+                </div>
+                <div id="qcm_image_preview" style="display: none;">
+                    <img id="qcm_image_preview_img" src="" alt="Aperçu" class="img-thumbnail" style="max-width: 300px; max-height: 200px;">
+                    <button type="button" class="btn btn-sm btn-danger ms-2" onclick="removeQcmImage()">Supprimer</button>
+                </div>
+            </div>
+            
             <div id="questions_container"></div>
             <button type="button" class="btn btn-primary mb-3" onclick="addQuestion()">
                 <i class="bi bi-plus-circle"></i> Ajouter une question
@@ -79,6 +94,20 @@
         <div id="fill_in_blanks_section" class="exercise-type-section" style="display: none;">
             <h3>Texte à trous</h3>
             <p class="text-muted">Utilisez ___ (trois underscores) pour marquer les espaces à remplir.</p>
+            
+            <!-- Image optionnelle pour Texte à trous -->
+            <div class="mb-4 p-3" style="border: 2px dashed #28a745; border-radius: 8px; background-color: #f8f9fa;">
+                <h5 class="text-success"><i class="bi bi-image"></i> Image d'illustration (optionnel)</h5>
+                <p class="text-muted mb-3">Ajoutez une image pour accompagner votre texte à trous (diagramme, photo, support visuel...)</p>
+                <div class="mb-3">
+                    <input type="file" class="form-control" name="fill_in_blanks_image" accept="image/*" id="fill_in_blanks_image_input">
+                    <small class="text-muted">Formats acceptés : JPG, PNG, GIF (max 5MB)</small>
+                </div>
+                <div id="fill_in_blanks_image_preview" style="display: none;">
+                    <img id="fill_in_blanks_image_preview_img" src="" alt="Aperçu" class="img-thumbnail" style="max-width: 300px; max-height: 200px;">
+                    <button type="button" class="btn btn-sm btn-danger ms-2" onclick="removeFillInBlanksImage()">Supprimer</button>
+                </div>
+            </div>
             
             <div id="fill_in_blanks_container">
                 <div class="sentence-block mb-3">
@@ -280,6 +309,21 @@
         <!-- Section Souligner les mots -->
         <div id="underline_words_section" class="exercise-type-section" style="display: none;">
             <h3>Souligner les mots</h3>
+            
+            <!-- Image optionnelle pour Souligner les mots -->
+            <div class="mb-4 p-3" style="border: 2px dashed #dc3545; border-radius: 8px; background-color: #f8f9fa;">
+                <h5 class="text-danger"><i class="bi bi-image"></i> Image d'illustration (optionnel)</h5>
+                <p class="text-muted mb-3">Ajoutez une image pour accompagner votre exercice (texte, document, support visuel...)</p>
+                <div class="mb-3">
+                    <input type="file" class="form-control" name="underline_words_image" accept="image/*" id="underline_words_image_input">
+                    <small class="text-muted">Formats acceptés : JPG, PNG, GIF (max 5MB)</small>
+                </div>
+                <div id="underline_words_image_preview" style="display: none;">
+                    <img id="underline_words_image_preview_img" src="" alt="Aperçu" class="img-thumbnail" style="max-width: 300px; max-height: 200px;">
+                    <button type="button" class="btn btn-sm btn-danger ms-2" onclick="removeUnderlineWordsImage()">Supprimer</button>
+                </div>
+            </div>
+            
             <div id="underline_sentences_container">
                 <div class="sentence-item mb-3">
                     <label class="form-label">Phrase 1</label>
@@ -736,6 +780,59 @@ function updateOptionIndices(questionCard) {
         textInput.placeholder = `Option ${optionLetter}`;
     });
 }
+
+// Fonctions pour gérer l'aperçu des images
+function setupImagePreview(inputId, previewId, previewImgId) {
+    const input = document.getElementById(inputId);
+    if (input) {
+        input.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById(previewId);
+                    const previewImg = document.getElementById(previewImgId);
+                    
+                    previewImg.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+}
+
+// Fonctions de suppression d'images
+function removeQcmImage() {
+    const input = document.getElementById('qcm_image_input');
+    const preview = document.getElementById('qcm_image_preview');
+    
+    input.value = '';
+    preview.style.display = 'none';
+}
+
+function removeFillInBlanksImage() {
+    const input = document.getElementById('fill_in_blanks_image_input');
+    const preview = document.getElementById('fill_in_blanks_image_preview');
+    
+    input.value = '';
+    preview.style.display = 'none';
+}
+
+function removeUnderlineWordsImage() {
+    const input = document.getElementById('underline_words_image_input');
+    const preview = document.getElementById('underline_words_image_preview');
+    
+    input.value = '';
+    preview.style.display = 'none';
+}
+
+// Initialiser les aperçus d'images au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+    setupImagePreview('qcm_image_input', 'qcm_image_preview', 'qcm_image_preview_img');
+    setupImagePreview('fill_in_blanks_image_input', 'fill_in_blanks_image_preview', 'fill_in_blanks_image_preview_img');
+    setupImagePreview('underline_words_image_input', 'underline_words_image_preview', 'underline_words_image_preview_img');
+});
 
 // Fonction de test pour diagnostiquer la soumission du formulaire
 function testFormSubmission() {

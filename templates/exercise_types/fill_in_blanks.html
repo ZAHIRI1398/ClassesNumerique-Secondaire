@@ -22,6 +22,19 @@
                 {% endif %}
             </div>
         {% else %}
+            <!-- Affichage de l'image optionnelle -->
+            {% if content and content.image %}
+            <div class="mb-4 text-center">
+                <div class="card">
+                    <div class="card-body">
+                        <img src="{{ url_for('static', filename=content.image.replace('static/', '')) }}" 
+                             alt="Image d'illustration" 
+                             class="img-fluid rounded" 
+                             style="max-width: 100%; max-height: 400px; object-fit: contain;">
+                    </div>
+                </div>
+            </div>
+            {% endif %}
             <form method="POST" action="{{ url_for('exercise.submit_answer', exercise_id=exercise.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 
