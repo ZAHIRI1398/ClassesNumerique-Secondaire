@@ -166,6 +166,7 @@ class Exercise(db.Model):
         ('fill_in_blanks', 'Texte à trous'),
         ('underline_words', 'Souligner les mots'),
         ('drag_and_drop', 'Glisser-déposer'),
+        ('dictation', 'Dictée'),
     ]
     
     id = db.Column(db.Integer, primary_key=True)
@@ -173,6 +174,7 @@ class Exercise(db.Model):
     description = db.Column(db.Text)
     exercise_type = db.Column(db.String(50), nullable=False)
     content = db.Column(db.Text)  # Stocké en JSON
+    subject = db.Column(db.String(50), nullable=True)  # Matière de l'exercice
     teacher_id = db.Column(db.Integer, db.ForeignKey('user.id', name='fk_exercise_teacher'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     max_attempts = db.Column(db.Integer, default=None)  # Nombre maximum de tentatives autorisées, None = illimité

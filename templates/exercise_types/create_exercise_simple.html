@@ -301,6 +301,41 @@
             </button>
         </div>
 
+        <!-- Section Dictée -->
+        <div id="dictation_section" class="exercise-type-section" style="display: none;">
+            <h3>Dictée</h3>
+            <p class="text-muted">Écoute et écris sans faute. Ne mets pas de majuscule.</p>
+            
+            <div class="mb-3">
+                <label class="form-label">Instructions personnalisées (optionnel)</label>
+                <input type="text" class="form-control" name="dictation_instructions" 
+                       placeholder="Écoute et écris sans faute. Ne mets pas de majuscule.">
+            </div>
+            
+            <div id="dictation_sentences_container">
+                <div class="dictation-item mb-4 p-3" style="border: 1px solid #ddd; border-radius: 8px; background-color: #f8f9fa;">
+                    <h5>Phrase 1</h5>
+                    <div class="row">
+                        <div class="col-md-8">
+                            <label class="form-label">Texte de la phrase</label>
+                            <input type="text" class="form-control" name="dictation_sentences[]" 
+                                   placeholder="Entrez la phrase à dicter" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Fichier audio (optionnel)</label>
+                            <input type="file" class="form-control" name="dictation_audio_0" 
+                                   accept="audio/*" title="Uploadez un fichier audio MP3 ou WAV">
+                            <small class="text-muted">Formats acceptés : MP3, WAV</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="button" class="btn btn-primary mb-3" onclick="addDictationSentence()">
+                <i class="bi bi-plus-circle"></i> Ajouter une phrase
+            </button>
+        </div>
+
         <!-- Section Glisser-déposer -->
         <div id="drag_and_drop_section" class="exercise-type-section" style="display: none;">
             <h3>Glisser-déposer</h3>
@@ -883,6 +918,65 @@ function togglePairInput(selectElement, side) {
         const textInput = textDiv.querySelector('input[type="text"]');
         if (textInput) textInput.value = '';
     }
+}
+
+// Fonction pour ajouter une phrase de dictée
+function addDictationSentence() {
+    const container = document.getElementById('dictation_sentences_container');
+    const currentItems = container.querySelectorAll('.dictation-item');
+    const newIndex = currentItems.length;
+    
+    const newSentenceDiv = document.createElement('div');
+    newSentenceDiv.className = 'dictation-item mb-4 p-3';
+    newSentenceDiv.style.cssText = 'border: 1px solid #ddd; border-radius: 8px; background-color: #f8f9fa;';
+    
+    newSentenceDiv.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5>Phrase ${newIndex + 1}</h5>
+            <button type="button" class="btn btn-danger btn-sm" onclick="removeDictationSentence(this)">
+                <i class="bi bi-trash"></i> Supprimer
+            </button>
+        </div>
+        <div class="row">
+            <div class="col-md-8">
+                <label class="form-label">Texte de la phrase</label>
+                <input type="text" class="form-control" name="dictation_sentences[]" 
+                       placeholder="Entrez la phrase à dicter" required>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Fichier audio (optionnel)</label>
+                <input type="file" class="form-control" name="dictation_audio_${newIndex}" 
+                       accept="audio/*" title="Uploadez un fichier audio MP3 ou WAV">
+                <small class="text-muted">Formats acceptés : MP3, WAV</small>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(newSentenceDiv);
+}
+
+// Fonction pour supprimer une phrase de dictée
+function removeDictationSentence(button) {
+    const dictationItem = button.closest('.dictation-item');
+    dictationItem.remove();
+    updateDictationLabels();
+}
+
+// Fonction pour mettre à jour les labels des phrases de dictée
+function updateDictationLabels() {
+    const container = document.getElementById('dictation_sentences_container');
+    const items = container.querySelectorAll('.dictation-item');
+    
+    items.forEach((item, index) => {
+        const title = item.querySelector('h5');
+        title.textContent = `Phrase ${index + 1}`;
+        
+        // Mettre à jour le nom du champ audio
+        const audioInput = item.querySelector('input[type="file"]');
+        if (audioInput) {
+            audioInput.name = `dictation_audio_${index}`;
+        }
+    });
 }
 
 // Fonction de soumission directe qui contourne toute validation

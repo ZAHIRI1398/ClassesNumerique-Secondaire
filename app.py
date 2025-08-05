@@ -2577,9 +2577,106 @@ def handle_exercise_answer(exercise_id):
             # Pour underline_words, on utilise le score en pourcentage
             answers = {f'selected_words_{i}': request.form.get(f'selected_words_{i}', '') for i in range(len(sentences))}
         
+        elif exercise.exercise_type == 'dictation':
+            # Gestion des exercices de dictée
+            content = json.loads(exercise.content)
+            app.logger.info(f"[DICTATION_DEBUG] Processing dictation exercise {exercise_id}")
+            app.logger.info(f"[DICTATION_DEBUG] Form data: {dict(request.form)}")
+            
+            # Récupérer les phrases de référence
+            reference_sentences = content.get('sentences', [])
+            if not reference_sentences:
+                app.logger.error(f"[DICTATION_DEBUG] No sentences found in exercise content")
+                flash('Erreur: aucune phrase trouvée dans l\'exercice.', 'error')
+                return redirect(url_for('view_exercise', exercise_id=exercise_id))
+            
+            app.logger.info(f"[DICTATION_DEBUG] Found {len(reference_sentences)} sentences to check")
+            
+            # Calculer le score pour chaque phrase
+            total_sentences = len(reference_sentences)
+            correct_sentences = 0
+            feedback = []
+            user_answers = {}
+            
+            for i, reference_sentence in enumerate(reference_sentences):
+                # Récupérer la réponse de l'utilisateur
+                user_answer = request.form.get(f'dictation_answer_{i}', '').strip()
+                reference_text = reference_sentence.strip()
+                
+                user_answers[f'dictation_answer_{i}'] = user_answer
+                
+                app.logger.info(f"[DICTATION_DEBUG] Sentence {i}: user='{user_answer}' vs reference='{reference_text}'")
+                
+                # Normaliser les textes pour la comparaison
+                def normalize_text(text):
+                    # Convertir en minuscules
+                    normalized = text.lower()
+                    # Supprimer la ponctuation
+                    import string
+                    normalized = normalized.translate(str.maketrans('', '', string.punctuation))
+                    # Supprimer les espaces multiples
+                    normalized = ' '.join(normalized.split())
+                    return normalized
+                
+                user_normalized = normalize_text(user_answer)
+                reference_normalized = normalize_text(reference_text)
+                
+                app.logger.info(f"[DICTATION_DEBUG] Sentence {i}: normalized user='{user_normalized}' vs reference='{reference_normalized}'")
+                
+                # Vérifier si la phrase est correcte
+                is_correct = user_normalized == reference_normalized
+                if is_correct:
+                    correct_sentences += 1
+                
+                # Calculer la similarité (pourcentage de mots corrects)
+                user_words = user_normalized.split()
+                reference_words = reference_normalized.split()
+                
+                if reference_words:
+                    # Compter les mots corrects (même position)
+                    correct_words = 0
+                    max_length = max(len(user_words), len(reference_words))
+                    
+                    for j in range(max_length):
+                        user_word = user_words[j] if j < len(user_words) else ''
+                        ref_word = reference_words[j] if j < len(reference_words) else ''
+                        if user_word == ref_word and user_word != '':
+                            correct_words += 1
+                    
+                    similarity = (correct_words / len(reference_words)) * 100
+                else:
+                    similarity = 100 if not user_words else 0
+                
+                # Créer le feedback pour cette phrase
+                feedback.append({
+                    'sentence_index': i,
+                    'user_answer': user_answer,
+                    'reference_sentence': reference_text,
+                    'is_correct': is_correct,
+                    'similarity': round(similarity, 1),
+                    'status': 'Correct' if is_correct else f'Similarité: {round(similarity, 1)}%'
+                })
+            
+            # Calculer le score final
+            max_score = total_sentences
+            score_count = correct_sentences
+            score = round((score_count / max_score) * 100) if max_score > 0 else 0
+            
+            app.logger.info(f"[DICTATION_DEBUG] Final score: {score_count}/{max_score} = {score}%")
+            
+            feedback_summary = {
+                'score': score,
+                'correct_sentences': correct_sentences,
+                'total_sentences': total_sentences,
+                'details': feedback
+            }
+            
+            # Pour dictation, on utilise le score en pourcentage
+            answers = user_answers
+        
         # Créer une nouvelle tentative
-        # Pour drag_and_drop, pairs et underline_words, feedback est feedback_summary (sinon feedback dict habituel)
-        if exercise.exercise_type in ['drag_and_drop', 'pairs', 'underline_words']:
+        # Pour drag_and_drop, pairs, underline_words et dictation, feedback est feedback_summary (sinon feedback dict habituel)
+        if exercise.exercise_type in ['drag_and_drop', 'pairs', 'underline_words', 'dictation']:
             feedback_to_save = feedback_summary
         else:
             feedback_to_save = feedback

@@ -35,10 +35,11 @@
                         <div class="col-md-3">
                             <select class="form-select" name="subject">
                                 <option value="">Toutes les matières</option>
-                                <option value="math" {% if selected_subject == 'math' %}selected{% endif %}>Mathématiques</option>
-                                <option value="french" {% if selected_subject == 'french' %}selected{% endif %}>Français</option>
-                                <option value="history" {% if selected_subject == 'history' %}selected{% endif %}>Histoire</option>
-                                <option value="geography" {% if selected_subject == 'geography' %}selected{% endif %}>Géographie</option>
+                                <option value="Français" {% if selected_subject == 'Français' %}selected{% endif %}>Français</option>
+                                <option value="Mathématiques" {% if selected_subject == 'Mathématiques' %}selected{% endif %}>Mathématiques</option>
+                                <option value="Histoire" {% if selected_subject == 'Histoire' %}selected{% endif %}>Histoire</option>
+                                <option value="Géographie" {% if selected_subject == 'Géographie' %}selected{% endif %}>Géographie</option>
+                                <option value="Sciences" {% if selected_subject == 'Sciences' %}selected{% endif %}>Sciences</option>
                             </select>
                         </div>
                         <div class="col-md-2">

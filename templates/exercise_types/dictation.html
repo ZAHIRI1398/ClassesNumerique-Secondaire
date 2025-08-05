@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}{{ exercise.title }} - Dictée{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="mb-0">
+                        <i class="fas fa-volume-up"></i> {{ exercise.title }}
+                    </h2>
+                    <p class="mb-0">{{ exercise.description }}</p>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Instructions -->
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Instructions :</strong> {{ content.instructions }}
+                    </div>
+                    
+                    <!-- Formulaire de dictée -->
+                    <form method="POST" action="{{ url_for('handle_exercise_answer', exercise_id=exercise.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        {% for i in range(content.sentences|length) %}
+                        <div class="dictation-sentence mb-4 p-3" style="border: 1px solid #ddd; border-radius: 8px; background-color: #f8f9fa;">
+                            <div class="d-flex align-items-center mb-3">
+                                <h5 class="mb-0 me-3">Phrase {{ i + 1 }}</h5>
+                                
+                                <!-- Bouton audio -->
+                                {% if content.audio_files and content.audio_files[i] %}
+                                <button type="button" class="btn btn-outline-primary btn-sm audio-btn" 
+                                        data-audio-path="{{ content.audio_files[i] }}"
+                                        data-sentence-index="{{ i }}"
+                                        id="audio_btn_{{ i }}">
+                                    <i class="fas fa-volume-up"></i> Écouter
+                                </button>
+                                {% else %}
+                                <button type="button" class="btn btn-outline-secondary btn-sm" disabled>
+                                    <i class="fas fa-volume-mute"></i> Pas d'audio
+                                </button>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Champ de saisie -->
+                            <div class="mb-2">
+                                <input type="text" 
+                                       class="form-control form-control-lg" 
+                                       name="dictation_answer_{{ i }}" 
+                                       placeholder="Écrivez ce que vous entendez..."
+                                       style="font-size: 1.1em; padding: 15px;">
+                            </div>
+                            
+                            <!-- Phrase de référence (masquée, pour le scoring) -->
+                            <input type="hidden" name="dictation_reference_{{ i }}" value="{{ content.sentences[i] }}">
+                        </div>
+                        {% endfor %}
+                        
+                        <!-- Bouton de soumission -->
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-check"></i> Valider ma dictée
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Audio player caché -->
+<audio id="dictation_audio" style="display: none;" controls>
+    Votre navigateur ne supporte pas l'élément audio.
+</audio>
+
+<script>
+// Fonction pour jouer l'audio
+function playAudio(audioPath, sentenceIndex) {
+    const audio = document.getElementById('dictation_audio');
+    const button = document.getElementById(`audio_btn_${sentenceIndex}`);
+    
+    if (!audioPath) {
+        console.error('Pas de fichier audio pour cette phrase');
+        return;
+    }
+    
+    // Changer l'apparence du bouton pendant la lecture
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Lecture...';
+    button.disabled = true;
+    
+    // Configurer et jouer l'audio
+    audio.src = audioPath;
+    audio.load();
+    
+    audio.onloadeddata = function() {
+        audio.play().then(() => {
+            console.log(`Lecture audio démarrée pour la phrase ${sentenceIndex + 1}`);
+        }).catch((error) => {
+            console.error('Erreur lors de la lecture audio:', error);
+            alert('Erreur lors de la lecture du fichier audio');
+            resetAudioButton(button);
+        });
+    };
+    
+    audio.onended = function() {
+        resetAudioButton(button);
+    };
+    
+    audio.onerror = function() {
+        console.error('Erreur de chargement audio');
+        alert('Impossible de charger le fichier audio');
+        resetAudioButton(button);
+    };
+}
+
+// Gestionnaire d'événements pour les boutons audio
+document.addEventListener('DOMContentLoaded', function() {
+    // Ajouter des événements aux boutons audio
+    const audioButtons = document.querySelectorAll('.audio-btn');
+    audioButtons.forEach(function(button) {
+        button.addEventListener('click', function() {
+            const audioPath = this.getAttribute('data-audio-path');
+            const sentenceIndex = parseInt(this.getAttribute('data-sentence-index'));
+            playAudio(audioPath, sentenceIndex);
+        });
+    });
+});
+
+// Fonction pour remettre le bouton à l'état normal
+function resetAudioButton(button) {
+    button.innerHTML = '<i class="fas fa-volume-up"></i> Écouter';
+    button.disabled = false;
+}
+
+// Raccourcis clavier pour la lecture audio
+document.addEventListener('keydown', function(e) {
+    // Ctrl + numéro pour jouer l'audio de la phrase correspondante
+    if (e.ctrlKey && e.key >= '1' && e.key <= '9') {
+        e.preventDefault();
+        const sentenceIndex = parseInt(e.key) - 1;
+        const button = document.getElementById(`audio_btn_${sentenceIndex}`);
+        if (button && !button.disabled) {
+            button.click();
+        }
+    }
+});
+
+// Message d'aide pour les raccourcis
+document.addEventListener('DOMContentLoaded', function() {
+    const helpText = document.createElement('div');
+    helpText.className = 'alert alert-light mt-3';
+    helpText.innerHTML = '<small><i class="fas fa-keyboard"></i> <strong>Astuce :</strong> Utilisez Ctrl + 1, Ctrl + 2, etc. pour écouter rapidement chaque phrase.</small>';
+    
+    const form = document.querySelector('form');
+    if (form) {
+        form.appendChild(helpText);
+    }
+});
+</script>
+
+{% endblock %}

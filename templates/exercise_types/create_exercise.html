@@ -84,7 +84,25 @@
                 Les mots peuvent être placés horizontalement, verticalement ou en diagonale, dans les deux sens.
                 Utilisez uniquement des lettres (pas d'espaces, de chiffres ou de caractères spéciaux).
             </div>
-            <div id="words_container"></div>
+            <div id="words_container">
+                <!-- Champ initial pour le premier mot -->
+                <div class="mb-3 word-item">
+                    <label class="form-label">Mot 1</label>
+                    <div class="input-group">
+                        <input type="text" 
+                               class="form-control" 
+                               name="word_search_words[]" 
+                               placeholder="Entrez un mot (ou plusieurs mots séparés par des virgules)" 
+                               required>
+                        <button type="button" 
+                                class="btn btn-danger" 
+                                onclick="removeWord(this)" 
+                                style="display: none;">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
             <button type="button" class="btn btn-primary mb-3" onclick="addWord()">
                 <i class="bi bi-plus-circle"></i> Ajouter un mot
             </button>
@@ -364,12 +382,10 @@ function addWord() {
     wordDiv.className = 'input-group mb-2';
     wordDiv.innerHTML = `
         <input type="text" 
-               name="words[]" 
+               name="word_search_words[]" 
                class="form-control" 
-               placeholder="Entrez un mot" 
-               pattern="[A-Za-z]+"
-               maxlength="15"
-               oninput="this.value = this.value.replace(/[^A-Za-z]/g, '').toUpperCase()"
+               placeholder="Entrez un mot (ou plusieurs mots séparés par des virgules)" 
+               maxlength="50"
                required>
         <button type="button" 
                 class="btn btn-danger" 

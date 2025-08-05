@@ -1,58 +1,458 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion - Classe Numérique Saint Bernadette</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar {
+            background: rgba(255, 255, 255, 0.1) !important;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .navbar-brand {
+            color: white !important;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        
+        .navbar-nav .nav-link {
+            color: white !important;
+        }
+        
+        .hero-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            margin: 40px auto;
+            max-width: 1200px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .welcome-section {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 60px 40px;
+            text-align: left;
+        }
+        
+        .welcome-title {
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            line-height: 1.2;
+        }
+        
+        .welcome-subtitle {
+            font-size: 1.2rem;
+            color: #7f8c8d;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+        
+        .btn-custom {
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 50px;
+            margin-right: 15px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-primary-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+        }
+        
+        .btn-primary-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+            color: white;
+        }
+        
+        .btn-outline-custom {
+            border: 2px solid #667eea;
+            color: #667eea;
+            background: transparent;
+        }
+        
+        .btn-outline-custom:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .features-section {
+            padding: 60px 40px;
+        }
+        
+        .features-title {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 40px;
+        }
+        
+        .feature-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px 25px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            height: 100%;
+            border: none;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        }
+        
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 1.5rem;
+            color: white;
+        }
+        
+        .feature-icon.blue {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .feature-icon.green {
+            background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+        }
+        
+        .feature-icon.cyan {
+            background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%);
+        }
+        
+        .feature-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        
+        .feature-description {
+            color: #7f8c8d;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+        
+        .footer-section {
+            background: #2c3e50;
+            color: white;
+            padding: 50px 0;
+        }
+        
+        .footer-column h5 {
+            color: white;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        
+        .footer-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .footer-list li {
+            margin-bottom: 10px;
+            position: relative;
+            padding-left: 20px;
+        }
+        
+        .footer-list li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #27ae60;
+            font-weight: bold;
+        }
+        
+        .footer-copyright {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 1px solid #34495e;
+            color: #bdc3c7;
+        }
+        
+        .login-modal {
+            background: rgba(0, 0, 0, 0.8);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .login-form {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .login-form h3 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #2c3e50;
+        }
+        
+        .form-control {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            padding: 12px 15px;
+            margin-bottom: 20px;
+        }
+        
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #7f8c8d;
+            cursor: pointer;
+        }
+        
+        @media (max-width: 768px) {
+            .welcome-title {
+                font-size: 2.5rem;
+            }
+            
+            .welcome-section {
+                padding: 40px 20px;
+            }
+            
+            .features-section {
+                padding: 40px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-graduation-cap me-2"></i>
+                Classe Numérique Saint Bernadette
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="#" onclick="showLogin()">Connexion</a>
+            </div>
+        </div>
+    </nav>
 
-{% block title %}Connexion{% endblock %}
-
-{% block content %}
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h4 class="mb-0">Connexion</h4>
+    <!-- Hero Section -->
+    <div class="container">
+        <div class="hero-section">
+            <!-- Welcome Section -->
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="welcome-section">
+                        <h1 class="welcome-title">
+                            Bienvenue sur<br>
+                            Classe Numérique<br>
+                            Saint Bernadette
+                        </h1>
+                        <p class="welcome-subtitle">
+                            Une plateforme éducative moderne pour les enseignants et les élèves.
+                        </p>
+                        <div class="mt-4">
+                            <a href="#" class="btn-custom btn-primary-custom" onclick="showLogin()">
+                                Se connecter
+                            </a>
+                            <a href="{{ url_for('register_teacher') }}" class="btn-custom btn-outline-custom">
+                                S'inscrire
+                            </a>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    {% with messages = get_flashed_messages() %}
-                        {% if messages %}
-                            {% for message in messages %}
-                                <div class="alert alert-danger">{{ message }}</div>
-                            {% endfor %}
-                        {% endif %}
-                    {% endwith %}
-                    
-                    <form method="POST" action="{{ url_for('login') }}">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        
-                        <div class="mb-3">
-                            <label for="email" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="email" name="email" required autocomplete="username">
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Mot de passe</label>
-                            <input type="password" class="form-control" id="password" name="password" required autocomplete="current-password">
-                        </div>
-                        
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-box-arrow-in-right"></i> Se connecter
-                            </button>
-                        </div>
-                    </form>
-                    
-                    <div class="text-center mt-3">
-                        <p>Pas encore inscrit ?</p>
-                        <div class="btn-group">
-                            <a href="{{ url_for('register_teacher') }}" class="btn btn-outline-primary">
-                                <i class="bi bi-person-badge"></i> Enseignant
-                            </a>
-                            <a href="{{ url_for('register_student') }}" class="btn btn-outline-primary">
-                                <i class="bi bi-person"></i> Élève
-                            </a>
+                
+                <!-- Features Section -->
+                <div class="col-lg-6">
+                    <div class="features-section">
+                        <h2 class="features-title">Fonctionnalités principales</h2>
+                        <div class="row g-4">
+                            <div class="col-12">
+                                <div class="feature-card">
+                                    <div class="feature-icon blue">
+                                        <i class="fas fa-chalkboard-teacher"></i>
+                                    </div>
+                                    <h4 class="feature-title">Gestion des classes</h4>
+                                    <p class="feature-description">Créez et gérez facilement vos classes virtuelles</p>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="feature-card">
+                                    <div class="feature-icon green">
+                                        <i class="fas fa-tasks"></i>
+                                    </div>
+                                    <h4 class="feature-title">Exercices interactifs</h4>
+                                    <p class="feature-description">Créez des exercices personnalisés pour vos élèves</p>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="feature-card">
+                                    <div class="feature-icon cyan">
+                                        <i class="fas fa-chart-line"></i>
+                                    </div>
+                                    <h4 class="feature-title">Suivi des progrès</h4>
+                                    <p class="feature-description">Suivez la progression de vos élèves en temps réel</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
-{% endblock %}
+
+    <!-- Footer -->
+    <div class="footer-section">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="footer-column">
+                        <h5>Pour les enseignants</h5>
+                        <ul class="footer-list">
+                            <li>Créez des classes virtuelles</li>
+                            <li>Gérez les exercices</li>
+                            <li>Suivez les progrès</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="footer-column">
+                        <h5>Pour les élèves</h5>
+                        <ul class="footer-list">
+                            <li>Accédez aux cours</li>
+                            <li>Faites des exercices</li>
+                            <li>Suivez vos résultats</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="footer-column">
+                        <h5>Avantages</h5>
+                        <ul class="footer-list">
+                            <li>Interface intuitive</li>
+                            <li>Accessible partout</li>
+                            <li>Gratuit</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-copyright">
+                © 2025 Classe Numérique Saint Bernadette. Tous droits réservés.
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="login-modal" id="loginModal">
+        <div class="login-form">
+            <button class="close-btn" onclick="hideLogin()">&times;</button>
+            <h3>Connexion</h3>
+            
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-danger">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <form method="POST" action="{{ url_for('login') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="mb-3">
+                    <input type="email" class="form-control" id="email" name="email" placeholder="Email" required autocomplete="username">
+                </div>
+                
+                <div class="mb-3">
+                    <input type="password" class="form-control" id="password" name="password" placeholder="Mot de passe" required autocomplete="current-password">
+                </div>
+                
+                <div class="d-grid mb-3">
+                    <button type="submit" class="btn-custom btn-primary-custom w-100">
+                        <i class="fas fa-sign-in-alt me-2"></i> Se connecter
+                    </button>
+                </div>
+            </form>
+            
+            <div class="text-center">
+                <p class="mb-2">Pas encore inscrit ?</p>
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('register_teacher') }}" class="btn-custom btn-outline-custom w-100">
+                        <i class="fas fa-chalkboard-teacher me-2"></i> Enseignant
+                    </a>
+                    <a href="{{ url_for('register_student') }}" class="btn-custom btn-outline-custom w-100">
+                        <i class="fas fa-user-graduate me-2"></i> Élève
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function showLogin() {
+            document.getElementById('loginModal').style.display = 'flex';
+        }
+        
+        function hideLogin() {
+            document.getElementById('loginModal').style.display = 'none';
+        }
+        
+        // Fermer la modal en cliquant à l'extérieur
+        document.getElementById('loginModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideLogin();
+            }
+        });
+        
+        // Afficher la modal de connexion si il y a des erreurs
+        {% if get_flashed_messages() %}
+            showLogin();
+        {% endif %}
+    </script>
+</body>
+</html>

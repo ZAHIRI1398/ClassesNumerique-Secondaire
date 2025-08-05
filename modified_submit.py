@@ -76,10 +76,6 @@ def create_exercise():
             # Initialiser le contenu
             content = {}
             
-            # Ajouter la matière au contenu si spécifiée
-            if subject:
-                content['subject'] = subject
-            
             if exercise_type == 'qcm':
                 current_app.logger.debug('Traitement d\'un exercice QCM')
                 current_app.logger.debug(f'Données du formulaire: {dict(request.form)}')
@@ -162,6 +158,43 @@ def create_exercise():
                 content['words'] = words
                 content['grid_width'] = grid_width
                 content['grid_height'] = grid_height
+                
+            elif exercise_type == 'dictation':
+                print(f'[DICTATION_CREATE_DEBUG] Form data: {dict(request.form)}')
+                
+                # Récupérer les phrases de dictée
+                sentences = request.form.getlist('dictation_sentences[]')
+                sentences = [sentence.strip() for sentence in sentences if sentence.strip()]
+                
+                print(f'[DICTATION_CREATE_DEBUG] Sentences: {sentences}')
+                
+                if not sentences:
+                    flash('Veuillez entrer au moins une phrase pour la dictée.', 'error')
+                    return redirect(request.url)
+                
+                # Traitement des fichiers audio (si uploadés)
+                audio_files = []
+                for i, sentence in enumerate(sentences):
+                    audio_file = request.files.get(f'dictation_audio_{i}')
+                    if audio_file and audio_file.filename:
+                        # Sauvegarder le fichier audio
+                        filename = secure_filename(f'dictation_{exercise_id}_{i}_{audio_file.filename}')
+                        audio_path = os.path.join('static/uploads/audio', filename)
+                        
+                        # Créer le dossier s'il n'existe pas
+                        os.makedirs(os.path.dirname(audio_path), exist_ok=True)
+                        
+                        audio_file.save(audio_path)
+                        audio_files.append(f'/static/uploads/audio/{filename}')
+                        print(f'[DICTATION_CREATE_DEBUG] Audio saved: {audio_path}')
+                    else:
+                        audio_files.append(None)  # Pas de fichier audio pour cette phrase
+                
+                content['sentences'] = sentences
+                content['audio_files'] = audio_files
+                content['instructions'] = request.form.get('dictation_instructions', 'Écoute et écris sans faute. Ne mets pas de majuscule.')
+                
+                print(f'[DICTATION_CREATE_DEBUG] Final content: {content}')
                 
             elif exercise_type == 'fill_in_blanks':
                 sentences = request.form.getlist('fill_in_blanks_sentences[]')
@@ -383,6 +416,7 @@ def create_exercise():
                 description=description,
                 exercise_type=exercise_type,
                 content=json.dumps(content),
+                subject=subject if subject else None,
                 max_attempts=max_attempts,
                 teacher_id=current_user.id
             )
@@ -691,6 +725,73 @@ def edit_exercise(exercise_id):
                 
                 content['pairs'] = pairs
             
+            elif exercise.exercise_type == 'dictation':
+                # Traitement pour les exercices de dictée (édition)
+                print(f"[DICTATION_EDIT_DEBUG] Processing dictation edit...")
+                
+                # Récupérer les instructions
+                instructions = request.form.get('dictation_instructions', '').strip()
+                if not instructions:
+                    instructions = 'Écoutez attentivement chaque phrase et écrivez ce que vous entendez.'
+                
+                # Récupérer les phrases
+                sentences = request.form.getlist('dictation_sentences[]')
+                sentences = [s.strip() for s in sentences if s.strip()]
+                
+                print(f"[DICTATION_EDIT_DEBUG] Instructions: {instructions}")
+                print(f"[DICTATION_EDIT_DEBUG] Sentences: {sentences}")
+                
+                # Validation
+                if not sentences:
+                    flash('Veuillez ajouter au moins une phrase.', 'error')
+                    return render_template('exercise_types/dictation_edit.html', exercise=exercise, content=exercise.get_content())
+                
+                # Gestion des fichiers audio
+                audio_files = []
+                for i in range(len(sentences)):
+                    audio_file = None
+                    
+                    # Vérifier s'il y a un nouveau fichier audio
+                    if f'dictation_audio_{i}' in request.files:
+                        file = request.files[f'dictation_audio_{i}']
+                        if file and file.filename:
+                            # Vérifier l'extension du fichier
+                            if file.filename.lower().endswith(('.mp3', '.wav', '.ogg', '.m4a')):
+                                filename = secure_filename(file.filename)
+                                unique_filename = generate_unique_filename(filename)
+                                
+                                # Créer le dossier audio s'il n'existe pas
+                                audio_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'audio')
+                                os.makedirs(audio_folder, exist_ok=True)
+                                
+                                file_path = os.path.join(audio_folder, unique_filename)
+                                file.save(file_path)
+                                audio_file = f'/static/uploads/audio/{unique_filename}'
+                                print(f"[DICTATION_EDIT_DEBUG] Audio file {i} saved: {audio_file}")
+                            else:
+                                flash(f'Le fichier audio {i+1} doit être au format MP3, WAV, OGG ou M4A.', 'error')
+                                return render_template('exercise_types/dictation_edit.html', exercise=exercise, content=exercise.get_content())
+                    
+                    # Si pas de nouveau fichier, garder l'ancien s'il existe
+                    if not audio_file:
+                        existing_content = exercise.get_content()
+                        existing_audio_files = existing_content.get('audio_files', [])
+                        if i < len(existing_audio_files):
+                            audio_file = existing_audio_files[i]
+                    
+                    audio_files.append(audio_file)
+                
+                print(f"[DICTATION_EDIT_DEBUG] Audio files: {audio_files}")
+                
+                # Construire le contenu
+                content = {
+                    'instructions': instructions,
+                    'sentences': sentences,
+                    'audio_files': audio_files
+                }
+                
+                print(f"[DICTATION_EDIT_DEBUG] Final content: {content}")
+            
             # Sauvegarder les modifications
             exercise.content = json.dumps(content)
             db.session.commit()
@@ -758,19 +859,11 @@ def exercise_library():
         query = query.filter(Exercise.title.ilike(f'%{search_query}%'))
     if selected_type:
         query = query.filter(Exercise.exercise_type == selected_type)
+    if selected_subject:
+        query = query.filter(Exercise.subject == selected_subject)
     
     # Trier par date de création décroissante
     exercises = query.order_by(desc(Exercise.created_at)).all()
-    
-    # Filtrer par matière côté Python (car stockée dans le JSON)
-    if selected_subject:
-        filtered_exercises = []
-        for exercise in exercises:
-            content = exercise.get_content()
-            exercise_subject = content.get('subject', '')
-            if selected_subject.lower() in exercise_subject.lower():
-                filtered_exercises.append(exercise)
-        exercises = filtered_exercises
     
     # Définir les types d'exercices disponibles
     exercise_types = [
@@ -778,7 +871,8 @@ def exercise_library():
         ('word_search', 'Mots mêlés'),
         ('pairs', 'Paires'),
         ('fill_in_blanks', 'Texte à trous'),
-        ('underline_words', 'Souligner les mots')
+        ('underline_words', 'Souligner les mots'),
+        ('dictation', 'Dictée')
     ]
     
     return render_template('exercise_library.html',
