@@ -74,6 +74,37 @@
                     line-height: 1.8;
                 }
             </style>
+            
+            <script>
+            // Mélanger aléatoirement les mots disponibles
+            document.addEventListener('DOMContentLoaded', function() {
+                const wordBank = document.querySelector('.word-bank');
+                if (wordBank) {
+                    const words = Array.from(wordBank.querySelectorAll('.draggable-word'));
+                    
+                    // Fonction de mélange Fisher-Yates
+                    function shuffleArray(array) {
+                        const shuffled = [...array];
+                        for (let i = shuffled.length - 1; i > 0; i--) {
+                            const j = Math.floor(Math.random() * (i + 1));
+                            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                        }
+                        return shuffled;
+                    }
+                    
+                    // Mélanger les mots
+                    const shuffledWords = shuffleArray(words);
+                    
+                    // Vider la banque de mots et réinsérer dans l'ordre mélangé
+                    wordBank.innerHTML = '';
+                    shuffledWords.forEach(word => {
+                        wordBank.appendChild(word);
+                    });
+                    
+                    console.log('Mots mélangés avec succès!');
+                }
+            });
+            </script>
         {% endif %}
     </div>
 </div>
