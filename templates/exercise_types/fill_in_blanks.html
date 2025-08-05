@@ -22,17 +22,12 @@
                 {% endif %}
             </div>
         {% else %}
-            <!-- Affichage de l'image optionnelle -->
-            {% if content and content.image %}
-            <div class="mb-4 text-center">
-                <div class="card">
-                    <div class="card-body">
-                        <img src="{{ url_for('static', filename=content.image.replace('static/', '')) }}" 
-                             alt="Image d'illustration" 
-                             class="img-fluid rounded" 
-                             style="max-width: 100%; max-height: 400px; object-fit: contain;">
-                    </div>
-                </div>
+            <!-- Affichage de l'image si elle existe -->
+            {% if exercise.image_path %}
+            <div class="exercise-image" style="text-align: center; margin: 1.5rem 0;">
+                <img src="{{ url_for('static', filename='uploads/' + exercise.image_path) }}" 
+                     alt="Image de l'exercice" 
+                     style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
             </div>
             {% endif %}
             <form method="POST" action="{{ url_for('exercise.submit_answer', exercise_id=exercise.id) }}">
