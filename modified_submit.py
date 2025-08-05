@@ -122,14 +122,46 @@ def create_exercise():
                 content['questions'] = questions_data
 
             elif exercise_type == 'word_search':
-                words = request.form.get('words', '').strip().split('\n')
-                words = [word.strip() for word in words if word.strip()]
+                print(f'[WORD_SEARCH_CREATE_DEBUG] Form data: {dict(request.form)}')
+                
+                # Récupérer les mots depuis les champs word_search_words[]
+                words_from_fields = request.form.getlist('word_search_words[]')
+                print(f'[WORD_SEARCH_CREATE_DEBUG] Words from fields: {words_from_fields}')
+                
+                # Traiter chaque champ (peut contenir des mots séparés par des virgules)
+                all_words = []
+                for field_value in words_from_fields:
+                    if field_value and field_value.strip():
+                        # Si le champ contient des virgules, séparer les mots
+                        if ',' in field_value:
+                            words_in_field = [w.strip().upper() for w in field_value.split(',') if w.strip()]
+                            all_words.extend(words_in_field)
+                        else:
+                            # Sinon, ajouter le mot unique
+                            all_words.append(field_value.strip().upper())
+                
+                print(f'[WORD_SEARCH_CREATE_DEBUG] All words processed: {all_words}')
+                
+                # Supprimer les doublons tout en préservant l'ordre
+                unique_words = []
+                for word in all_words:
+                    if word not in unique_words:
+                        unique_words.append(word)
+                
+                print(f'[WORD_SEARCH_CREATE_DEBUG] Final unique words: {unique_words}')
+                words = unique_words
                 
                 if not words:
                     flash('Veuillez entrer au moins un mot.', 'error')
                     return redirect(request.url)
                 
+                # Récupérer les dimensions de la grille
+                grid_width = int(request.form.get('grid_width', 15))
+                grid_height = int(request.form.get('grid_height', 15))
+                
                 content['words'] = words
+                content['grid_width'] = grid_width
+                content['grid_height'] = grid_height
                 
             elif exercise_type == 'fill_in_blanks':
                 sentences = request.form.getlist('fill_in_blanks_sentences[]')
@@ -430,13 +462,13 @@ def edit_exercise(exercise_id):
             print(f"[EDIT_POST_DEBUG] Subject: '{subject}'")
             print(f"[EDIT_POST_DEBUG] Description: '{description}'")
             
-            if not title or not subject:
-                flash('Le titre et la matière sont requis.', 'error')
+            if not title:
+                flash('Le titre est requis.', 'error')
                 return render_template(f'exercise_types/{exercise.exercise_type}_edit.html', exercise=exercise, content=exercise.get_content())
             
             # Mettre à jour les champs de base
             exercise.title = title
-            exercise.subject = subject
+            # Note: subject field removed as it doesn't exist in Exercise model
             exercise.description = description
             
             # Traiter le contenu selon le type d'exercice
@@ -516,6 +548,47 @@ def edit_exercise(exercise_id):
                 
                 content['sentences'] = sentences
                 content['words'] = words
+                
+            elif exercise.exercise_type == 'word_search':
+                # Traitement pour mots mêlés (édition)
+                print(f"[WORD_SEARCH_EDIT_DEBUG] Processing word_search edit...")
+                
+                # Récupérer les mots à trouver
+                words = request.form.getlist('words[]')
+                # Filtrer les mots vides
+                filtered_words = [word.strip().upper() for word in words if word.strip()]
+                
+                print(f"[WORD_SEARCH_EDIT_DEBUG] Words received: {words}")
+                print(f"[WORD_SEARCH_EDIT_DEBUG] Filtered words: {filtered_words}")
+                
+                # Récupérer la taille de grille
+                grid_size_value = request.form.get('grid_size', '8')
+                try:
+                    grid_size = int(grid_size_value)
+                    if grid_size < 8 or grid_size > 20:
+                        grid_size = 12  # Valeur par défaut
+                except (ValueError, TypeError):
+                    grid_size = 12  # Valeur par défaut
+                
+                print(f"[WORD_SEARCH_EDIT_DEBUG] Grid size: {grid_size}")
+                
+                # Validation
+                if not filtered_words:
+                    flash('Veuillez ajouter au moins un mot.', 'error')
+                    return render_template('exercise_types/word_search_edit.html', exercise=exercise, content=exercise.get_content())
+                
+                # Vérifier que les mots ne sont pas trop longs pour la grille
+                max_word_length = max(len(word) for word in filtered_words)
+                if max_word_length > grid_size:
+                    flash(f'Le mot le plus long ({max_word_length} lettres) est trop grand pour une grille {grid_size}x{grid_size}.', 'error')
+                    return render_template('exercise_types/word_search_edit.html', exercise=exercise, content=exercise.get_content())
+                
+                # Construire le contenu
+                content['words'] = filtered_words
+                content['grid_size'] = {'width': grid_size, 'height': grid_size}
+                content['instructions'] = 'Trouvez tous les mots cachés dans la grille ci-dessous.'
+                
+                print(f"[WORD_SEARCH_EDIT_DEBUG] Final content: {content}")
                 
             elif exercise.exercise_type == 'drag_and_drop':
                 # Traitement pour glisser-déposer (édition)
@@ -704,7 +777,8 @@ def exercise_library():
         ('qcm', 'QCM'),
         ('word_search', 'Mots mêlés'),
         ('pairs', 'Paires'),
-        ('fill_in_blanks', 'Texte à trous')
+        ('fill_in_blanks', 'Texte à trous'),
+        ('underline_words', 'Souligner les mots')
     ]
     
     return render_template('exercise_library.html',
@@ -825,9 +899,21 @@ def submit_answer(exercise_id):
             score = (correct_count / total_pairs) * 100 if total_pairs > 0 else 0
             
         elif exercise.exercise_type == 'word_search':
-            # Récupérer les mots trouvés par l'utilisateur
-            found_words = request.form.getlist('found_words[]')
+            print(f'[WORD_SEARCH_SUBMIT_DEBUG] Processing word_search exercise {exercise_id}')
+            print(f'[WORD_SEARCH_SUBMIT_DEBUG] Form data: {dict(request.form)}')
+            
+            # Récupérer les mots trouvés par l'utilisateur depuis les champs word_0, word_1, etc.
+            found_words = []
+            for key, value in request.form.items():
+                if key.startswith('word_') and value:
+                    word = value.strip().upper()
+                    if word and word != 'UNDEFINED':  # Éviter les valeurs vides ou non définies
+                        found_words.append(word)
+            
+            print(f'[WORD_SEARCH_SUBMIT_DEBUG] Found words by user: {found_words}')
+            
             target_words = content.get('words', [])
+            print(f'[WORD_SEARCH_SUBMIT_DEBUG] Target words: {target_words}')
             
             if not target_words:
                 print('Contenu Mots mêlés invalide: liste de mots vide')
@@ -835,15 +921,27 @@ def submit_answer(exercise_id):
                 return render_template('exercise_not_found.html'), 404
             
             # Calculer le score
-            correct_count = sum(1 for word in found_words if word in target_words)
+            correct_words = [word for word in found_words if word in target_words]
+            incorrect_words = [word for word in found_words if word not in target_words]
+            missed_words = [word for word in target_words if word not in found_words]
+            
+            correct_count = len(correct_words)
             total_words = len(target_words)
             score = (correct_count / total_words) * 100 if total_words > 0 else 0
             
-            feedback = [{
-                'word': word,
-                'is_correct': word in target_words,
-                'found': word in found_words
-            } for word in target_words]
+            print(f'[WORD_SEARCH_SUBMIT_DEBUG] Correct words: {correct_words}')
+            print(f'[WORD_SEARCH_SUBMIT_DEBUG] Incorrect words: {incorrect_words}')
+            print(f'[WORD_SEARCH_SUBMIT_DEBUG] Missed words: {missed_words}')
+            print(f'[WORD_SEARCH_SUBMIT_DEBUG] Score: {correct_count}/{total_words} = {score}%')
+            
+            feedback = {
+                'correct_words': correct_words,
+                'incorrect_words': incorrect_words,
+                'missed_words': missed_words,
+                'total_found': len(found_words),
+                'total_correct': correct_count,
+                'total_words': total_words
+            }
             
         elif exercise.exercise_type == 'fill_in_blanks':
             # Log du contenu de l'exercice

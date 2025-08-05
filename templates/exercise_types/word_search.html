@@ -260,12 +260,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Ajouter une animation
                     item.style.animation = 'wordFound 0.5s ease';
                     
-                    // Sauvegarder les coordonnées du mot trouvé
+                    // Sauvegarder le nom du mot trouvé (pas les coordonnées)
+                    const foundWordName = wordText.trim().toUpperCase();
+                    item.querySelector('.word-input').value = foundWordName;
+                    
+                    // Optionnel : sauvegarder aussi les coordonnées pour debug
                     const coords = selectedCells.map(cell => ({
                         x: parseInt(cell.dataset.x),
                         y: parseInt(cell.dataset.y)
                     }));
-                    item.querySelector('.word-input').value = JSON.stringify(coords);
+                    console.log(`Mot trouvé: ${foundWordName}, coordonnées:`, coords);
                     
                     // Ajouter une icône de succès
                     const checkIcon = document.createElement('i');
@@ -400,4 +404,5 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+    {% endif %}
 {% endblock %}

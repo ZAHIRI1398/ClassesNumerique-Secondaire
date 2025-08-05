@@ -67,7 +67,7 @@
             <h3>Mots mêlés</h3>
             <div id="words_container">
                 <div class="input-group mb-2">
-                    <input type="text" name="words[]" class="form-control" placeholder="Entrez un mot">
+                    <input type="text" name="word_search_words[]" class="form-control" placeholder="Entrez un mot (ou plusieurs mots séparés par des virgules)">
                 </div>
             </div>
             <button type="button" class="btn btn-primary mb-3" onclick="addWord()">
@@ -104,6 +104,126 @@
             <button type="button" class="btn btn-primary mb-3" onclick="addFillInBlanksWord()">
                 <i class="bi bi-plus-circle"></i> Ajouter un mot de réponse
             </button>
+        </div>
+
+        <!-- Section Mots mêlés -->
+        <div id="word_search_section" class="exercise-type-section" style="display: none;">
+            <h3>Mots mêlés</h3>
+            <p class="text-muted">Ajoutez les mots qui seront cachés dans la grille de mots mêlés (5 mots maximum).</p>
+            
+            <div class="word-search-inputs" style="background: #f8f9fa; padding: 15px; border: 2px solid #28a745; border-radius: 8px; margin: 15px 0;">
+                <h5 style="color: #28a745; margin-bottom: 15px;">Mots à cacher dans la grille :</h5>
+                
+                <div class="mb-3">
+                    <label class="form-label">Mot 1 :</label>
+                    <input type="text" name="word_search_words[]" class="form-control" placeholder="Entrez le premier mot" style="border: 2px solid #007bff;">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Mot 2 :</label>
+                    <input type="text" name="word_search_words[]" class="form-control" placeholder="Entrez le deuxième mot" style="border: 2px solid #007bff;">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Mot 3 :</label>
+                    <input type="text" name="word_search_words[]" class="form-control" placeholder="Entrez le troisième mot" style="border: 2px solid #007bff;">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Mot 4 (optionnel) :</label>
+                    <input type="text" name="word_search_words[]" class="form-control" placeholder="Entrez le quatrième mot (optionnel)" style="border: 2px solid #6c757d;">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Mot 5 (optionnel) :</label>
+                    <input type="text" name="word_search_words[]" class="form-control" placeholder="Entrez le cinquième mot (optionnel)" style="border: 2px solid #6c757d;">
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> <strong>Astuce :</strong> Vous pouvez laisser les champs optionnels vides. Au minimum 3 mots sont recommandés pour une grille intéressante.
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Taille de la grille</label>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label">Largeur</label>
+                        <input type="number" name="grid_width" class="form-control" value="15" min="10" max="20">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Hauteur</label>
+                        <input type="number" name="grid_height" class="form-control" value="15" min="10" max="20">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Mots mêlés -->
+        <div id="word_search_section" class="exercise-type-section" style="display: none;">
+            <h3>Mots mêlés</h3>
+            <p class="text-muted">Créez une grille de mots mêlés. Entrez les mots que les élèves devront trouver dans la grille.</p>
+            
+            <div class="mb-3">
+                <label class="form-label">Mots à cacher dans la grille</label>
+                <div id="word_search_words_container" style="border: 2px solid #28a745; padding: 15px; border-radius: 8px; background-color: #f8f9fa;">
+                    <div class="alert alert-info mb-3">
+                        <i class="bi bi-info-circle"></i> <strong>Instructions :</strong> 
+                        Entrez vos mots dans les champs ci-dessous. Vous pouvez aussi séparer plusieurs mots par des virgules dans un seul champ.
+                        <br><strong>Exemple :</strong> CHAT,CHIEN,OISEAU ou un mot par champ.
+                    </div>
+                    
+                    <!-- 5 champs fixes pour les mots -->
+                    <div class="mb-3">
+                        <label class="form-label" style="color: #0066cc; font-weight: bold;">Mot 1 : (obligatoire)</label>
+                        <input type="text" name="word_search_words[]" class="form-control" 
+                               style="border: 2px solid #0066cc;" 
+                               placeholder="Entrez le premier mot ou plusieurs mots séparés par des virgules" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label" style="color: #0066cc; font-weight: bold;">Mot 2 : (obligatoire)</label>
+                        <input type="text" name="word_search_words[]" class="form-control" 
+                               style="border: 2px solid #0066cc;" 
+                               placeholder="Entrez le deuxième mot" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label" style="color: #0066cc; font-weight: bold;">Mot 3 : (obligatoire)</label>
+                        <input type="text" name="word_search_words[]" class="form-control" 
+                               style="border: 2px solid #0066cc;" 
+                               placeholder="Entrez le troisième mot" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label" style="color: #666; font-weight: normal;">Mot 4 : (optionnel)</label>
+                        <input type="text" name="word_search_words[]" class="form-control" 
+                               style="border: 2px solid #ccc;" 
+                               placeholder="Mot optionnel">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label" style="color: #666; font-weight: normal;">Mot 5 : (optionnel)</label>
+                        <input type="text" name="word_search_words[]" class="form-control" 
+                               style="border: 2px solid #ccc;" 
+                               placeholder="Mot optionnel">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Taille de la grille</label>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label">Largeur</label>
+                        <input type="number" name="grid_width" class="form-control" value="15" min="10" max="20">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Hauteur</label>
+                        <input type="number" name="grid_height" class="form-control" value="15" min="10" max="20">
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Section Association de paires -->
@@ -299,18 +419,135 @@ function addQuestion() {
     container.appendChild(questionDiv);
 }
 
-// Fonction pour ajouter un mot (Mots mêlés)
+// Fonction pour ajouter un mot (Mots mêlés) - VERSION FINALE QUI FONCTIONNE
 function addWord() {
-    const container = document.getElementById('words_container');
+    console.log('[DEBUG] addWord() appelée - VERSION FINALE');
+    
+    // Trouver ou créer un conteneur qui fonctionne (basé sur le test brutal réussi)
+    let workingContainer = document.getElementById('final_word_container');
+    
+    if (!workingContainer) {
+        console.log('[DEBUG] Création du conteneur final qui fonctionne');
+        
+        // Créer un conteneur avec l'approche qui fonctionne (position relative)
+        workingContainer = document.createElement('div');
+        workingContainer.id = 'final_word_container';
+        workingContainer.style.cssText = `
+            position: relative;
+            display: block !important;
+            min-height: 50px !important;
+            height: auto !important;
+            padding: 15px;
+            margin: 15px 0;
+            border: 2px solid #28a745;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 10;
+        `;
+        
+        // Ajouter un titre
+        const title = document.createElement('h5');
+        title.textContent = 'Mots à cacher dans la grille :';
+        title.style.cssText = 'margin: 0 0 10px 0; color: #28a745; font-weight: bold;';
+        workingContainer.appendChild(title);
+        
+        // L'insérer après le bouton "Ajouter un mot"
+        const addButton = document.querySelector('button[onclick="addWord()"]');
+        if (addButton) {
+            addButton.parentNode.insertBefore(workingContainer, addButton.nextSibling);
+        }
+    }
+    
+    // Compter les mots existants (exclure le titre)
+    const existingWords = workingContainer.querySelectorAll('div[data-word-item]').length;
+    console.log('[DEBUG] Nombre de mots existants:', existingWords);
+    
+    // Créer le nouvel élément avec l'approche qui fonctionne
     const wordDiv = document.createElement('div');
-    wordDiv.className = 'input-group mb-2';
-    wordDiv.innerHTML = `
-        <input type="text" name="words[]" class="form-control" placeholder="Entrez un mot" required>
-        <button type="button" class="btn btn-danger" onclick="this.closest('.input-group').remove()">
-            <i class="bi bi-trash"></i>
-        </button>
+    wordDiv.setAttribute('data-word-item', 'true');
+    wordDiv.style.cssText = `
+        display: flex !important;
+        align-items: center;
+        margin-bottom: 10px;
+        min-height: 45px !important;
+        height: auto !important;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 8px;
+        background-color: white;
+        position: relative;
     `;
-    container.appendChild(wordDiv);
+    
+    // Créer l'input avec l'approche qui fonctionne
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.name = 'word_search_words[]';
+    input.placeholder = `Entrez le mot ${existingWords + 1}`;
+    input.style.cssText = `
+        height: 35px !important;
+        min-height: 35px !important;
+        width: 250px;
+        padding: 8px 12px;
+        border: 2px solid #007bff;
+        border-radius: 4px;
+        margin-right: 10px;
+        font-size: 14px;
+        display: block !important;
+    `;
+    
+    // Créer le bouton avec l'approche qui fonctionne
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.innerHTML = '❌ Supprimer';
+    button.onclick = function() { 
+        this.parentElement.remove();
+        console.log('Mot supprimé');
+    };
+    button.style.cssText = `
+        height: 35px !important;
+        min-height: 35px !important;
+        padding: 8px 15px;
+        border: 2px solid #dc3545;
+        background-color: #dc3545;
+        color: white;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        display: block !important;
+    `;
+    
+    // Assembler les éléments
+    wordDiv.appendChild(input);
+    wordDiv.appendChild(button);
+    
+    console.log('[DEBUG] Nouvel élément créé avec approche finale');
+    
+    // Ajouter au conteneur
+    workingContainer.appendChild(wordDiv);
+    
+    // Vérification finale
+    const newWordCount = workingContainer.querySelectorAll('div[data-word-item]').length;
+    console.log('[DEBUG] Nombre de mots après ajout:', newWordCount);
+    
+    if (newWordCount > existingWords) {
+        console.log('[SUCCESS] Mot ajouté avec succès!');
+        console.log('[DEBUG] Hauteur du conteneur:', workingContainer.offsetHeight);
+        console.log('[DEBUG] Hauteur du nouvel élément:', wordDiv.offsetHeight);
+        
+        // Focus sur le nouveau champ
+        input.focus();
+    } else {
+        console.error('[ERROR] Échec de l\'ajout du mot!');
+    }
+}
+
+// Fonction pour supprimer un mot (Mots mêlés)
+function removeWord(button) {
+    const container = document.getElementById('word_search_container');
+    if (container.children.length > 1) {
+        button.closest('.input-group').remove();
+    }
 }
 
 // Fonction pour ajouter une phrase (Texte à trous)
@@ -501,6 +738,28 @@ function testFormSubmission() {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing simplified form...');
     showExerciseType();
+    
+    // Ajouter gestionnaire d'événements pour le bouton "Ajouter un mot"
+    // Chercher le bouton par son texte dans la section Mots mêlés
+    const wordSearchSection = document.getElementById('word_search_section');
+    if (wordSearchSection) {
+        const addWordBtn = wordSearchSection.querySelector('button[onclick="addWord()"]');
+        if (addWordBtn) {
+            // Supprimer l'ancien onclick pour éviter les doublons
+            addWordBtn.removeAttribute('onclick');
+            
+            addWordBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('[EVENT] Bouton Ajouter un mot cliqué via gestionnaire');
+                addWord();
+            });
+            console.log('[INIT] Gestionnaire d\'événements ajouté au bouton Ajouter un mot');
+        } else {
+            console.error('[ERROR] Bouton Ajouter un mot non trouvé dans la section');
+        }
+    } else {
+        console.error('[ERROR] Section word_search_section non trouvée');
+    }
     
     // Écouter les changements de type d'exercice
     const exerciseTypeSelect = document.getElementById('exercise_type');

@@ -719,6 +719,168 @@ def view_exercise(exercise_id):
                 # Créer une structure vide pour éviter les erreurs
                 content['words'] = []
                 content['instructions'] = 'Aucune phrase trouvée pour cet exercice.'
+        
+        # Traitement spécifique pour les exercices "Mots mêlés"
+        elif exercise.exercise_type == 'word_search':
+            app.logger.info('Processing word_search exercise')
+            app.logger.info(f'Content keys: {list(content.keys())}')
+            
+            # Vérifier que les données nécessaires sont présentes
+            if 'words' in content and ('grid_size' in content or ('grid_width' in content and 'grid_height' in content)):
+                words = content['words']
+                
+                # Support des deux formats de grille
+                if 'grid_size' in content:
+                    # Format ancien : {"grid_size": {"width": 15, "height": 15}}
+                    grid_size = content['grid_size']
+                    width = grid_size['width']
+                    height = grid_size['height']
+                else:
+                    # Format nouveau : {"grid_width": 15, "grid_height": 15}
+                    width = content['grid_width']
+                    height = content['grid_height']
+                    grid_size = {'width': width, 'height': height}
+                
+                app.logger.info(f'Found {len(words)} words to place in {width}x{height} grid')
+                
+                # Générer la grille avec les mots placés
+                try:
+                    from word_search_generator import generate_word_search_grid
+                    grid, placed_words = generate_word_search_grid(words, grid_size['width'], grid_size['height'])
+                    content['grid'] = grid
+                    content['placed_words'] = placed_words
+                    app.logger.info(f'Grid generated successfully with {len(placed_words)} words placed')
+                except ImportError:
+                    app.logger.warning('word_search_generator not available, using improved simple grid generation')
+                    # Génération améliorée de grille
+                    import random
+                    import string
+                    
+                    width = grid_size['width']
+                    height = grid_size['height']
+                    
+                    # Créer une grille vide
+                    grid = []
+                    for i in range(height):
+                        row = []
+                        for j in range(width):
+                            row.append('')  # Grille vide au départ
+                        grid.append(row)
+                    
+                    # Directions possibles : horizontal, vertical, diagonal
+                    directions = [
+                        (0, 1),   # horizontal droite
+                        (1, 0),   # vertical bas
+                        (1, 1),   # diagonal bas-droite
+                        (-1, 1),  # diagonal haut-droite
+                    ]
+                    
+                    placed_words = []
+                    
+                    # Fonction pour vérifier si un mot peut être placé
+                    def can_place_word(word, start_row, start_col, direction):
+                        dr, dc = direction
+                        for i, letter in enumerate(word):
+                            r = start_row + i * dr
+                            c = start_col + i * dc
+                            if r < 0 or r >= height or c < 0 or c >= width:
+                                return False
+                            if grid[r][c] != '' and grid[r][c] != letter:
+                                return False
+                        return True
+                    
+                    # Fonction pour placer un mot
+                    def place_word(word, start_row, start_col, direction):
+                        dr, dc = direction
+                        for i, letter in enumerate(word):
+                            r = start_row + i * dr
+                            c = start_col + i * dc
+                            grid[r][c] = letter
+                        
+                        end_row = start_row + (len(word) - 1) * dr
+                        end_col = start_col + (len(word) - 1) * dc
+                        
+                        direction_name = {
+                            (0, 1): 'horizontal',
+                            (1, 0): 'vertical',
+                            (1, 1): 'diagonal_down_right',
+                            (-1, 1): 'diagonal_up_right'
+                        }.get(direction, 'unknown')
+                        
+                        placed_words.append({
+                            'word': word,
+                            'start': [start_row, start_col],
+                            'end': [end_row, end_col],
+                            'direction': direction_name
+                        })
+                    
+                    # Placer TOUS les mots (pas seulement 3)
+                    for word in words:
+                        placed = False
+                        attempts = 0
+                        max_attempts = 100
+                        
+                        while not placed and attempts < max_attempts:
+                            # Choisir une direction aléatoire
+                            direction = random.choice(directions)
+                            dr, dc = direction
+                            
+                            # Calculer les limites de position de départ
+                            if dr >= 0:
+                                max_row = height - len(word)
+                            else:
+                                max_row = height - 1
+                                min_row = len(word) - 1
+                            
+                            if dc >= 0:
+                                max_col = width - len(word)
+                            else:
+                                max_col = width - 1
+                                min_col = len(word) - 1
+                            
+                            # Générer une position aléatoire valide
+                            if dr >= 0:
+                                start_row = random.randint(0, max(0, max_row))
+                            else:
+                                start_row = random.randint(min_row, max_row)
+                            
+                            if dc >= 0:
+                                start_col = random.randint(0, max(0, max_col))
+                            else:
+                                start_col = random.randint(min_col, max_col)
+                            
+                            # Vérifier si le mot peut être placé
+                            if can_place_word(word, start_row, start_col, direction):
+                                place_word(word, start_row, start_col, direction)
+                                placed = True
+                                app.logger.info(f'Placed word "{word}" at ({start_row}, {start_col}) direction {direction}')
+                            
+                            attempts += 1
+                        
+                        if not placed:
+                            app.logger.warning(f'Could not place word "{word}" after {max_attempts} attempts')
+                    
+                    # Remplir les cases vides avec des lettres aléatoires
+                    for i in range(height):
+                        for j in range(width):
+                            if grid[i][j] == '':
+                                grid[i][j] = random.choice(string.ascii_uppercase)
+                    
+                    content['grid'] = grid
+                    content['placed_words'] = placed_words
+                    app.logger.info(f'Improved grid generated with {len(placed_words)} words placed out of {len(words)} total words')
+                
+                # Ajouter les instructions si elles ne sont pas présentes
+                if 'instructions' not in content:
+                    content['instructions'] = 'Trouvez tous les mots cachés dans la grille ci-dessous.'
+                    app.logger.info('Added default instructions for word_search')
+            else:
+                app.logger.error('No words or grid_size found in word_search exercise')
+                app.logger.error(f'Available keys: {list(content.keys())}')
+                # Créer une structure vide pour éviter les erreurs
+                content['words'] = []
+                content['grid'] = []
+                content['instructions'] = 'Aucune donnée trouvée pour cet exercice.'
     except Exception as e:
         app.logger.error(f'Error parsing content: {str(e)}')
         app.logger.exception('Full error:')
@@ -2171,6 +2333,79 @@ def handle_exercise_answer(exercise_id):
             # Pour drag_and_drop, on utilise le score en pourcentage mais on sauvegarde aussi le score_count
             answers = {f'answer_{i}': str(user_order[i]) for i in range(len(user_order))}
         
+        elif exercise.exercise_type == 'word_search':
+            # Gestion des exercices mots mêlés
+            content = json.loads(exercise.content)
+            app.logger.info(f"[WORD_SEARCH_DEBUG] Processing word_search exercise {exercise_id}")
+            app.logger.info(f"[WORD_SEARCH_DEBUG] Form data: {dict(request.form)}")
+            
+            # Récupérer les mots à trouver
+            words_to_find = content.get('words', [])
+            if not words_to_find:
+                app.logger.error(f"[WORD_SEARCH_DEBUG] No words found in exercise content")
+                flash('Erreur: aucun mot trouvé dans l\'exercice.', 'error')
+                return redirect(url_for('view_exercise', exercise_id=exercise_id))
+            
+            app.logger.info(f"[WORD_SEARCH_DEBUG] Words to find: {words_to_find}")
+            
+            # Récupérer les mots trouvés par l'utilisateur depuis les champs word_0, word_1, etc.
+            found_words = []
+            for key, value in request.form.items():
+                if key.startswith('word_') and value:
+                    word = value.strip().upper()
+                    if word and word != 'UNDEFINED':  # Éviter les valeurs vides ou non définies
+                        found_words.append(word)
+            
+            # Alternative: récupérer depuis un champ caché ou une liste (pour compatibilité)
+            if not found_words:
+                found_words_str = request.form.get('found_words', '')
+                if found_words_str:
+                    found_words = [word.strip().upper() for word in found_words_str.split(',') if word.strip()]
+            
+            app.logger.info(f"[WORD_SEARCH_DEBUG] Found words by user: {found_words}")
+            
+            # Calculer le score
+            correct_words = []
+            incorrect_words = []
+            
+            for word in found_words:
+                if word in words_to_find:
+                    correct_words.append(word)
+                else:
+                    incorrect_words.append(word)
+            
+            # Mots manqués
+            missed_words = [word for word in words_to_find if word not in found_words]
+            
+            score_count = len(correct_words)
+            max_score = len(words_to_find)
+            score = (score_count / max_score) * 100 if max_score > 0 else 0
+            
+            app.logger.info(f"[WORD_SEARCH_DEBUG] Correct words: {correct_words}")
+            app.logger.info(f"[WORD_SEARCH_DEBUG] Incorrect words: {incorrect_words}")
+            app.logger.info(f"[WORD_SEARCH_DEBUG] Missed words: {missed_words}")
+            app.logger.info(f"[WORD_SEARCH_DEBUG] Score: {score_count}/{max_score} = {score}%")
+            
+            # Créer le feedback
+            feedback = {
+                'correct_words': correct_words,
+                'incorrect_words': incorrect_words,
+                'missed_words': missed_words,
+                'total_found': len(found_words),
+                'total_correct': score_count,
+                'total_words': max_score
+            }
+            
+            feedback_summary = {
+                'score': score,
+                'score_count': score_count,
+                'max_score': max_score,
+                'details': feedback
+            }
+            
+            # Sauvegarder les réponses
+            answers = {'found_words': ','.join(found_words)}
+        
         elif exercise.exercise_type == 'pairs':
             # Gestion des exercices d'association de paires
             content = json.loads(exercise.content)
@@ -2391,7 +2626,7 @@ def create_exercise():
     form = ExerciseForm()
     
     if request.method == 'GET':
-        return render_template('exercise_types/create_exercise.html', form=form, exercise_types=Exercise.EXERCISE_TYPES)
+        return render_template('exercise_types/create_exercise_simple.html', form=form, exercise_types=Exercise.EXERCISE_TYPES)
     
     if request.method == 'POST':
         # Validation basique
@@ -2456,9 +2691,48 @@ def create_exercise():
                 content = {'questions': questions}
             
             elif exercise_type == 'word_search':
-                # Traitement pour mots mêlés
-                words = request.form.getlist('words[]')
-                content = {'words': [w for w in words if w.strip()]}
+                # Traitement pour mots mêlés - LOGIQUE CORRIGÉE
+                print(f'[WORD_SEARCH_CREATE_DEBUG] Form data: {dict(request.form)}')
+                
+                # Récupérer les mots depuis les champs word_search_words[]
+                words_from_fields = request.form.getlist('word_search_words[]')
+                print(f'[WORD_SEARCH_CREATE_DEBUG] Words from fields: {words_from_fields}')
+                
+                # Traiter chaque champ (peut contenir des mots séparés par des virgules)
+                all_words = []
+                for field_value in words_from_fields:
+                    if field_value and field_value.strip():
+                        # Si le champ contient des virgules, séparer les mots
+                        if ',' in field_value:
+                            words_in_field = [w.strip().upper() for w in field_value.split(',') if w.strip()]
+                            all_words.extend(words_in_field)
+                        else:
+                            # Sinon, ajouter le mot unique
+                            all_words.append(field_value.strip().upper())
+                
+                print(f'[WORD_SEARCH_CREATE_DEBUG] All words processed: {all_words}')
+                
+                # Validation
+                if not all_words:
+                    flash('Au moins un mot est requis pour un exercice "Mots mêlés".', 'error')
+                    return render_template('exercise_types/create_exercise_simple.html', form=form, exercise_types=Exercise.EXERCISE_TYPES)
+                
+                if len(all_words) < 3:
+                    flash('Au minimum 3 mots sont recommandés pour un exercice "Mots mêlés".', 'warning')
+                
+                # Supprimer les doublons tout en préservant l'ordre
+                unique_words = []
+                for word in all_words:
+                    if word not in unique_words:
+                        unique_words.append(word)
+                
+                print(f'[WORD_SEARCH_CREATE_DEBUG] Final unique words: {unique_words}')
+                
+                content = {
+                    'words': unique_words,
+                    'grid_width': int(request.form.get('grid_width', 15)),
+                    'grid_height': int(request.form.get('grid_height', 15))
+                }
             
             elif exercise_type == 'underline_words':
                 # Traitement pour souligner les mots
