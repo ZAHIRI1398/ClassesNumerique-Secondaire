@@ -2,9 +2,24 @@
 
 {% block title %}{{ course.title }}{% endblock %}
 
-{% block extra_head %}
-<!-- Quill.js CSS -->
-<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+{% block head %}
+<style>
+    .course-content {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+        margin-bottom: 20px;
+    }
+    .course-content img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin: 15px 0;
+        border: 1px solid #e0e0e0;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -47,7 +62,13 @@
                     <hr>
                     {% endif %}
                     
-                    <div id="course-content"></div>
+                    {% if course.content %}
+                    <div class="course-content" id="courseContent">
+                        {{ course.content|safe }}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Aucun contenu disponible pour ce cours.</p>
+                    {% endif %}
                 </div>
             </div>
 
@@ -231,29 +252,102 @@
     </div>
 </div>
 {% endif %}
+
+<script>
+// Auto-embed YouTube videos
+document.addEventListener('DOMContentLoaded', function() {
+    const courseContent = document.getElementById('courseContent');
+    if (!courseContent) return;
+    
+    // Fonction pour extraire l'ID YouTube d'une URL
+    function getYouTubeVideoId(url) {
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+        const match = url.match(regExp);
+        return (match && match[2].length === 11) ? match[2] : null;
+    }
+    
+    // Fonction pour créer un iframe YouTube
+    function createYouTubeEmbed(videoId) {
+        const iframe = document.createElement('iframe');
+        iframe.src = `https://www.youtube.com/embed/${videoId}`;
+        iframe.width = '100%';
+        iframe.height = '315';
+        iframe.frameBorder = '0';
+        iframe.allowFullscreen = true;
+        iframe.style.borderRadius = '8px';
+        iframe.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+        iframe.style.margin = '15px 0';
+        return iframe;
+    }
+    
+    // Trouver tous les liens YouTube et les remplacer par des vidéos intégrées
+    const links = courseContent.querySelectorAll('a[href*="youtube.com"], a[href*="youtu.be"]');
+    
+    links.forEach(link => {
+        const videoId = getYouTubeVideoId(link.href);
+        if (videoId) {
+            const embed = createYouTubeEmbed(videoId);
+            
+            // Créer un conteneur pour la vidéo
+            const container = document.createElement('div');
+            container.style.textAlign = 'center';
+            container.style.margin = '20px 0';
+            container.appendChild(embed);
+            
+            // Remplacer le lien par la vidéo intégrée
+            link.parentNode.replaceChild(container, link);
+        }
+    });
+    
+    // Aussi traiter les liens YouTube qui ne sont pas dans des balises <a>
+    const textNodes = [];
+    const walker = document.createTreeWalker(
+        courseContent,
+        NodeFilter.SHOW_TEXT,
+        null,
+        false
+    );
+    
+    let node;
+    while (node = walker.nextNode()) {
+        textNodes.push(node);
+    }
+    
+    textNodes.forEach(textNode => {
+        const text = textNode.textContent;
+        const youtubeRegex = /(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})(\S*)/g;
+        
+        if (youtubeRegex.test(text)) {
+            const newHTML = text.replace(youtubeRegex, (match, protocol, www, baseUrl, videoId, params) => {
+                return `<div style="text-align: center; margin: 20px 0;">
+                    <iframe src="https://www.youtube.com/embed/${videoId}" 
+                            width="100%" height="315" frameborder="0" 
+                            allowfullscreen 
+                            style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"></iframe>
+                </div>`;
+            });
+            
+            if (newHTML !== text) {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = newHTML;
+                
+                // Remplacer le nœud de texte par le contenu HTML
+                while (tempDiv.firstChild) {
+                    textNode.parentNode.insertBefore(tempDiv.firstChild, textNode);
+                }
+                textNode.parentNode.removeChild(textNode);
+            }
+        }
+    });
+    
+    console.log('YouTube auto-embed initialized successfully!');
+});
+</script>
+
 {% endblock %}
 
 {% block scripts %}
-<!-- Quill.js -->
-<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 <script>
-var quill = new Quill('#course-content', {
-    theme: 'snow',
-    modules: {
-        toolbar: false
-    },
-    readOnly: true
-});
-
-// Charger le contenu du cours
-var content = {{ course.content|tojson|safe if course.content else 'null' }};
-if (content) {
-    try {
-        quill.setContents(JSON.parse(content));
-    } catch (e) {
-        console.error('Erreur lors du chargement du contenu:', e);
-    }
-}
 
 // Fonction pour supprimer un fichier
 const deleteFile = async (fileId) => {

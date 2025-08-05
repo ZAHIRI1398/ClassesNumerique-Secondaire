@@ -3,12 +3,10 @@
 {% block title %}Créer un cours{% endblock %}
 
 {% block head %}
-<!-- Quill CSS -->
-<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<!-- CKEditor 5 CSS -->
 <style>
-    #editor {
-        height: 300px;
-        background: white;
+    .ck-editor__editable {
+        min-height: 300px;
     }
 </style>
 {% endblock %}
@@ -33,8 +31,7 @@
         
         <div class="form-group mb-3">
             <label>Contenu du cours</label>
-            <div id="editor"></div>
-            <input type="hidden" name="content" id="hiddenContent">
+            <textarea name="content" id="content" class="form-control"></textarea>
         </div>
         
         <div class="form-group mb-3">
@@ -58,53 +55,92 @@
 {% endblock %}
 
 {% block scripts %}
-<!-- Quill JS -->
-<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+<!-- CKEditor 5 JS -->
+<script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
 <script>
-var quill = new Quill('#editor', {
-    theme: 'snow',
-    modules: {
-        toolbar: [
-            [{ 'header': [1, 2, 3, false] }],
-            ['bold', 'italic', 'underline'],
-            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-            ['link', 'image']
-        ]
-    },
-    placeholder: 'Composez votre cours ici...'
-});
-
-document.getElementById('courseForm').addEventListener('submit', function() {
-    document.getElementById('hiddenContent').value = JSON.stringify(quill.getContents());
-});
-
-document.getElementById('files').addEventListener('change', function(e) {
-    const fileList = document.getElementById('fileList');
-    fileList.innerHTML = '';
+    let editor;
     
-    Array.from(this.files).forEach(file => {
-        const fileDiv = document.createElement('div');
-        fileDiv.className = 'alert alert-info d-flex justify-content-between align-items-center';
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Initializing CKEditor 5 for course creation...');
         
-        const fileName = document.createElement('span');
-        fileName.textContent = file.name;
+        const contentElement = document.querySelector('#content');
+        if (!contentElement) {
+            console.error('Element #content not found!');
+            return;
+        }
         
-        const fileSize = document.createElement('small');
-        fileSize.className = 'text-muted ms-2';
-        fileSize.textContent = formatFileSize(file.size);
-        
-        fileDiv.appendChild(fileName);
-        fileDiv.appendChild(fileSize);
-        fileList.appendChild(fileDiv);
+        ClassicEditor
+            .create(contentElement, {
+                toolbar: {
+                    items: [
+                        'heading', '|',
+                        'bold', 'italic', 'underline', '|',
+                        'fontSize', 'fontColor', 'fontBackgroundColor', '|',
+                        'bulletedList', 'numberedList', '|',
+                        'outdent', 'indent', '|',
+                        'link', 'insertImage', 'insertTable', '|',
+                        'blockQuote', '|',
+                        'undo', 'redo'
+                    ]
+                },
+                image: {
+                    toolbar: [
+                        'imageTextAlternative',
+                        'imageStyle:inline',
+                        'imageStyle:block',
+                        'imageStyle:side'
+                    ]
+                },
+                table: {
+                    contentToolbar: [
+                        'tableColumn',
+                        'tableRow',
+                        'mergeTableCells'
+                    ]
+                },
+                language: 'fr'
+            })
+            .then(newEditor => {
+                editor = newEditor;
+                console.log('CKEditor 5 initialized successfully for course creation!');
+                
+                // Synchroniser avec le textarea pour la soumission
+                editor.model.document.on('change:data', () => {
+                    contentElement.value = editor.getData();
+                });
+            })
+            .catch(error => {
+                console.error('Error initializing CKEditor 5:', error);
+            });
     });
-});
 
-function formatFileSize(bytes) {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
+    document.getElementById('files').addEventListener('change', function(e) {
+        const fileList = document.getElementById('fileList');
+        fileList.innerHTML = '';
+        
+        Array.from(this.files).forEach(file => {
+            const fileDiv = document.createElement('div');
+            fileDiv.className = 'alert alert-info d-flex justify-content-between align-items-center';
+            
+            const fileName = document.createElement('span');
+            fileName.textContent = file.name;
+            
+            const fileSize = document.createElement('small');
+            fileSize.className = 'text-muted ms-2';
+            fileSize.textContent = formatFileSize(file.size);
+            
+            fileDiv.appendChild(fileName);
+            fileDiv.appendChild(fileSize);
+            fileList.appendChild(fileDiv);
+        });
+    });
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
 </script>
 {% endblock %}
