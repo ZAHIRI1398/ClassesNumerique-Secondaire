@@ -43,7 +43,8 @@ def create_exercise():
             return render_template('exercise_types/create_exercise_simple.html', form=form, exercise_types=Exercise.EXERCISE_TYPES)
         
         try:
-            print('Données reçues:', request.form)
+            # Log sécurisé sans caractères Unicode problématiques
+            current_app.logger.info('Donnees recues pour creation exercice')
             title = form.title.data
             description = form.description.data
             exercise_type = form.exercise_type.data
@@ -53,11 +54,11 @@ def create_exercise():
             course_id = request.form.get('course_id')
             subject = request.form.get('subject', '').strip()
 
-            print('Titre:', title)
-            print('Type:', exercise_type)
-            print('Tentatives:', max_attempts)
-            print('Cours ID:', course_id)
-            print('Matière:', subject)
+            current_app.logger.info(f'Titre: {title}')
+            current_app.logger.info(f'Type: {exercise_type}')
+            current_app.logger.info(f'Tentatives: {max_attempts}')
+            current_app.logger.info(f'Cours ID: {course_id}')
+            current_app.logger.info(f'Matiere: {subject}')
 
             if not all([title, exercise_type]):
                 flash('Le titre et le type d\'exercice sont obligatoires.', 'error')
@@ -507,16 +508,19 @@ def create_exercise():
             return redirect(url_for('exercise.exercise_library'))
 
         except Exception as e:
-            print(f"=== ERREUR CRÉATION EXERCICE ===")
-            print(f"Type d'erreur: {type(e).__name__}")
-            print(f"Message: {str(e)}")
-            print(f"Traceback complet: {exc_info()}")
-            print(f"Form data reçue: {dict(request.form)}")
-            print(f"Files reçus: {list(request.files.keys())}")
-            print(f"=== FIN ERREUR ===")
-            current_app.logger.error(f'Erreur lors de la création de l\'exercice: {str(e)}\n{exc_info()}')
+            # Logs sécurisés sans caractères Unicode problématiques
+            current_app.logger.error("=== ERREUR CREATION EXERCICE ===")
+            current_app.logger.error(f"Type d'erreur: {type(e).__name__}")
+            current_app.logger.error(f"Message: {str(e)}")
+            current_app.logger.error(f"Traceback complet: {exc_info()}")
+            try:
+                current_app.logger.error(f"Form data recue: {dict(request.form)}")
+            except UnicodeEncodeError:
+                current_app.logger.error("Form data recue: [Unicode encoding error]")
+            current_app.logger.error(f"Files recus: {list(request.files.keys())}")
+            current_app.logger.error("=== FIN ERREUR ===")
             db.session.rollback()
-            flash(f'Une erreur est survenue lors de la création de l\'exercice: {str(e)}', 'error')
+            flash(f'Une erreur est survenue lors de la creation de l\'exercice: {str(e)}', 'error')
             return redirect(request.url)
 
 
