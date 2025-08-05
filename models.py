@@ -178,6 +178,7 @@ class Exercise(db.Model):
     teacher_id = db.Column(db.Integer, db.ForeignKey('user.id', name='fk_exercise_teacher'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     max_attempts = db.Column(db.Integer, default=None)  # Nombre maximum de tentatives autorisées, None = illimité
+    image_path = db.Column(db.String(255), nullable=True)  # Chemin vers l'image de l'exercice
     
     # Relations
     courses = db.relationship('Course', secondary=course_exercise, back_populates='exercises', lazy=True)

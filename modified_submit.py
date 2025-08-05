@@ -468,6 +468,26 @@ def create_exercise():
                         content['image'] = f'static/uploads/{unique_filename}'
                         current_app.logger.debug(f'Image Souligner les mots sauvegardée: {content["image"]}')
 
+            # Gestion de l'image de l'exercice (pour tous les types d'exercices)
+            exercise_image_path = None
+            if 'exercise_image' in request.files:
+                image_file = request.files['exercise_image']
+                if image_file and image_file.filename != '' and allowed_file(image_file.filename):
+                    filename = secure_filename(image_file.filename)
+                    unique_filename = generate_unique_filename(filename)
+                    
+                    # Créer le dossier uploads s'il n'existe pas
+                    upload_folder = os.path.join(current_app.root_path, 'static', 'uploads')
+                    os.makedirs(upload_folder, exist_ok=True)
+                    
+                    # Sauvegarder l'image
+                    image_path = os.path.join(upload_folder, unique_filename)
+                    image_file.save(image_path)
+                    
+                    # Stocker le chemin relatif pour la base de données
+                    exercise_image_path = unique_filename
+                    current_app.logger.info(f'Image exercice sauvegardée: {exercise_image_path}')
+
             # Créer l'exercice
             exercise = Exercise(
                 title=title,
@@ -476,7 +496,8 @@ def create_exercise():
                 content=json.dumps(content),
                 subject=subject if subject else None,
                 max_attempts=max_attempts,
-                teacher_id=current_user.id
+                teacher_id=current_user.id,
+                image_path=exercise_image_path
             )
 
             db.session.add(exercise)
