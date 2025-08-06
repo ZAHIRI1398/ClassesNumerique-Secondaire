@@ -74,8 +74,9 @@ def create_exercise():
                 flash('Le nombre de tentatives doit être au moins égal à 1.', 'error')
                 return redirect(request.url)
 
-            # Initialiser le contenu
+            # Initialiser le contenu et le chemin d'image
             content = {}
+            exercise_image_path = None
             
             if exercise_type == 'qcm':
                 current_app.logger.debug('Traitement d\'un exercice QCM')
@@ -464,12 +465,16 @@ def create_exercise():
                         image_path = os.path.join(upload_folder, unique_filename)
                         image_file.save(image_path)
                         
-                        # Ajouter le chemin de l'image au contenu
+                        # CORRECTION: Sauvegarder dans exercise_image_path pour que le template puisse l'afficher
+                        if not exercise_image_path:  # Ne pas écraser si déjà défini
+                            exercise_image_path = unique_filename
+                        
+                        # Ajouter le chemin de l'image au contenu (pour compatibilité)
                         content['image'] = f'static/uploads/{unique_filename}'
-                        current_app.logger.debug(f'Image Souligner les mots sauvegardée: {content["image"]}')
+                        current_app.logger.debug(f'Image Souligner les mots sauvegardée: {unique_filename}')
 
             # Gestion de l'image de l'exercice (pour tous les types d'exercices)
-            exercise_image_path = None
+            # exercise_image_path déjà initialisé plus haut pour underline_words
             if 'exercise_image' in request.files:
                 image_file = request.files['exercise_image']
                 if image_file and image_file.filename != '' and allowed_file(image_file.filename):
