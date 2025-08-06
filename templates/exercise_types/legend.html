@@ -260,13 +260,15 @@
         {% if content.zones %}
         <div class="legend-options">
             <h4>Légendes disponibles :</h4>
-            {% for zone in content.zones %}
-            <div class="legend-item" 
-                 data-legend-id="{{ zone.id }}"
-                 draggable="true">
-                {{ zone.legend }}
+            <div id="legend-items-container">
+                {% for zone in content.zones %}
+                <div class="legend-item" 
+                     data-legend-id="{{ zone.id }}"
+                     draggable="true">
+                    {{ zone.legend }}
+                </div>
+                {% endfor %}
             </div>
-            {% endfor %}
         </div>
 
         <!-- Champs cachés pour stocker les réponses -->
@@ -285,6 +287,26 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Fonction pour mélanger les légendes de façon aléatoire
+    function shuffleLegendItems() {
+        const container = document.getElementById('legend-items-container');
+        if (!container) return;
+        
+        const items = Array.from(container.children);
+        
+        // Algorithme de mélange Fisher-Yates
+        for (let i = items.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [items[i], items[j]] = [items[j], items[i]];
+        }
+        
+        // Réorganiser les éléments dans le DOM
+        items.forEach(item => container.appendChild(item));
+    }
+    
+    // Mélanger les légendes au chargement de la page
+    shuffleLegendItems();
+    
     const zones = document.querySelectorAll('.legend-zone');
     const legendItems = document.querySelectorAll('.legend-item');
     const container = document.getElementById('legend-container');
