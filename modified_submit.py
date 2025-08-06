@@ -474,10 +474,19 @@ def create_exercise():
                         current_app.logger.debug(f'Image Souligner les mots sauvegardée: {unique_filename}')
 
             elif exercise_type == 'legend':
+                # Récupérer le mode d'exercice légende
+                legend_mode = request.form.get('legend_mode', 'classic').strip()
+                current_app.logger.debug(f'Mode légende sélectionné: {legend_mode}')
+                
                 # Récupérer les instructions
                 instructions = request.form.get('legend_instructions', '').strip()
                 if not instructions:
-                    instructions = 'Placez les légendes aux bons endroits sur l\'image.'
+                    if legend_mode == 'grid':
+                        instructions = 'Déplacez les éléments vers les bonnes cases du quadrillage.'
+                    elif legend_mode == 'spatial':
+                        instructions = 'Placez les éléments dans les bonnes zones.'
+                    else:
+                        instructions = 'Placez les légendes aux bons endroits sur l\'image.'
                 
                 # Récupérer l'image principale (obligatoire pour les légendes)
                 main_image_path = None
@@ -507,32 +516,154 @@ def create_exercise():
                     flash('Une image principale est obligatoire pour un exercice de légende.', 'error')
                     return redirect(request.url)
                 
-                # Récupérer les zones et légendes
-                zones = []
-                zone_index = 0
-                while f'zone_{zone_index}_x' in request.form:
-                    x = request.form.get(f'zone_{zone_index}_x', type=int)
-                    y = request.form.get(f'zone_{zone_index}_y', type=int)
-                    legend_text = request.form.get(f'zone_{zone_index}_legend', '').strip()
+                # Traitement selon le mode d'exercice
+                if legend_mode == 'grid':
+                    # Mode Quadrillage
+                    grid_rows = request.form.get('grid_rows', type=int) or 4
+                    grid_cols = request.form.get('grid_cols', type=int) or 4
                     
-                    if x is not None and y is not None and legend_text:
-                        zones.append({
-                            'x': x,
-                            'y': y,
-                            'legend': legend_text,
-                            'id': zone_index
-                        })
+                    # Récupérer les éléments de quadrillage
+                    grid_elements = []
+                    element_index = 1
+                    while f'grid_element_{element_index}_type' in request.form:
+                        element_type = request.form.get(f'grid_element_{element_index}_type')
+                        target_row = request.form.get(f'grid_element_{element_index}_target_row', type=int)
+                        target_col = request.form.get(f'grid_element_{element_index}_target_col', type=int)
+                        
+                        if element_type and target_row and target_col:
+                            element_data = {
+                                'id': element_index,
+                                'type': element_type,
+                                'target_row': target_row,
+                                'target_col': target_col
+                            }
+                            
+                            if element_type == 'text':
+                                text = request.form.get(f'grid_element_{element_index}_text', '').strip()
+                                if text:
+                                    element_data['text'] = text
+                                    grid_elements.append(element_data)
+                            elif element_type == 'image':
+                                # Gérer l'upload d'image pour l'élément
+                                if f'grid_element_{element_index}_image' in request.files:
+                                    image_file = request.files[f'grid_element_{element_index}_image']
+                                    if image_file and image_file.filename != '' and allowed_file(image_file.filename):
+                                        filename = secure_filename(image_file.filename)
+                                        unique_filename = generate_unique_filename(filename)
+                                        
+                                        image_path = os.path.join(upload_folder, unique_filename)
+                                        image_file.save(image_path)
+                                        
+                                        element_data['image'] = f'static/uploads/{unique_filename}'
+                                        grid_elements.append(element_data)
+                        
+                        element_index += 1
                     
-                    zone_index += 1
-                
-                if not zones:
-                    flash('Veuillez ajouter au moins une zone avec sa légende.', 'error')
-                    return redirect(request.url)
+                    if not grid_elements:
+                        flash('Veuillez ajouter au moins un élément à déplacer dans le quadrillage.', 'error')
+                        return redirect(request.url)
+                    
+                    content['mode'] = 'grid'
+                    content['grid_rows'] = grid_rows
+                    content['grid_cols'] = grid_cols
+                    content['elements'] = grid_elements
+                    
+                elif legend_mode == 'spatial':
+                    # Mode Spatial
+                    # Récupérer les zones spatiales (similaire au mode classique)
+                    spatial_zones = []
+                    zone_index = 0
+                    while f'zone_{zone_index}_x' in request.form:
+                        x = request.form.get(f'zone_{zone_index}_x', type=int)
+                        y = request.form.get(f'zone_{zone_index}_y', type=int)
+                        zone_name = request.form.get(f'zone_{zone_index}_legend', '').strip()
+                        
+                        if x is not None and y is not None and zone_name:
+                            spatial_zones.append({
+                                'x': x,
+                                'y': y,
+                                'name': zone_name,
+                                'id': zone_index
+                            })
+                        
+                        zone_index += 1
+                    
+                    # Récupérer les éléments spatiaux
+                    spatial_elements = []
+                    element_index = 1
+                    while f'spatial_element_{element_index}_type' in request.form:
+                        element_type = request.form.get(f'spatial_element_{element_index}_type')
+                        target_zone = request.form.get(f'spatial_element_{element_index}_target_zone')
+                        
+                        if element_type and target_zone:
+                            element_data = {
+                                'id': element_index,
+                                'type': element_type,
+                                'target_zone': target_zone
+                            }
+                            
+                            if element_type == 'text':
+                                text = request.form.get(f'spatial_element_{element_index}_text', '').strip()
+                                if text:
+                                    element_data['text'] = text
+                                    spatial_elements.append(element_data)
+                            elif element_type == 'image':
+                                # Gérer l'upload d'image pour l'élément
+                                if f'spatial_element_{element_index}_image' in request.files:
+                                    image_file = request.files[f'spatial_element_{element_index}_image']
+                                    if image_file and image_file.filename != '' and allowed_file(image_file.filename):
+                                        filename = secure_filename(image_file.filename)
+                                        unique_filename = generate_unique_filename(filename)
+                                        
+                                        image_path = os.path.join(upload_folder, unique_filename)
+                                        image_file.save(image_path)
+                                        
+                                        element_data['image'] = f'static/uploads/{unique_filename}'
+                                        spatial_elements.append(element_data)
+                        
+                        element_index += 1
+                    
+                    if not spatial_zones:
+                        flash('Veuillez définir au moins une zone de dépôt.', 'error')
+                        return redirect(request.url)
+                    
+                    if not spatial_elements:
+                        flash('Veuillez ajouter au moins un élément à placer.', 'error')
+                        return redirect(request.url)
+                    
+                    content['mode'] = 'spatial'
+                    content['zones'] = spatial_zones
+                    content['elements'] = spatial_elements
+                    
+                else:
+                    # Mode Classique (existant)
+                    zones = []
+                    zone_index = 0
+                    while f'zone_{zone_index}_x' in request.form:
+                        x = request.form.get(f'zone_{zone_index}_x', type=int)
+                        y = request.form.get(f'zone_{zone_index}_y', type=int)
+                        legend_text = request.form.get(f'zone_{zone_index}_legend', '').strip()
+                        
+                        if x is not None and y is not None and legend_text:
+                            zones.append({
+                                'x': x,
+                                'y': y,
+                                'legend': legend_text,
+                                'id': zone_index
+                            })
+                        
+                        zone_index += 1
+                    
+                    if not zones:
+                        flash('Veuillez ajouter au moins une zone avec sa légende.', 'error')
+                        return redirect(request.url)
+                    
+                    content['mode'] = 'classic'
+                    content['zones'] = zones
                 
                 content['instructions'] = instructions
                 content['main_image'] = main_image_path
-                content['zones'] = zones
-                current_app.logger.debug(f'Exercice légende créé avec {len(zones)} zones')
+                current_app.logger.debug(f'Exercice légende {legend_mode} créé')
 
             # Gestion de l'image de l'exercice (pour tous les types d'exercices)
             # exercise_image_path déjà initialisé plus haut pour underline_words

@@ -431,6 +431,27 @@
             <h3>Exercice de légende</h3>
             <p class="text-muted">Créez un exercice où les élèves doivent placer des légendes aux bons endroits sur une image.</p>
             
+            <!-- Sélection du mode d'exercice -->
+            <div class="mb-4">
+                <label class="form-label">Mode d'exercice</label>
+                <select class="form-select" id="legend_mode" name="legend_mode" onchange="changeLegendMode()">
+                    <option value="classic">Classique - Zones libres sur l'image</option>
+                    <option value="grid">Quadrillage - Grille superposée à l'image</option>
+                    <option value="spatial">Spatial - Zones prédéfinies sur l'image</option>
+                </select>
+                <div class="form-text">Choisissez le type d'interaction pour votre exercice de légende</div>
+            </div>
+            
+            <!-- Instructions personnalisées -->
+            <div class="mb-4">
+                <label class="form-label">Instructions</label>
+                <textarea class="form-control" 
+                         id="legend_instructions" 
+                         name="legend_instructions" 
+                         rows="3" 
+                         placeholder="Les instructions seront générées automatiquement selon le mode choisi, mais vous pouvez les personnaliser ici."></textarea>
+            </div>
+            
             <div class="alert alert-info" role="alert">
                 <i class="fas fa-info-circle"></i>
                 <strong>Instructions :</strong>
@@ -462,6 +483,126 @@
                 <div id="legend-main-image-preview" class="mt-2" style="display: none;">
                     <img id="preview-legend-main-img" src="" alt="Prévisualisation" class="img-thumbnail" style="max-width: 300px; max-height: 300px;">
                     <p id="preview-legend-main-filename" class="small text-muted mt-1"></p>
+                </div>
+            </div>
+            
+            <!-- Section Mode Quadrillage -->
+            <div id="legend-grid-section" class="legend-mode-section" style="display: none;">
+                <h4 class="text-primary">Configuration du quadrillage</h4>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label">Nombre de lignes</label>
+                        <input type="number" class="form-control" id="grid_rows" name="grid_rows" value="4" min="2" max="10">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Nombre de colonnes</label>
+                        <input type="number" class="form-control" id="grid_cols" name="grid_cols" value="4" min="2" max="10">
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <h5>Éléments à placer dans la grille</h5>
+                    <div id="grid-elements-container">
+                        <div class="grid-element-item border p-3 mb-3 rounded">
+                            <h6>Élément 1</h6>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label class="form-label">Type</label>
+                                    <select class="form-select" name="grid_element_1_type" onchange="toggleGridElementType(this, 1)">
+                                        <option value="text">Texte</option>
+                                        <option value="image">Image</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Ligne cible</label>
+                                    <input type="number" class="form-control" name="grid_element_1_target_row" min="1" max="10" value="1">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Colonne cible</label>
+                                    <input type="number" class="form-control" name="grid_element_1_target_col" min="1" max="10" value="1">
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <div class="grid-element-text">
+                                    <label class="form-label">Texte de l'élément</label>
+                                    <input type="text" class="form-control" name="grid_element_1_text" placeholder="Entrez le texte">
+                                </div>
+                                <div class="grid-element-image" style="display: none;">
+                                    <label class="form-label">Image de l'élément</label>
+                                    <input type="file" class="form-control" name="grid_element_1_image" accept="image/*">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-outline-primary" onclick="addGridElement()">Ajouter un élément</button>
+                </div>
+            </div>
+            
+            <!-- Section Mode Spatial -->
+            <div id="legend-spatial-section" class="legend-mode-section" style="display: none;">
+                <h4 class="text-success">Configuration des zones spatiales</h4>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Mode spatial :</strong> Définissez des zones prédéfinies sur l'image où les éléments peuvent être déposés.
+                </div>
+                
+                <div class="mt-4">
+                    <h5>Zones de dépôt</h5>
+                    <div id="spatial-zones-container">
+                        <div class="spatial-zone-item border p-3 mb-3 rounded">
+                            <h6>Zone 1</h6>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label class="form-label">Position X (%)</label>
+                                    <input type="number" class="form-control" name="zone_0_x" min="0" max="100" value="10">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Position Y (%)</label>
+                                    <input type="number" class="form-control" name="zone_0_y" min="0" max="100" value="10">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Nom de la zone</label>
+                                    <input type="text" class="form-control" name="zone_0_legend" placeholder="Nom de la zone">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-outline-success" onclick="addSpatialZone()">Ajouter une zone</button>
+                </div>
+                
+                <div class="mt-4">
+                    <h5>Éléments à placer</h5>
+                    <div id="spatial-elements-container">
+                        <div class="spatial-element-item border p-3 mb-3 rounded">
+                            <h6>Élément 1</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label">Type</label>
+                                    <select class="form-select" name="spatial_element_1_type" onchange="toggleSpatialElementType(this, 1)">
+                                        <option value="text">Texte</option>
+                                        <option value="image">Image</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Zone cible</label>
+                                    <select class="form-select" name="spatial_element_1_target_zone">
+                                        <option value="0">Zone 1</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <div class="spatial-element-text">
+                                    <label class="form-label">Texte de l'élément</label>
+                                    <input type="text" class="form-control" name="spatial_element_1_text" placeholder="Entrez le texte">
+                                </div>
+                                <div class="spatial-element-image" style="display: none;">
+                                    <label class="form-label">Image de l'élément</label>
+                                    <input type="file" class="form-control" name="spatial_element_1_image" accept="image/*">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-outline-success" onclick="addSpatialElement()">Ajouter un élément</button>
                 </div>
             </div>
 
@@ -899,6 +1040,209 @@ function removeUnderlineWordsImage() {
 // Variables globales pour la gestion des légendes
 let legendZoneCounter = 0;
 let currentLegendZone = null;
+let gridElementCounter = 1;
+let spatialZoneCounter = 0;
+let spatialElementCounter = 1;
+
+// Fonction pour changer le mode de légende
+function changeLegendMode() {
+    const mode = document.getElementById('legend_mode').value;
+    const instructions = document.getElementById('legend_instructions');
+    
+    // Masquer toutes les sections de mode
+    document.querySelectorAll('.legend-mode-section').forEach(section => {
+        section.style.display = 'none';
+    });
+    
+    // Afficher la section correspondante et mettre à jour les instructions
+    if (mode === 'grid') {
+        document.getElementById('legend-grid-section').style.display = 'block';
+        if (!instructions.value) {
+            instructions.value = 'Déplacez les éléments vers les bonnes cases du quadrillage.';
+        }
+    } else if (mode === 'spatial') {
+        document.getElementById('legend-spatial-section').style.display = 'block';
+        if (!instructions.value) {
+            instructions.value = 'Placez les éléments dans les bonnes zones.';
+        }
+    } else {
+        // Mode classique - afficher la zone interactive
+        if (!instructions.value) {
+            instructions.value = 'Placez les légendes aux bons endroits sur l\'image.';
+        }
+    }
+}
+
+// Fonctions pour le mode quadrillage
+function addGridElement() {
+    gridElementCounter++;
+    const container = document.getElementById('grid-elements-container');
+    
+    const elementDiv = document.createElement('div');
+    elementDiv.className = 'grid-element-item border p-3 mb-3 rounded';
+    elementDiv.innerHTML = `
+        <h6>Élément ${gridElementCounter}</h6>
+        <div class="row">
+            <div class="col-md-4">
+                <label class="form-label">Type</label>
+                <select class="form-select" name="grid_element_${gridElementCounter}_type" onchange="toggleGridElementType(this, ${gridElementCounter})">
+                    <option value="text">Texte</option>
+                    <option value="image">Image</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Ligne cible</label>
+                <input type="number" class="form-control" name="grid_element_${gridElementCounter}_target_row" min="1" max="10" value="1">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Colonne cible</label>
+                <input type="number" class="form-control" name="grid_element_${gridElementCounter}_target_col" min="1" max="10" value="1">
+            </div>
+        </div>
+        <div class="mt-3">
+            <div class="grid-element-text">
+                <label class="form-label">Texte de l'élément</label>
+                <input type="text" class="form-control" name="grid_element_${gridElementCounter}_text" placeholder="Entrez le texte">
+            </div>
+            <div class="grid-element-image" style="display: none;">
+                <label class="form-label">Image de l'élément</label>
+                <input type="file" class="form-control" name="grid_element_${gridElementCounter}_image" accept="image/*">
+            </div>
+        </div>
+        <button type="button" class="btn btn-outline-danger btn-sm mt-2" onclick="this.closest('.grid-element-item').remove()">
+            <i class="fas fa-trash"></i> Supprimer cet élément
+        </button>
+    `;
+    
+    container.appendChild(elementDiv);
+}
+
+function toggleGridElementType(select, elementId) {
+    const parent = select.closest('.grid-element-item');
+    const textDiv = parent.querySelector('.grid-element-text');
+    const imageDiv = parent.querySelector('.grid-element-image');
+    
+    if (select.value === 'text') {
+        textDiv.style.display = 'block';
+        imageDiv.style.display = 'none';
+    } else {
+        textDiv.style.display = 'none';
+        imageDiv.style.display = 'block';
+    }
+}
+
+// Fonctions pour le mode spatial
+function addSpatialZone() {
+    spatialZoneCounter++;
+    const container = document.getElementById('spatial-zones-container');
+    
+    const zoneDiv = document.createElement('div');
+    zoneDiv.className = 'spatial-zone-item border p-3 mb-3 rounded';
+    zoneDiv.innerHTML = `
+        <h6>Zone ${spatialZoneCounter + 1}</h6>
+        <div class="row">
+            <div class="col-md-4">
+                <label class="form-label">Position X (%)</label>
+                <input type="number" class="form-control" name="zone_${spatialZoneCounter}_x" min="0" max="100" value="10">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Position Y (%)</label>
+                <input type="number" class="form-control" name="zone_${spatialZoneCounter}_y" min="0" max="100" value="10">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Nom de la zone</label>
+                <input type="text" class="form-control" name="zone_${spatialZoneCounter}_legend" placeholder="Nom de la zone">
+            </div>
+        </div>
+        <button type="button" class="btn btn-outline-danger btn-sm mt-2" onclick="removeSpatialZone(this)">
+            <i class="fas fa-trash"></i> Supprimer cette zone
+        </button>
+    `;
+    
+    container.appendChild(zoneDiv);
+    updateSpatialElementTargets();
+}
+
+function removeSpatialZone(button) {
+    button.closest('.spatial-zone-item').remove();
+    updateSpatialElementTargets();
+}
+
+function addSpatialElement() {
+    spatialElementCounter++;
+    const container = document.getElementById('spatial-elements-container');
+    
+    const elementDiv = document.createElement('div');
+    elementDiv.className = 'spatial-element-item border p-3 mb-3 rounded';
+    elementDiv.innerHTML = `
+        <h6>Élément ${spatialElementCounter}</h6>
+        <div class="row">
+            <div class="col-md-6">
+                <label class="form-label">Type</label>
+                <select class="form-select" name="spatial_element_${spatialElementCounter}_type" onchange="toggleSpatialElementType(this, ${spatialElementCounter})">
+                    <option value="text">Texte</option>
+                    <option value="image">Image</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Zone cible</label>
+                <select class="form-select" name="spatial_element_${spatialElementCounter}_target_zone">
+                    <!-- Options mises à jour dynamiquement -->
+                </select>
+            </div>
+        </div>
+        <div class="mt-3">
+            <div class="spatial-element-text">
+                <label class="form-label">Texte de l'élément</label>
+                <input type="text" class="form-control" name="spatial_element_${spatialElementCounter}_text" placeholder="Entrez le texte">
+            </div>
+            <div class="spatial-element-image" style="display: none;">
+                <label class="form-label">Image de l'élément</label>
+                <input type="file" class="form-control" name="spatial_element_${spatialElementCounter}_image" accept="image/*">
+            </div>
+        </div>
+        <button type="button" class="btn btn-outline-danger btn-sm mt-2" onclick="this.closest('.spatial-element-item').remove()">
+            <i class="fas fa-trash"></i> Supprimer cet élément
+        </button>
+    `;
+    
+    container.appendChild(elementDiv);
+    updateSpatialElementTargets();
+}
+
+function toggleSpatialElementType(select, elementId) {
+    const parent = select.closest('.spatial-element-item');
+    const textDiv = parent.querySelector('.spatial-element-text');
+    const imageDiv = parent.querySelector('.spatial-element-image');
+    
+    if (select.value === 'text') {
+        textDiv.style.display = 'block';
+        imageDiv.style.display = 'none';
+    } else {
+        textDiv.style.display = 'none';
+        imageDiv.style.display = 'block';
+    }
+}
+
+function updateSpatialElementTargets() {
+    const zones = document.querySelectorAll('.spatial-zone-item');
+    const elementSelects = document.querySelectorAll('[name*="spatial_element_"][name*="_target_zone"]');
+    
+    elementSelects.forEach(select => {
+        const currentValue = select.value;
+        select.innerHTML = '';
+        
+        zones.forEach((zone, index) => {
+            const option = document.createElement('option');
+            option.value = index;
+            option.textContent = `Zone ${index + 1}`;
+            if (currentValue == index) {
+                option.selected = true;
+            }
+            select.appendChild(option);
+        });
+    });
+}
 
 // Fonction de prévisualisation d'image principale pour légende
 function previewLegendMainImage(input) {

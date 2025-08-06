@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Légende - Diagnostic</title>
+    <style>
+        .debug-box { background: #e3f2fd; padding: 20px; margin: 20px; border: 2px solid #2196f3; }
+        .error { color: red; font-weight: bold; }
+        .success { color: green; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="debug-box">
+        <h2>🔍 DIAGNOSTIC EXERCICE LÉGENDE</h2>
+        
+        <h3>1. Variables de base :</h3>
+        <p><strong>Exercise ID:</strong> {{ exercise.id if exercise else 'UNDEFINED' }}</p>
+        <p><strong>Exercise Title:</strong> {{ exercise.title if exercise else 'UNDEFINED' }}</p>
+        <p><strong>Exercise Type:</strong> {{ exercise.exercise_type if exercise else 'UNDEFINED' }}</p>
+        
+        <h3>2. Test d'accès au contenu :</h3>
+        {% if content %}
+            <p class="success">✅ Content existe</p>
+            <p><strong>Type de content:</strong> {{ content.__class__.__name__ }}</p>
+            
+            {% if content is mapping %}
+                <p class="success">✅ Content est un dictionnaire</p>
+                <p><strong>Clés disponibles:</strong> {{ content.keys() | list }}</p>
+                
+                <h3>3. Test des clés spécifiques :</h3>
+                <p><strong>Mode:</strong> {{ content.get('mode', 'NON DÉFINI') }}</p>
+                <p><strong>Main Image:</strong> {{ content.get('main_image', 'NON DÉFINIE') }}</p>
+                <p><strong>Instructions:</strong> {{ content.get('instructions', 'NON DÉFINIES') }}</p>
+                <p><strong>Zones:</strong> {{ content.get('zones', []) | length }} zone(s)</p>
+                <p><strong>Elements:</strong> {{ content.get('elements', []) | length }} élément(s)</p>
+                
+                {% if content.get('zones') %}
+                    <h3>4. Détail des zones :</h3>
+                    {% for zone in content.zones %}
+                        <p>Zone {{ loop.index }}: ID={{ zone.id }}, X={{ zone.x }}, Y={{ zone.y }}, Legend={{ zone.legend if zone.legend else 'N/A' }}</p>
+                    {% endfor %}
+                {% endif %}
+                
+            {% else %}
+                <p class="error">❌ Content n'est pas un dictionnaire: {{ content }}</p>
+            {% endif %}
+            
+        {% else %}
+            <p class="error">❌ Content est None ou undefined</p>
+        {% endif %}
+        
+        <h3>5. Test d'affichage image :</h3>
+        {% if content and content.get('main_image') %}
+            <p class="success">✅ Image définie: {{ content.main_image }}</p>
+            <img src="{{ url_for('static', filename=content.main_image.replace('static/', '')) }}" 
+                 alt="Test Image" 
+                 style="max-width: 200px; border: 1px solid #ccc;">
+        {% else %}
+            <p class="error">❌ Aucune image définie</p>
+        {% endif %}
+        
+        <h3>6. Contenu brut :</h3>
+        <pre style="background: #f5f5f5; padding: 10px; overflow: auto;">{{ content }}</pre>
+    </div>
+</body>
+</html>

@@ -56,6 +56,49 @@
             </div>
         </div>
 
+        <!-- Mode d'exercice légende -->
+        <div class="mb-4">
+            <label class="form-label">Mode d'exercice</label>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <input type="radio" class="form-check-input" id="mode_classic" name="legend_mode" value="classic" checked onchange="updateLegendMode()">
+                            <label for="mode_classic" class="form-check-label d-block mt-2">
+                                <i class="fas fa-map-marker-alt fa-2x text-primary mb-2"></i>
+                                <h6>Classique</h6>
+                                <small class="text-muted">Placer des légendes sur des points précis de l'image</small>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <input type="radio" class="form-check-input" id="mode_grid" name="legend_mode" value="grid" onchange="updateLegendMode()">
+                            <label for="mode_grid" class="form-check-label d-block mt-2">
+                                <i class="fas fa-th fa-2x text-success mb-2"></i>
+                                <h6>Quadrillage</h6>
+                                <small class="text-muted">Déplacer des éléments vers des cases spécifiques</small>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <input type="radio" class="form-check-input" id="mode_spatial" name="legend_mode" value="spatial" onchange="updateLegendMode()">
+                            <label for="mode_spatial" class="form-check-label d-block mt-2">
+                                <i class="fas fa-home fa-2x text-warning mb-2"></i>
+                                <h6>Spatial</h6>
+                                <small class="text-muted">Placer des éléments dans des zones définies</small>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Section des instructions -->
         <div class="mb-3">
             <label for="legend_instructions" class="form-label">Instructions</label>
@@ -95,6 +138,59 @@
                     {% else %}
                     <p class="text-muted">Uploadez une image pour commencer à placer des zones de légende</p>
                     {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Mode Quadrillage -->
+        <div id="grid-mode-section" class="mb-4" style="display: none;">
+            <label class="form-label">Configuration du quadrillage</label>
+            <div class="row">
+                <div class="col-md-6">
+                    <label for="grid_rows" class="form-label">Nombre de lignes</label>
+                    <input type="number" class="form-control" id="grid_rows" name="grid_rows" min="2" max="10" value="4">
+                </div>
+                <div class="col-md-6">
+                    <label for="grid_cols" class="form-label">Nombre de colonnes</label>
+                    <input type="number" class="form-control" id="grid_cols" name="grid_cols" min="2" max="10" value="4">
+                </div>
+            </div>
+            
+            <div class="mt-3">
+                <label class="form-label">Éléments à déplacer</label>
+                <div id="grid-elements-container">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        Ajoutez les éléments (images ou textes) que les élèves devront déplacer vers les bonnes cases du quadrillage.
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="addGridElement()">Ajouter un élément</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Mode Spatial -->
+        <div id="spatial-mode-section" class="mb-4" style="display: none;">
+            <label class="form-label">Configuration spatiale</label>
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                Définissez les zones de dépôt sur l'image et les éléments à placer.
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Zones de dépôt</label>
+                <div id="spatial-zones-container">
+                    <p class="text-muted">Cliquez sur l'image pour définir les zones où les élèves pourront déposer les éléments.</p>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Éléments à placer</label>
+                <div id="spatial-elements-container">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        Ajoutez les éléments (images ou textes) que les élèves devront placer dans les bonnes zones.
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="addSpatialElement()">Ajouter un élément</button>
                 </div>
             </div>
         </div>
@@ -183,6 +279,171 @@
 <script>
 let zoneCounter = {{ content.zones|length if content and content.zones else 0 }};
 let currentZone = null;
+let gridElementCounter = 0;
+let spatialElementCounter = 0;
+
+// Fonction pour changer le mode d'exercice
+function updateLegendMode() {
+    const classicMode = document.getElementById('mode_classic').checked;
+    const gridMode = document.getElementById('mode_grid').checked;
+    const spatialMode = document.getElementById('mode_spatial').checked;
+    
+    // Masquer toutes les sections
+    document.getElementById('grid-mode-section').style.display = 'none';
+    document.getElementById('spatial-mode-section').style.display = 'none';
+    
+    // Afficher la section correspondante
+    if (gridMode) {
+        document.getElementById('grid-mode-section').style.display = 'block';
+        updateInstructions('Déplacez les éléments vers les bonnes cases du quadrillage.');
+    } else if (spatialMode) {
+        document.getElementById('spatial-mode-section').style.display = 'block';
+        updateInstructions('Placez les éléments dans les bonnes zones.');
+    } else {
+        updateInstructions('Placez les légendes aux bons endroits sur l\'image.');
+    }
+}
+
+// Fonction pour mettre à jour les instructions
+function updateInstructions(text) {
+    const instructionsField = document.getElementById('legend_instructions');
+    if (instructionsField.value === '' || instructionsField.value === instructionsField.placeholder) {
+        instructionsField.value = text;
+    }
+}
+
+// Fonction pour ajouter un élément de quadrillage
+function addGridElement() {
+    gridElementCounter++;
+    const container = document.getElementById('grid-elements-container');
+    
+    const elementDiv = document.createElement('div');
+    elementDiv.className = 'card mb-3';
+    elementDiv.innerHTML = `
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label">Type d'élément</label>
+                    <select class="form-select" name="grid_element_${gridElementCounter}_type" onchange="toggleGridElementInput(${gridElementCounter}, this.value)">
+                        <option value="text">Texte</option>
+                        <option value="image">Image</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Position cible (ligne, colonne)</label>
+                    <div class="row">
+                        <div class="col-6">
+                            <input type="number" class="form-control" name="grid_element_${gridElementCounter}_target_row" placeholder="Ligne" min="1">
+                        </div>
+                        <div class="col-6">
+                            <input type="number" class="form-control" name="grid_element_${gridElementCounter}_target_col" placeholder="Colonne" min="1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-3">
+                <div id="grid_element_${gridElementCounter}_text_input">
+                    <label class="form-label">Texte</label>
+                    <input type="text" class="form-control" name="grid_element_${gridElementCounter}_text" placeholder="Texte à afficher">
+                </div>
+                <div id="grid_element_${gridElementCounter}_image_input" style="display: none;">
+                    <label class="form-label">Image</label>
+                    <input type="file" class="form-control" name="grid_element_${gridElementCounter}_image" accept=".jpg,.jpeg,.png,.gif">
+                </div>
+            </div>
+            <div class="mt-2">
+                <button type="button" class="btn btn-danger btn-sm" onclick="removeGridElement(this)">
+                    <i class="fas fa-trash"></i> Supprimer
+                </button>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(elementDiv);
+}
+
+// Fonction pour basculer entre texte et image pour les éléments de quadrillage
+function toggleGridElementInput(elementId, type) {
+    const textInput = document.getElementById(`grid_element_${elementId}_text_input`);
+    const imageInput = document.getElementById(`grid_element_${elementId}_image_input`);
+    
+    if (type === 'text') {
+        textInput.style.display = 'block';
+        imageInput.style.display = 'none';
+    } else {
+        textInput.style.display = 'none';
+        imageInput.style.display = 'block';
+    }
+}
+
+// Fonction pour supprimer un élément de quadrillage
+function removeGridElement(button) {
+    button.closest('.card').remove();
+}
+
+// Fonction pour ajouter un élément spatial
+function addSpatialElement() {
+    spatialElementCounter++;
+    const container = document.getElementById('spatial-elements-container');
+    
+    const elementDiv = document.createElement('div');
+    elementDiv.className = 'card mb-3';
+    elementDiv.innerHTML = `
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label">Type d'élément</label>
+                    <select class="form-select" name="spatial_element_${spatialElementCounter}_type" onchange="toggleSpatialElementInput(${spatialElementCounter}, this.value)">
+                        <option value="text">Texte</option>
+                        <option value="image">Image</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Zone cible</label>
+                    <select class="form-select" name="spatial_element_${spatialElementCounter}_target_zone">
+                        <option value="">Sélectionner une zone</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mt-3">
+                <div id="spatial_element_${spatialElementCounter}_text_input">
+                    <label class="form-label">Texte</label>
+                    <input type="text" class="form-control" name="spatial_element_${spatialElementCounter}_text" placeholder="Texte à afficher">
+                </div>
+                <div id="spatial_element_${spatialElementCounter}_image_input" style="display: none;">
+                    <label class="form-label">Image</label>
+                    <input type="file" class="form-control" name="spatial_element_${spatialElementCounter}_image" accept=".jpg,.jpeg,.png,.gif">
+                </div>
+            </div>
+            <div class="mt-2">
+                <button type="button" class="btn btn-danger btn-sm" onclick="removeSpatialElement(this)">
+                    <i class="fas fa-trash"></i> Supprimer
+                </button>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(elementDiv);
+}
+
+// Fonction pour basculer entre texte et image pour les éléments spatiaux
+function toggleSpatialElementInput(elementId, type) {
+    const textInput = document.getElementById(`spatial_element_${elementId}_text_input`);
+    const imageInput = document.getElementById(`spatial_element_${elementId}_image_input`);
+    
+    if (type === 'text') {
+        textInput.style.display = 'block';
+        imageInput.style.display = 'none';
+    } else {
+        textInput.style.display = 'none';
+        imageInput.style.display = 'block';
+    }
+}
+
+// Fonction pour supprimer un élément spatial
+function removeSpatialElement(button) {
+    button.closest('.card').remove();
+}
 
 // Fonction de prévisualisation d'image principale
 function previewMainImage(input) {
