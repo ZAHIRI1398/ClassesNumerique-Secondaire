@@ -473,6 +473,67 @@ def create_exercise():
                         content['image'] = f'static/uploads/{unique_filename}'
                         current_app.logger.debug(f'Image Souligner les mots sauvegardée: {unique_filename}')
 
+            elif exercise_type == 'legend':
+                # Récupérer les instructions
+                instructions = request.form.get('legend_instructions', '').strip()
+                if not instructions:
+                    instructions = 'Placez les légendes aux bons endroits sur l\'image.'
+                
+                # Récupérer l'image principale (obligatoire pour les légendes)
+                main_image_path = None
+                if 'legend_main_image' in request.files:
+                    image_file = request.files['legend_main_image']
+                    if image_file and image_file.filename != '' and allowed_file(image_file.filename):
+                        filename = secure_filename(image_file.filename)
+                        unique_filename = generate_unique_filename(filename)
+                        
+                        # Créer le dossier uploads s'il n'existe pas
+                        upload_folder = os.path.join(current_app.root_path, 'static', 'uploads')
+                        os.makedirs(upload_folder, exist_ok=True)
+                        
+                        # Sauvegarder l'image
+                        image_path = os.path.join(upload_folder, unique_filename)
+                        image_file.save(image_path)
+                        
+                        main_image_path = f'static/uploads/{unique_filename}'
+                        
+                        # Sauvegarder aussi dans exercise_image_path
+                        if not exercise_image_path:
+                            exercise_image_path = unique_filename
+                        
+                        current_app.logger.debug(f'Image principale légende sauvegardée: {unique_filename}')
+                
+                if not main_image_path:
+                    flash('Une image principale est obligatoire pour un exercice de légende.', 'error')
+                    return redirect(request.url)
+                
+                # Récupérer les zones et légendes
+                zones = []
+                zone_index = 0
+                while f'zone_{zone_index}_x' in request.form:
+                    x = request.form.get(f'zone_{zone_index}_x', type=int)
+                    y = request.form.get(f'zone_{zone_index}_y', type=int)
+                    legend_text = request.form.get(f'zone_{zone_index}_legend', '').strip()
+                    
+                    if x is not None and y is not None and legend_text:
+                        zones.append({
+                            'x': x,
+                            'y': y,
+                            'legend': legend_text,
+                            'id': zone_index
+                        })
+                    
+                    zone_index += 1
+                
+                if not zones:
+                    flash('Veuillez ajouter au moins une zone avec sa légende.', 'error')
+                    return redirect(request.url)
+                
+                content['instructions'] = instructions
+                content['main_image'] = main_image_path
+                content['zones'] = zones
+                current_app.logger.debug(f'Exercice légende créé avec {len(zones)} zones')
+
             # Gestion de l'image de l'exercice (pour tous les types d'exercices)
             # exercise_image_path déjà initialisé plus haut pour underline_words
             if 'exercise_image' in request.files:
@@ -878,6 +939,76 @@ def edit_exercise(exercise_id):
                 }
                 
                 print(f"[DICTATION_EDIT_DEBUG] Final content: {content}")
+            
+            elif exercise.exercise_type == 'legend':
+                # Traitement pour les exercices de légende (édition)
+                current_app.logger.debug('Processing legend edit...')
+                
+                # Récupérer les instructions
+                instructions = request.form.get('legend_instructions', '').strip()
+                if not instructions:
+                    instructions = 'Placez les légendes aux bons endroits sur l\'image.'
+                
+                # Gestion de l'image principale
+                main_image_path = None
+                if 'legend_main_image' in request.files:
+                    image_file = request.files['legend_main_image']
+                    if image_file and image_file.filename != '' and allowed_file(image_file.filename):
+                        filename = secure_filename(image_file.filename)
+                        unique_filename = generate_unique_filename(filename)
+                        
+                        # Créer le dossier uploads s'il n'existe pas
+                        upload_folder = os.path.join(current_app.root_path, 'static', 'uploads')
+                        os.makedirs(upload_folder, exist_ok=True)
+                        
+                        # Sauvegarder l'image
+                        image_path = os.path.join(upload_folder, unique_filename)
+                        image_file.save(image_path)
+                        
+                        main_image_path = f'static/uploads/{unique_filename}'
+                        
+                        # Mettre à jour le champ image_path de l'exercice
+                        exercise.image_path = unique_filename
+                        
+                        current_app.logger.debug(f'Image principale légende mise à jour: {unique_filename}')
+                
+                # Si pas de nouvelle image, garder l'ancienne
+                if not main_image_path:
+                    existing_content = exercise.get_content()
+                    main_image_path = existing_content.get('main_image')
+                    if not main_image_path and not exercise.image_path:
+                        flash('Une image principale est obligatoire pour un exercice de légende.', 'error')
+                        return render_template('exercise_types/legend_edit.html', exercise=exercise, content=exercise.get_content())
+                
+                # Récupérer les zones et légendes
+                zones = []
+                zone_index = 0
+                while f'zone_{zone_index}_x' in request.form:
+                    x = request.form.get(f'zone_{zone_index}_x', type=int)
+                    y = request.form.get(f'zone_{zone_index}_y', type=int)
+                    legend_text = request.form.get(f'zone_{zone_index}_legend', '').strip()
+                    
+                    if x is not None and y is not None and legend_text:
+                        zones.append({
+                            'x': x,
+                            'y': y,
+                            'legend': legend_text,
+                            'id': zone_index
+                        })
+                    
+                    zone_index += 1
+                
+                if not zones:
+                    flash('Veuillez ajouter au moins une zone avec sa légende.', 'error')
+                    return render_template('exercise_types/legend_edit.html', exercise=exercise, content=exercise.get_content())
+                
+                content = {
+                    'instructions': instructions,
+                    'main_image': main_image_path,
+                    'zones': zones
+                }
+                
+                current_app.logger.debug(f'Exercice légende modifié avec {len(zones)} zones')
             
             # Sauvegarder les modifications
             exercise.content = json.dumps(content)

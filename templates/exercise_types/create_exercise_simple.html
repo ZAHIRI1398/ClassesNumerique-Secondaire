@@ -426,6 +426,75 @@
             </div>
         </div>
 
+        <!-- Section Légende -->
+        <div id="legend_section" class="exercise-type-section" style="display: none;">
+            <h3>Exercice de légende</h3>
+            <p class="text-muted">Créez un exercice où les élèves doivent placer des légendes aux bons endroits sur une image.</p>
+            
+            <div class="alert alert-info" role="alert">
+                <i class="fas fa-info-circle"></i>
+                <strong>Instructions :</strong>
+                <ol class="mb-0 mt-2">
+                    <li>Uploadez une image principale (obligatoire)</li>
+                    <li>Cliquez sur l'image pour placer des zones de légende</li>
+                    <li>Pour chaque zone, saisissez le texte de la légende correspondante</li>
+                </ol>
+            </div>
+
+            <!-- Instructions personnalisées -->
+            <div class="mb-3">
+                <label for="legend_instructions" class="form-label">Instructions</label>
+                <textarea class="form-control" id="legend_instructions" name="legend_instructions" rows="2" placeholder="Placez les légendes aux bons endroits sur l'image."></textarea>
+                <div class="form-text">Instructions qui seront affichées aux élèves</div>
+            </div>
+
+            <!-- Upload d'image principale -->
+            <div class="mb-4">
+                <label class="form-label">Image principale (obligatoire)</label>
+                <input type="file" 
+                       class="form-control" 
+                       id="legend_main_image" 
+                       name="legend_main_image" 
+                       accept=".jpg,.jpeg,.png,.gif"
+                       onchange="previewLegendMainImage(this)"
+                       required>
+                <div class="form-text">Ajoutez l'image principale à légender (formats acceptés : JPG, PNG, GIF, max 5MB)</div>
+                <div id="legend-main-image-preview" class="mt-2" style="display: none;">
+                    <img id="preview-legend-main-img" src="" alt="Prévisualisation" class="img-thumbnail" style="max-width: 300px; max-height: 300px;">
+                    <p id="preview-legend-main-filename" class="small text-muted mt-1"></p>
+                </div>
+            </div>
+
+            <!-- Zone interactive pour placer les légendes -->
+            <div class="mb-4">
+                <label class="form-label">Zones de légende</label>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Comment ajouter des zones :</strong>
+                    <ol class="mb-0 mt-2">
+                        <li>Uploadez d'abord une image principale</li>
+                        <li>Cliquez sur l'image pour placer une zone de légende</li>
+                        <li>Saisissez le texte de la légende dans le champ qui apparaît</li>
+                        <li>Répétez pour ajouter d'autres zones</li>
+                    </ol>
+                </div>
+                
+                <div id="legend-editor" class="border rounded p-3" style="min-height: 400px; background-color: #f8f9fa;">
+                    <div id="legend-image-container" style="position: relative; display: inline-block;">
+                        <p class="text-muted">Uploadez une image pour commencer à placer des zones de légende</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Liste des zones créées -->
+            <div class="mb-4">
+                <label class="form-label">Légendes créées</label>
+                <div id="legend-zones-list" class="border rounded p-3" style="min-height: 100px; background-color: #f8f9fa;">
+                    <p class="text-muted">Aucune zone de légende créée. Cliquez sur l'image pour en ajouter.</p>
+                </div>
+            </div>
+        </div>
+
         <div class="text-center mt-4">
             <button type="submit" class="btn btn-success btn-lg">Créer l'exercice</button>
             <button type="button" class="btn btn-primary btn-lg ms-3" onclick="testFormSubmission()">Test Submit</button>
@@ -825,6 +894,136 @@ function removeUnderlineWordsImage() {
     
     input.value = '';
     preview.style.display = 'none';
+}
+
+// Variables globales pour la gestion des légendes
+let legendZoneCounter = 0;
+let currentLegendZone = null;
+
+// Fonction de prévisualisation d'image principale pour légende
+function previewLegendMainImage(input) {
+    const preview = document.getElementById('legend-main-image-preview');
+    const previewImg = document.getElementById('preview-legend-main-img');
+    const previewFilename = document.getElementById('preview-legend-main-filename');
+    
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            previewImg.src = e.target.result;
+            previewFilename.textContent = input.files[0].name;
+            preview.style.display = 'block';
+            
+            // Remplacer l'image dans l'éditeur
+            const imageContainer = document.getElementById('legend-image-container');
+            imageContainer.innerHTML = `
+                <img id="legend-editor-image" 
+                     src="${e.target.result}" 
+                     alt="Image à légender" 
+                     style="max-width: 100%; height: auto; cursor: crosshair;"
+                     onclick="addLegendZone(event)">
+            `;
+        };
+        
+        reader.readAsDataURL(input.files[0]);
+    } else {
+        preview.style.display = 'none';
+    }
+}
+
+// Fonction pour ajouter une zone de légende
+function addLegendZone(event) {
+    const rect = event.target.getBoundingClientRect();
+    const x = event.offsetX;
+    const y = event.offsetY;
+    
+    const legendText = prompt('Saisissez le texte de la légende :');
+    
+    if (!legendText || !legendText.trim()) {
+        return;
+    }
+    
+    currentLegendZone = {
+        id: legendZoneCounter,
+        x: x,
+        y: y,
+        legend: legendText.trim()
+    };
+    
+    // Ajouter le marqueur visuel sur l'image
+    const imageContainer = document.getElementById('legend-image-container');
+    const marker = document.createElement('div');
+    marker.className = 'legend-zone-marker';
+    marker.dataset.zoneId = currentLegendZone.id;
+    marker.style.cssText = `
+        position: absolute; 
+        left: ${currentLegendZone.x}px; 
+        top: ${currentLegendZone.y}px; 
+        width: 20px; 
+        height: 20px; 
+        background-color: #ff4444; 
+        border: 2px solid #fff; 
+        border-radius: 50%; 
+        transform: translate(-50%, -50%); 
+        cursor: pointer;
+        z-index: 10;
+    `;
+    marker.title = legendText;
+    imageContainer.appendChild(marker);
+    
+    // Ajouter l'élément dans la liste des zones
+    const zonesList = document.getElementById('legend-zones-list');
+    const zoneItem = document.createElement('div');
+    zoneItem.className = 'legend-zone-item mb-2 p-2 bg-white border rounded';
+    zoneItem.dataset.zoneId = currentLegendZone.id;
+    zoneItem.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <strong>Zone ${legendZoneCounter + 1} :</strong> ${legendText}
+                <small class="text-muted">(Position: ${currentLegendZone.x}, ${currentLegendZone.y})</small>
+            </div>
+            <button type="button" class="btn btn-sm btn-danger" onclick="removeLegendZone(${currentLegendZone.id})">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+        <input type="hidden" name="zone_${currentLegendZone.id}_x" value="${currentLegendZone.x}">
+        <input type="hidden" name="zone_${currentLegendZone.id}_y" value="${currentLegendZone.y}">
+        <input type="hidden" name="zone_${currentLegendZone.id}_legend" value="${legendText}">
+    `;
+    
+    // Supprimer le message "Aucune zone" s'il existe
+    const noZonesMessage = zonesList.querySelector('p.text-muted');
+    if (noZonesMessage) {
+        noZonesMessage.remove();
+    }
+    
+    zonesList.appendChild(zoneItem);
+    
+    // Incrémenter le compteur
+    legendZoneCounter++;
+    currentLegendZone = null;
+}
+
+// Fonction pour supprimer une zone de légende
+function removeLegendZone(zoneId) {
+    // Supprimer le marqueur visuel
+    const marker = document.querySelector(`[data-zone-id="${zoneId}"]`);
+    if (marker && marker.classList.contains('legend-zone-marker')) {
+        marker.remove();
+    }
+    
+    // Supprimer l'élément de la liste
+    const zoneItem = document.querySelector(`.legend-zone-item[data-zone-id="${zoneId}"]`);
+    if (zoneItem) {
+        zoneItem.remove();
+    }
+    
+    // Vérifier s'il reste des zones
+    const remainingZones = document.querySelectorAll('.legend-zone-item');
+    if (remainingZones.length === 0) {
+        const zonesList = document.getElementById('legend-zones-list');
+        zonesList.innerHTML = '<p class="text-muted">Aucune zone de légende créée. Cliquez sur l\'image pour en ajouter.</p>';
+    }
 }
 
 // Initialiser les aperçus d'images au chargement de la page

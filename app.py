@@ -67,7 +67,7 @@ def chr_filter_registered(value):
         return str(value)
 
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'uploads')
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max-limit
+app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max-limit
 
 # S'assurer que le dossier d'upload existe
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -185,6 +185,16 @@ def log_request_info():
     logger.debug('URL: %s', request.url)
     logger.debug('Method: %s', request.method)
     logger.debug('Path: %s', request.path)
+
+# Route pour servir les fichiers uploadés
+@app.route('/static/uploads/<path:filename>')
+def uploaded_file(filename):
+    """Sert les fichiers uploadés depuis le dossier static/uploads"""
+    try:
+        return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+    except FileNotFoundError:
+        logger.error(f"Fichier non trouvé: {filename}")
+        return "Fichier non trouvé", 404
 
 # Routes
 @app.route('/')
@@ -1777,7 +1787,7 @@ def download_course_file(course_id, file_id):
     
     # Vérifier que l'utilisateur a accès au cours
     if current_user.is_teacher or any(c.id == course.class_id for c in current_user.classes_enrolled):
-        uploads_dir = os.path.join(app.root_path, 'uploads')
+        uploads_dir = app.config['UPLOAD_FOLDER']  # Utilise le bon dossier static/uploads
         return send_from_directory(uploads_dir, file.filename, as_attachment=True, download_name=file.original_filename)
     else:
         flash('Accès non autorisé.', 'error')
@@ -2674,9 +2684,73 @@ def handle_exercise_answer(exercise_id):
             # Pour dictation, on utilise le score en pourcentage
             answers = user_answers
         
+        elif exercise.exercise_type == 'legend':
+            # Gestion des exercices de légende
+            content = json.loads(exercise.content)
+            app.logger.info(f"[LEGEND_DEBUG] Processing legend exercise {exercise_id}")
+            app.logger.info(f"[LEGEND_DEBUG] Form data: {dict(request.form)}")
+            
+            # Récupérer les zones définies dans l'exercice
+            zones = content.get('zones', [])
+            if not zones:
+                app.logger.error(f"[LEGEND_DEBUG] No zones found in exercise content")
+                flash('Erreur: aucune zone trouvée dans l\'exercice.', 'error')
+                return redirect(url_for('view_exercise', exercise_id=exercise_id))
+            
+            app.logger.info(f"[LEGEND_DEBUG] Found {len(zones)} zones to check")
+            
+            # Calculer le score pour chaque zone
+            total_zones = len(zones)
+            correct_zones = 0
+            feedback = []
+            user_answers = {}
+            
+            for zone in zones:
+                zone_id = zone.get('id')
+                expected_legend_id = str(zone_id)  # L'ID de la zone correspond à l'ID de sa légende
+                
+                # Récupérer la réponse de l'utilisateur pour cette zone
+                user_answer = request.form.get(f'zone_{zone_id}_answer', '').strip()
+                user_answers[f'zone_{zone_id}_answer'] = user_answer
+                
+                app.logger.info(f"[LEGEND_DEBUG] Zone {zone_id}: user='{user_answer}' vs expected='{expected_legend_id}'")
+                
+                # Vérifier si la réponse est correcte
+                is_correct = user_answer == expected_legend_id
+                if is_correct:
+                    correct_zones += 1
+                
+                # Ajouter au feedback
+                feedback.append({
+                    'zone_id': zone_id,
+                    'zone_legend': zone.get('legend', ''),
+                    'user_answer': user_answer,
+                    'expected_answer': expected_legend_id,
+                    'is_correct': is_correct,
+                    'position': {'x': zone.get('x'), 'y': zone.get('y')}
+                })
+            
+            # Calculer le score final
+            score = correct_zones
+            max_score = total_zones
+            
+            app.logger.info(f"[LEGEND_DEBUG] Final score: {score}/{max_score} zones correct")
+            
+            feedback_summary = {
+                'score': score,
+                'max_score': max_score,
+                'correct_zones': correct_zones,
+                'total_zones': total_zones,
+                'percentage': round((score / max_score * 100) if max_score > 0 else 0, 1),
+                'details': feedback
+            }
+            
+            # Pour legend, on utilise le score en nombre de zones correctes
+            answers = user_answers
+        
         # Créer une nouvelle tentative
-        # Pour drag_and_drop, pairs, underline_words et dictation, feedback est feedback_summary (sinon feedback dict habituel)
-        if exercise.exercise_type in ['drag_and_drop', 'pairs', 'underline_words', 'dictation']:
+        # Pour drag_and_drop, pairs, underline_words, dictation et legend, feedback est feedback_summary (sinon feedback dict habituel)
+        if exercise.exercise_type in ['drag_and_drop', 'pairs', 'underline_words', 'dictation', 'legend']:
             feedback_to_save = feedback_summary
         else:
             feedback_to_save = feedback
