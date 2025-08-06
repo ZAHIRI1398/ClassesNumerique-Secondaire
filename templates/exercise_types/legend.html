@@ -296,11 +296,18 @@
         border-color: #4caf50;
     }
 
-    .zone-label {
-        font-size: 0.8rem;
-        font-weight: 600;
-        color: #333;
+    .zone-number {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: #fff;
         text-align: center;
+        background-color: rgba(0, 0, 0, 0.7);
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .spatial-elements {
@@ -422,8 +429,8 @@
                  data-zone-id="{{ zone.id }}"
                  data-zone-name="{{ zone.name }}"
                  style="left: {{ zone.x }}px; top: {{ zone.y }}px;"
-                 title="{{ zone.name }}">
-                <span class="zone-label">{{ zone.name }}</span>
+                 title="Zone {{ loop.index }}">
+                <span class="zone-number">{{ loop.index }}</span>
             </div>
             {% endfor %}
             {% endif %}
@@ -476,19 +483,44 @@
         {% endfor %}
         
         {% elif content and content.get('mode') == 'spatial' and content.elements %}
-        <!-- Éléments pour le mode spatial -->
-        <div class="spatial-elements">
-            <h4>Éléments à placer :</h4>
-            <div id="spatial-elements-container">
+        <!-- Éléments pour le mode spatial - Layout original -->
+        <div class="spatial-elements mt-4">
+            <h4 class="text-center mb-3">
+                <i class="fas fa-puzzle-piece text-primary"></i> 
+                Éléments à placer :
+            </h4>
+            
+            <div class="alert alert-info text-center mb-3">
+                <i class="fas fa-info-circle"></i>
+                <strong>Instructions :</strong> Glissez chaque élément vers la zone numérotée correspondante sur l'image ci-dessus.
+            </div>
+            
+            <div id="spatial-elements-container" class="d-flex flex-wrap justify-content-center gap-3">
                 {% for element in content.elements %}
                 <div class="spatial-element" 
                      data-element-id="{{ element.id }}"
                      data-target-zone="{{ element.target_zone }}"
-                     draggable="true">
+                     draggable="true"
+                     style="padding: 15px 20px; 
+                            background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%); 
+                            border: 2px solid #007bff; 
+                            border-radius: 12px; 
+                            cursor: grab; 
+                            text-align: center; 
+                            font-weight: 600;
+                            font-size: 16px;
+                            color: #007bff;
+                            box-shadow: 0 2px 8px rgba(0,123,255,0.15);
+                            transition: all 0.3s ease;
+                            min-width: 80px;
+                            user-select: none;">
                     {% if element.type == 'text' %}
                         {{ element.text }}
                     {% elif element.type == 'image' %}
-                        <img src="{{ url_for('static', filename=element.image.replace('static/', '')) }}" alt="Élément" class="element-image">
+                        <img src="{{ url_for('static', filename=element.image.replace('static/', '')) }}" 
+                             alt="Élément" 
+                             class="element-image" 
+                             style="max-width: 60px; height: auto;">
                     {% endif %}
                 </div>
                 {% endfor %}
