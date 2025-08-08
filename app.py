@@ -3342,12 +3342,21 @@ def edit_exercise(exercise_id):
                 print(f'[DICTATION_EDIT_DEBUG] Contenu sauvegardé: {len(sentences)} phrases, {len(audio_files)} fichiers audio')
             
             elif exercise.exercise_type == 'legend':
-                print(f'[LEGEND_EDIT_DEBUG] Traitement du contenu Légende')
+                current_app.logger.info(f'[LEGEND_EDIT_DEBUG] Traitement du contenu Légende')
+                
+                # Récupérer le mode de légende
+                legend_mode = request.form.get('legend_mode', 'classic')
+                current_app.logger.info(f'[LEGEND_EDIT_DEBUG] Mode sélectionné: {legend_mode}')
                 
                 # Récupérer les instructions
                 instructions = request.form.get('legend_instructions', '').strip()
                 if not instructions:
-                    instructions = 'Placez les légendes aux bons endroits sur l\'image.'
+                    if legend_mode == 'grid':
+                        instructions = 'Déplacez les éléments vers les bonnes cases du quadrillage.'
+                    elif legend_mode == 'spatial':
+                        instructions = 'Placez les éléments dans les bonnes zones définies.'
+                    else:
+                        instructions = 'Placez les légendes aux bons endroits sur l\'image.'
                 
                 # Gestion de l'image principale
                 main_image_path = None
@@ -3372,14 +3381,24 @@ def edit_exercise(exercise_id):
                 # Scanner tous les champs zone_* pour récupérer toutes les zones
                 zone_indices = set()
                 for key in request.form.keys():
-                    if key.startswith('zone_') and '_x' in key:
-                        zone_index = key.split('_')[1]
-                        zone_indices.add(int(zone_index))
+                    if key.startswith('zone_') and key.endswith('_x'):
+                        # Extraire l'index de la zone depuis zone_INDEX_x
+                        parts = key.split('_')
+                        if len(parts) >= 3:
+                            zone_index = parts[1]  # zone_INDEX_x -> INDEX
+                            try:
+                                zone_indices.add(int(zone_index))
+                            except ValueError:
+                                continue
+                
+                current_app.logger.info(f'[LEGEND_EDIT_DEBUG] Zones trouvées: {sorted(zone_indices)}')
                 
                 for zone_index in sorted(zone_indices):
                     x = request.form.get(f'zone_{zone_index}_x')
                     y = request.form.get(f'zone_{zone_index}_y')
                     legend = request.form.get(f'zone_{zone_index}_legend', '').strip()
+                    
+                    current_app.logger.info(f'[LEGEND_EDIT_DEBUG] Zone {zone_index}: x={x}, y={y}, legend="{legend}"')
                     
                     if x and y and legend:
                         try:
@@ -3391,22 +3410,132 @@ def edit_exercise(exercise_id):
                                 'legend': legend
                             })
                             elements.append(legend)
-                        except ValueError:
+                            current_app.logger.info(f'[LEGEND_EDIT_DEBUG] Zone {zone_index} ajoutée avec succès')
+                        except ValueError as e:
+                            current_app.logger.error(f'[LEGEND_EDIT_DEBUG] Erreur conversion zone {zone_index}: {e}')
                             continue
                 
                 if not zones:
                     flash('Veuillez ajouter au moins une zone avec légende.', 'error')
                     return render_template('edit_exercise.html', exercise=exercise)
                 
-                # Mettre à jour le contenu
-                content = {
-                    'instructions': instructions,
-                    'main_image': main_image_path,
-                    'zones': zones,
-                    'elements': elements
-                }
+                # Gestion des différents modes de légende
+                if legend_mode == 'grid':
+                    # Mode quadrillage - récupérer les éléments de grille
+                    grid_elements = []
+                    grid_element_indices = set()
+                    
+                    # Scanner les éléments de grille
+                    for key in request.form.keys():
+                        if key.startswith('grid_element_') and key.endswith('_text'):
+                            parts = key.split('_')
+                            if len(parts) >= 3:
+                                element_index = parts[2]
+                                try:
+                                    grid_element_indices.add(int(element_index))
+                                except ValueError:
+                                    continue
+                    
+                    for element_index in sorted(grid_element_indices):
+                        element_text = request.form.get(f'grid_element_{element_index}_text', '').strip()
+                        if element_text:
+                            grid_elements.append(element_text)
+                    
+                    # Récupérer les paramètres de grille
+                    grid_rows = request.form.get('grid_rows', '3')
+                    grid_cols = request.form.get('grid_cols', '3')
+                    
+                    try:
+                        grid_rows = int(grid_rows)
+                        grid_cols = int(grid_cols)
+                    except ValueError:
+                        grid_rows, grid_cols = 3, 3
+                    
+                    content = {
+                        'mode': 'grid',
+                        'instructions': instructions,
+                        'main_image': main_image_path,
+                        'elements': grid_elements,
+                        'grid_rows': grid_rows,
+                        'grid_cols': grid_cols
+                    }
+                    current_app.logger.info(f'[LEGEND_EDIT_DEBUG] Mode grille: {len(grid_elements)} éléments, grille {grid_rows}x{grid_cols}')
+                
+                elif legend_mode == 'spatial':
+                    # Mode spatial - récupérer les éléments et zones spatiales
+                    spatial_elements = []
+                    spatial_zones = []
+                    
+                    # Scanner les éléments spatiaux
+                    spatial_element_indices = set()
+                    for key in request.form.keys():
+                        if key.startswith('spatial_element_') and key.endswith('_text'):
+                            parts = key.split('_')
+                            if len(parts) >= 3:
+                                element_index = parts[2]
+                                try:
+                                    spatial_element_indices.add(int(element_index))
+                                except ValueError:
+                                    continue
+                    
+                    for element_index in sorted(spatial_element_indices):
+                        element_text = request.form.get(f'spatial_element_{element_index}_text', '').strip()
+                        if element_text:
+                            spatial_elements.append(element_text)
+                    
+                    # Scanner les zones spatiales
+                    spatial_zone_indices = set()
+                    for key in request.form.keys():
+                        if key.startswith('spatial_zone_') and key.endswith('_name'):
+                            parts = key.split('_')
+                            if len(parts) >= 3:
+                                zone_index = parts[2]
+                                try:
+                                    spatial_zone_indices.add(int(zone_index))
+                                except ValueError:
+                                    continue
+                    
+                    for zone_index in sorted(spatial_zone_indices):
+                        zone_name = request.form.get(f'spatial_zone_{zone_index}_name', '').strip()
+                        zone_x = request.form.get(f'spatial_zone_{zone_index}_x')
+                        zone_y = request.form.get(f'spatial_zone_{zone_index}_y')
+                        zone_width = request.form.get(f'spatial_zone_{zone_index}_width')
+                        zone_height = request.form.get(f'spatial_zone_{zone_index}_height')
+                        
+                        if zone_name and zone_x and zone_y and zone_width and zone_height:
+                            try:
+                                spatial_zones.append({
+                                    'name': zone_name,
+                                    'x': float(zone_x),
+                                    'y': float(zone_y),
+                                    'width': float(zone_width),
+                                    'height': float(zone_height)
+                                })
+                            except ValueError:
+                                continue
+                    
+                    content = {
+                        'mode': 'spatial',
+                        'instructions': instructions,
+                        'main_image': main_image_path,
+                        'elements': spatial_elements,
+                        'zones': spatial_zones
+                    }
+                    current_app.logger.info(f'[LEGEND_EDIT_DEBUG] Mode spatial: {len(spatial_elements)} éléments, {len(spatial_zones)} zones')
+                
+                else:
+                    # Mode classique - utiliser la logique des zones existante
+                    content = {
+                        'mode': 'classic',
+                        'instructions': instructions,
+                        'main_image': main_image_path,
+                        'zones': zones,
+                        'elements': elements
+                    }
+                    current_app.logger.info(f'[LEGEND_EDIT_DEBUG] Mode classique: {len(zones)} zones')
+                
                 exercise.content = json.dumps(content)
-                print(f'[LEGEND_EDIT_DEBUG] Contenu sauvegardé: {len(zones)} zones, image: {main_image_path}')
+                current_app.logger.info(f'[LEGEND_EDIT_DEBUG] Contenu sauvegardé avec succès - Mode: {legend_mode}, Image: {main_image_path}')
             
             # Mettre à jour l'exercice en base
             exercise.title = title
