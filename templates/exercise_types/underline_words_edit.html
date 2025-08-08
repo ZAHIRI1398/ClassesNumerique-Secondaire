@@ -67,13 +67,13 @@
                 Important : Pour chaque phrase, indiquez les mots exacts à souligner. Les élèves devront cliquer sur ces mots précis.
             </div>
             <div id="sentences-container">
-                {% if exercise and exercise.content %}
-                    {% for sentence in exercise.content.sentences %}
+                {% if content and content.words %}
+                    {% for sentence in content.words %}
                         <div class="sentence-group mb-4">
                             <div class="input-group mb-2">
                                 <input type="text" class="form-control sentence-input" 
                                        name="sentences[]" 
-                                       value="{{ ' '.join(sentence.words) }}" 
+                                       value="{{ sentence.text }}" 
                                        required>
                                 <button type="button" class="btn btn-outline-danger remove-sentence">
                                     <i class="fas fa-times"></i>

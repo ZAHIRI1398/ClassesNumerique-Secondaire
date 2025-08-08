@@ -20,8 +20,8 @@
         <div class="mb-3">
             <label class="form-label">Mots à trouver</label>
             <div id="words-container">
-                {% if exercise and exercise.content %}
-                    {% for word in exercise.content.words %}
+                {% if content and content.words %}
+                    {% for word in content.words %}
                         <div class="input-group mb-2 word-input">
                             <input type="text" class="form-control" name="words[]" value="{{ word }}" required>
                             <button type="button" class="btn btn-outline-danger remove-word">
@@ -47,7 +47,7 @@
             <label for="grid-size" class="form-label">Taille de la grille</label>
             <select class="form-select" id="grid-size" name="grid_size" required>
                 {% for size in range(8, 21) %}
-                    <option value="{{ size }}" {% if exercise and exercise.content and exercise.content.grid|length == size %}selected{% endif %}>
+                    <option value="{{ size }}" {% if content and content.grid and content.grid|length == size %}selected{% endif %}>
                         {{ size }}x{{ size }}
                     </option>
                 {% endfor %}
