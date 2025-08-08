@@ -3060,6 +3060,354 @@ def edit_exercise(exercise_id):
                 exercise.content = json.dumps(content)
                 print(f'[QCM_EDIT_DEBUG] Contenu sauvegardé: {len(questions)} questions')
             
+            elif exercise.exercise_type == 'fill_in_blanks':
+                print(f'[FILL_BLANKS_EDIT_DEBUG] Traitement du contenu Texte à trous')
+                print(f'[FILL_BLANKS_EDIT_DEBUG] Tous les champs du formulaire: {list(request.form.keys())}')
+                
+                # Récupérer les phrases et mots du formulaire
+                sentences = request.form.getlist('sentences[]')
+                words = request.form.getlist('words[]')
+                
+                print(f'[FILL_BLANKS_EDIT_DEBUG] Phrases trouvées: {sentences}')
+                print(f'[FILL_BLANKS_EDIT_DEBUG] Mots trouvés: {words}')
+                
+                # Filtrer les phrases et mots vides
+                sentences = [s.strip() for s in sentences if s.strip()]
+                words = [w.strip() for w in words if w.strip()]
+                
+                if not sentences:
+                    flash('Veuillez ajouter au moins une phrase.', 'error')
+                    return render_template('edit_exercise.html', exercise=exercise)
+                
+                if not words:
+                    flash('Veuillez ajouter au moins un mot.', 'error')
+                    return render_template('edit_exercise.html', exercise=exercise)
+                
+                # Vérifier que chaque phrase contient au moins un trou
+                for i, sentence in enumerate(sentences):
+                    if '___' not in sentence:
+                        flash(f'La phrase {i+1} ne contient pas de trous (utilisez ___ pour marquer les trous).', 'error')
+                        return render_template('edit_exercise.html', exercise=exercise)
+                
+                # Vérifier qu'il y a assez de mots pour tous les trous
+                total_blanks = sum(sentence.count('___') for sentence in sentences)
+                if len(words) < total_blanks:
+                    flash(f'Il n\'y a pas assez de mots ({len(words)}) pour remplir tous les trous ({total_blanks}).', 'error')
+                    return render_template('edit_exercise.html', exercise=exercise)
+                
+                # Mettre à jour le contenu
+                content = {
+                    'sentences': sentences,
+                    'words': words
+                }
+                exercise.content = json.dumps(content)
+                print(f'[FILL_BLANKS_EDIT_DEBUG] Contenu sauvegardé: {len(sentences)} phrases, {len(words)} mots')
+            
+            elif exercise.exercise_type == 'word_search':
+                print(f'[WORD_SEARCH_EDIT_DEBUG] Traitement du contenu Mots mêlés')
+                
+                # Récupérer les mots à trouver
+                words = request.form.getlist('words[]')
+                # Filtrer les mots vides
+                filtered_words = [word.strip().upper() for word in words if word.strip()]
+                
+                # Récupérer la taille de grille
+                grid_size_value = request.form.get('grid_size', '8')
+                try:
+                    grid_size = int(grid_size_value)
+                    if grid_size < 8 or grid_size > 20:
+                        grid_size = 12  # Valeur par défaut
+                except (ValueError, TypeError):
+                    grid_size = 12  # Valeur par défaut
+                
+                # Validation
+                if not filtered_words:
+                    flash('Veuillez ajouter au moins un mot.', 'error')
+                    return render_template('edit_exercise.html', exercise=exercise)
+                
+                # Vérifier que les mots ne sont pas trop longs pour la grille
+                max_word_length = max(len(word) for word in filtered_words)
+                if max_word_length > grid_size:
+                    flash(f'Le mot le plus long ({max_word_length} lettres) est trop grand pour une grille {grid_size}x{grid_size}.', 'error')
+                    return render_template('edit_exercise.html', exercise=exercise)
+                
+                # Mettre à jour le contenu
+                content = {
+                    'words': filtered_words,
+                    'grid_size': {'width': grid_size, 'height': grid_size},
+                    'instructions': 'Trouvez tous les mots cachés dans la grille ci-dessous.'
+                }
+                exercise.content = json.dumps(content)
+                print(f'[WORD_SEARCH_EDIT_DEBUG] Contenu sauvegardé: {len(filtered_words)} mots, grille {grid_size}x{grid_size}')
+            
+            elif exercise.exercise_type == 'drag_and_drop':
+                print(f'[DRAG_DROP_EDIT_DEBUG] Traitement du contenu Glisser-déposer')
+                
+                # Traitement pour glisser-déposer (édition)
+                drag_items = request.form.getlist('drag_items[]')
+                drop_zones = request.form.getlist('drop_zones[]')
+                correct_order_str = request.form.get('correct_order', '')
+                
+                # Filtrer les éléments vides
+                filtered_drag_items = [item.strip() for item in drag_items if item.strip()]
+                filtered_drop_zones = [zone.strip() for zone in drop_zones if zone.strip()]
+                
+                # Validation
+                if not filtered_drag_items:
+                    flash('Au moins un élément à glisser est requis.', 'error')
+                    return render_template('edit_exercise.html', exercise=exercise)
+                
+                if not filtered_drop_zones:
+                    flash('Au moins une zone de dépôt est requise.', 'error')
+                    return render_template('edit_exercise.html', exercise=exercise)
+                
+                if len(filtered_drag_items) != len(filtered_drop_zones):
+                    flash('Le nombre d\'éléments à glisser doit être égal au nombre de zones de dépôt.', 'error')
+                    return render_template('edit_exercise.html', exercise=exercise)
+                
+                # Parser l'ordre correct
+                try:
+                    if correct_order_str.strip():
+                        correct_order = [int(x.strip()) for x in correct_order_str.split(',') if x.strip()]
+                        if len(correct_order) != len(filtered_drag_items):
+                            flash('L\'ordre correct doit contenir autant d\'éléments que d\'éléments à glisser.', 'error')
+                            return render_template('edit_exercise.html', exercise=exercise)
+                    else:
+                        # Générer un ordre par défaut si vide
+                        correct_order = list(range(len(filtered_drag_items)))
+                except (ValueError, AttributeError):
+                    flash('L\'ordre correct doit être une liste de nombres séparés par des virgules (ex: 1,0,2,3).', 'error')
+                    return render_template('edit_exercise.html', exercise=exercise)
+                
+                # Mettre à jour le contenu
+                content = {
+                    'draggable_items': filtered_drag_items,
+                    'drop_zones': filtered_drop_zones,
+                    'correct_order': correct_order
+                }
+                exercise.content = json.dumps(content)
+                print(f'[DRAG_DROP_EDIT_DEBUG] Contenu sauvegardé: {len(filtered_drag_items)} éléments, {len(filtered_drop_zones)} zones')
+            
+            elif exercise.exercise_type == 'underline_words':
+                print(f'[UNDERLINE_EDIT_DEBUG] Traitement du contenu Souligner les mots')
+                
+                # Récupérer les instructions et phrases
+                instructions = request.form.get('instructions', '').strip()
+                sentences = request.form.getlist('sentences[]')
+                words_to_underline = request.form.getlist('words_to_underline[]')
+                
+                # Filtrer les éléments vides
+                sentences = [s.strip() for s in sentences if s.strip()]
+                words_to_underline = [w.strip() for w in words_to_underline if w.strip()]
+                
+                if not sentences:
+                    flash('Veuillez ajouter au moins une phrase.', 'error')
+                    return render_template('edit_exercise.html', exercise=exercise)
+                
+                if not words_to_underline:
+                    flash('Veuillez ajouter au moins un mot à souligner.', 'error')
+                    return render_template('edit_exercise.html', exercise=exercise)
+                
+                # Mettre à jour le contenu
+                content = {
+                    'instructions': instructions or 'Soulignez les mots demandés dans les phrases suivantes.',
+                    'words': [{'sentence': sentence, 'words_to_underline': words_to_underline} for sentence in sentences]
+                }
+                exercise.content = json.dumps(content)
+                print(f'[UNDERLINE_EDIT_DEBUG] Contenu sauvegardé: {len(sentences)} phrases, {len(words_to_underline)} mots à souligner')
+            
+            elif exercise.exercise_type == 'pairs':
+                print(f'[PAIRS_EDIT_DEBUG] Traitement du contenu Association de paires')
+                
+                pairs = []
+                pair_ids = set()
+                
+                # Récupérer tous les IDs de paires
+                for key in request.form:
+                    if key.startswith('pair_left_') and not key.endswith('_type'):
+                        pair_id = key.split('_')[-1]
+                        pair_ids.add(pair_id)
+                
+                # Construire les paires avec support des images
+                for pair_id in pair_ids:
+                    left_content = ''
+                    right_content = ''
+                    left_type = request.form.get(f'pair_left_type_{pair_id}', 'text')
+                    right_type = request.form.get(f'pair_right_type_{pair_id}', 'text')
+                    
+                    # Gestion du contenu gauche (left)
+                    if left_type == 'image':
+                        if f'pair_left_image_{pair_id}' in request.files:
+                            file = request.files[f'pair_left_image_{pair_id}']
+                            if file and file.filename and allowed_file(file.filename):
+                                filename = secure_filename(file.filename)
+                                unique_filename = generate_unique_filename(filename)
+                                file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_filename)
+                                file.save(file_path)
+                                left_content = f'/static/uploads/{unique_filename}'
+                        if not left_content:
+                            left_content = request.form.get(f'pair_left_{pair_id}', '').strip()
+                    else:
+                        left_content = request.form.get(f'pair_left_{pair_id}', '').strip()
+                    
+                    # Gestion du contenu droit (right)
+                    if right_type == 'image':
+                        if f'pair_right_image_{pair_id}' in request.files:
+                            file = request.files[f'pair_right_image_{pair_id}']
+                            if file and file.filename and allowed_file(file.filename):
+                                filename = secure_filename(file.filename)
+                                unique_filename = generate_unique_filename(filename)
+                                file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_filename)
+                                file.save(file_path)
+                                right_content = f'/static/uploads/{unique_filename}'
+                        if not right_content:
+                            right_content = request.form.get(f'pair_right_{pair_id}', '').strip()
+                    else:
+                        right_content = request.form.get(f'pair_right_{pair_id}', '').strip()
+                    
+                    if left_content and right_content:  # Ne garder que les paires complètes
+                        pairs.append({
+                            'id': pair_id,
+                            'left': {'content': left_content, 'type': left_type},
+                            'right': {'content': right_content, 'type': right_type}
+                        })
+                
+                if not pairs:
+                    flash('Veuillez ajouter au moins une paire.', 'error')
+                    return render_template('edit_exercise.html', exercise=exercise)
+                
+                # Mettre à jour le contenu
+                content = {'pairs': pairs}
+                exercise.content = json.dumps(content)
+                print(f'[PAIRS_EDIT_DEBUG] Contenu sauvegardé: {len(pairs)} paires')
+            
+            elif exercise.exercise_type == 'dictation':
+                print(f'[DICTATION_EDIT_DEBUG] Traitement du contenu Dictée')
+                
+                # Récupérer les instructions
+                instructions = request.form.get('dictation_instructions', '').strip()
+                if not instructions:
+                    instructions = 'Écoutez attentivement chaque phrase et écrivez ce que vous entendez.'
+                
+                # Récupérer les phrases
+                sentences = request.form.getlist('dictation_sentences[]')
+                sentences = [s.strip() for s in sentences if s.strip()]
+                
+                # Validation
+                if not sentences:
+                    flash('Veuillez ajouter au moins une phrase.', 'error')
+                    return render_template('edit_exercise.html', exercise=exercise)
+                
+                # Gestion des fichiers audio
+                audio_files = []
+                for i in range(len(sentences)):
+                    audio_file = None
+                    
+                    # Vérifier s'il y a un nouveau fichier audio
+                    if f'dictation_audio_{i}' in request.files:
+                        file = request.files[f'dictation_audio_{i}']
+                        if file and file.filename:
+                            # Vérifier l'extension du fichier
+                            if file.filename.lower().endswith(('.mp3', '.wav', '.ogg', '.m4a')):
+                                filename = secure_filename(file.filename)
+                                unique_filename = generate_unique_filename(filename)
+                                
+                                # Créer le dossier audio s'il n'existe pas
+                                audio_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'audio')
+                                os.makedirs(audio_folder, exist_ok=True)
+                                
+                                file_path = os.path.join(audio_folder, unique_filename)
+                                file.save(file_path)
+                                audio_file = f'/static/uploads/audio/{unique_filename}'
+                            else:
+                                flash(f'Le fichier audio {i+1} doit être au format MP3, WAV, OGG ou M4A.', 'error')
+                                return render_template('edit_exercise.html', exercise=exercise)
+                    
+                    # Si pas de nouveau fichier, garder l'ancien s'il existe
+                    if not audio_file:
+                        existing_content = exercise.get_content()
+                        existing_audio_files = existing_content.get('audio_files', [])
+                        if i < len(existing_audio_files):
+                            audio_file = existing_audio_files[i]
+                    
+                    audio_files.append(audio_file)
+                
+                # Mettre à jour le contenu
+                content = {
+                    'instructions': instructions,
+                    'sentences': sentences,
+                    'audio_files': audio_files
+                }
+                exercise.content = json.dumps(content)
+                print(f'[DICTATION_EDIT_DEBUG] Contenu sauvegardé: {len(sentences)} phrases, {len(audio_files)} fichiers audio')
+            
+            elif exercise.exercise_type == 'legend':
+                print(f'[LEGEND_EDIT_DEBUG] Traitement du contenu Légende')
+                
+                # Récupérer les instructions
+                instructions = request.form.get('legend_instructions', '').strip()
+                if not instructions:
+                    instructions = 'Placez les légendes aux bons endroits sur l\'image.'
+                
+                # Gestion de l'image principale
+                main_image_path = None
+                if 'legend_main_image' in request.files:
+                    image_file = request.files['legend_main_image']
+                    if image_file and image_file.filename != '' and allowed_file(image_file.filename):
+                        filename = secure_filename(image_file.filename)
+                        unique_filename = generate_unique_filename(filename)
+                        file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_filename)
+                        image_file.save(file_path)
+                        main_image_path = f'/static/uploads/{unique_filename}'
+                
+                # Si pas de nouvelle image, garder l'ancienne
+                if not main_image_path:
+                    existing_content = exercise.get_content()
+                    main_image_path = existing_content.get('main_image')
+                
+                # Récupérer les zones et légendes
+                zones = []
+                elements = []
+                
+                # Scanner tous les champs zone_* pour récupérer toutes les zones
+                zone_indices = set()
+                for key in request.form.keys():
+                    if key.startswith('zone_') and '_x' in key:
+                        zone_index = key.split('_')[1]
+                        zone_indices.add(int(zone_index))
+                
+                for zone_index in sorted(zone_indices):
+                    x = request.form.get(f'zone_{zone_index}_x')
+                    y = request.form.get(f'zone_{zone_index}_y')
+                    legend = request.form.get(f'zone_{zone_index}_legend', '').strip()
+                    
+                    if x and y and legend:
+                        try:
+                            x = float(x)
+                            y = float(y)
+                            zones.append({
+                                'x': x,
+                                'y': y,
+                                'legend': legend
+                            })
+                            elements.append(legend)
+                        except ValueError:
+                            continue
+                
+                if not zones:
+                    flash('Veuillez ajouter au moins une zone avec légende.', 'error')
+                    return render_template('edit_exercise.html', exercise=exercise)
+                
+                # Mettre à jour le contenu
+                content = {
+                    'instructions': instructions,
+                    'main_image': main_image_path,
+                    'zones': zones,
+                    'elements': elements
+                }
+                exercise.content = json.dumps(content)
+                print(f'[LEGEND_EDIT_DEBUG] Contenu sauvegardé: {len(zones)} zones, image: {main_image_path}')
+            
             # Mettre à jour l'exercice en base
             exercise.title = title
             exercise.description = description
@@ -3075,6 +3423,295 @@ def edit_exercise(exercise_id):
             print(f'Erreur lors de la modification: {e}')
             flash(f'Erreur lors de la modification de l\'exercice: {str(e)}', 'error')
             return render_template('edit_exercise.html', exercise=exercise)
+
+# ===== ROUTES STATISTIQUES ET EXPORT =====
+
+@app.route('/teacher/statistics')
+@login_required
+def teacher_statistics():
+    """Page des statistiques pour les enseignants"""
+    if not current_user.is_teacher:
+        flash('Accès refusé. Vous devez être enseignant.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    # Récupérer toutes les classes de l'enseignant
+    classes = Class.query.filter_by(teacher_id=current_user.id).all()
+    
+    # Calculer les statistiques pour chaque classe
+    classes_stats = []
+    for class_obj in classes:
+        # Récupérer tous les exercices de la classe
+        all_exercises = []
+        for course in class_obj.courses:
+            all_exercises.extend(course.exercises)
+        
+        # Calculer les statistiques pour chaque étudiant
+        students_stats = []
+        for student in class_obj.students:
+            # Compter les exercices complétés
+            completed_exercises = ExerciseAttempt.query.filter_by(
+                student_id=student.id
+            ).join(Exercise).filter(
+                Exercise.id.in_([ex.id for ex in all_exercises])
+            ).count()
+            
+            # Calculer le score moyen
+            attempts = ExerciseAttempt.query.filter_by(
+                student_id=student.id
+            ).join(Exercise).filter(
+                Exercise.id.in_([ex.id for ex in all_exercises])
+            ).all()
+            
+            if attempts:
+                average_score = sum(attempt.score or 0 for attempt in attempts) / len(attempts)
+            else:
+                average_score = None
+            
+            students_stats.append({
+                'student': student,
+                'completed_exercises': completed_exercises,
+                'total_exercises': len(all_exercises),
+                'average_score': average_score
+            })
+        
+        classes_stats.append({
+            'class': class_obj,
+            'students': students_stats,
+            'total_exercises': len(all_exercises)
+        })
+    
+    return render_template('teacher/statistics.html', classes_stats=classes_stats)
+
+@app.route('/teacher/export/pdf/<int:class_id>')
+@login_required
+def export_class_pdf(class_id):
+    """Export des statistiques d'une classe en PDF"""
+    if not current_user.is_teacher:
+        flash('Accès refusé. Vous devez être enseignant.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    # Vérifier que la classe appartient à l'enseignant
+    class_obj = Class.query.filter_by(id=class_id, teacher_id=current_user.id).first()
+    if not class_obj:
+        flash('Classe non trouvée.', 'error')
+        return redirect(url_for('teacher_statistics'))
+    
+    from reportlab.lib.pagesizes import letter, A4
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib import colors
+    from reportlab.lib.units import inch
+    from io import BytesIO
+    from datetime import datetime
+    
+    # Créer le buffer pour le PDF
+    buffer = BytesIO()
+    
+    # Créer le document PDF
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    styles = getSampleStyleSheet()
+    story = []
+    
+    # Titre
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=18,
+        spaceAfter=30,
+        alignment=1  # Centré
+    )
+    story.append(Paragraph(f'Statistiques de la classe : {class_obj.name}', title_style))
+    story.append(Spacer(1, 20))
+    
+    # Informations générales
+    info_style = styles['Normal']
+    story.append(Paragraph(f'<b>Enseignant :</b> {current_user.name}', info_style))
+    story.append(Paragraph(f'<b>Date d\'export :</b> {datetime.now().strftime("%d/%m/%Y à %H:%M")}', info_style))
+    story.append(Paragraph(f'<b>Nombre d\'élèves :</b> {len(class_obj.students)}', info_style))
+    story.append(Spacer(1, 20))
+    
+    # Récupérer tous les exercices de la classe
+    all_exercises = []
+    for course in class_obj.courses:
+        all_exercises.extend(course.exercises)
+    
+    story.append(Paragraph(f'<b>Nombre d\'exercices :</b> {len(all_exercises)}', info_style))
+    story.append(Spacer(1, 30))
+    
+    # Tableau des résultats
+    story.append(Paragraph('<b>Résultats par élève</b>', styles['Heading2']))
+    story.append(Spacer(1, 10))
+    
+    # Données du tableau
+    data = [['Élève', 'Exercices complétés', 'Score moyen (%)', 'Progression']]
+    
+    for student in class_obj.students:
+        # Compter les exercices complétés
+        completed_exercises = ExerciseAttempt.query.filter_by(
+            student_id=student.id
+        ).join(Exercise).filter(
+            Exercise.id.in_([ex.id for ex in all_exercises])
+        ).count()
+        
+        # Calculer le score moyen
+        attempts = ExerciseAttempt.query.filter_by(
+            student_id=student.id
+        ).join(Exercise).filter(
+            Exercise.id.in_([ex.id for ex in all_exercises])
+        ).all()
+        
+        if attempts:
+            average_score = sum(attempt.score or 0 for attempt in attempts) / len(attempts)
+            score_text = f'{average_score:.1f}%'
+        else:
+            score_text = '-'
+        
+        # Calculer la progression
+        if len(all_exercises) > 0:
+            progression = f'{completed_exercises}/{len(all_exercises)}'
+        else:
+            progression = '0/0'
+        
+        data.append([
+            student.name or student.username,
+            str(completed_exercises),
+            score_text,
+            progression
+        ])
+    
+    # Créer le tableau
+    table = Table(data)
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    ]))
+    
+    story.append(table)
+    
+    # Construire le PDF
+    doc.build(story)
+    
+    # Préparer la réponse
+    buffer.seek(0)
+    filename = f'statistiques_{class_obj.name}_{datetime.now().strftime("%Y%m%d_%H%M")}.pdf'
+    
+    from flask import make_response
+    response = make_response(buffer.getvalue())
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    return response
+
+@app.route('/teacher/export/excel/<int:class_id>')
+@login_required
+def export_class_excel(class_id):
+    """Export des statistiques d'une classe en Excel"""
+    if not current_user.is_teacher:
+        flash('Accès refusé. Vous devez être enseignant.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    # Vérifier que la classe appartient à l'enseignant
+    class_obj = Class.query.filter_by(id=class_id, teacher_id=current_user.id).first()
+    if not class_obj:
+        flash('Classe non trouvée.', 'error')
+        return redirect(url_for('teacher_statistics'))
+    
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from io import BytesIO
+    from datetime import datetime
+    
+    # Créer le workbook Excel
+    wb = Workbook()
+    ws = wb.active
+    ws.title = f'Statistiques {class_obj.name}'
+    
+    # Style pour les en-têtes
+    header_font = Font(bold=True, color='FFFFFF')
+    header_fill = PatternFill(start_color='366092', end_color='366092', fill_type='solid')
+    center_alignment = Alignment(horizontal='center', vertical='center')
+    
+    # Informations générales
+    ws['A1'] = f'Statistiques de la classe : {class_obj.name}'
+    ws['A1'].font = Font(bold=True, size=16)
+    ws.merge_cells('A1:D1')
+    
+    ws['A3'] = f'Enseignant : {current_user.name}'
+    ws['A4'] = f'Date d\'export : {datetime.now().strftime("%d/%m/%Y à %H:%M")}'
+    ws['A5'] = f'Nombre d\'élèves : {len(class_obj.students)}'
+    
+    # Récupérer tous les exercices de la classe
+    all_exercises = []
+    for course in class_obj.courses:
+        all_exercises.extend(course.exercises)
+    
+    ws['A6'] = f'Nombre d\'exercices : {len(all_exercises)}'
+    
+    # En-têtes du tableau
+    headers = ['Élève', 'Exercices complétés', 'Score moyen (%)', 'Progression']
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=8, column=col, value=header)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = center_alignment
+    
+    # Données des étudiants
+    for row, student in enumerate(class_obj.students, 9):
+        # Compter les exercices complétés
+        completed_exercises = ExerciseAttempt.query.filter_by(
+            student_id=student.id
+        ).join(Exercise).filter(
+            Exercise.id.in_([ex.id for ex in all_exercises])
+        ).count()
+        
+        # Calculer le score moyen
+        attempts = ExerciseAttempt.query.filter_by(
+            student_id=student.id
+        ).join(Exercise).filter(
+            Exercise.id.in_([ex.id for ex in all_exercises])
+        ).all()
+        
+        if attempts:
+            average_score = sum(attempt.score or 0 for attempt in attempts) / len(attempts)
+        else:
+            average_score = None
+        
+        # Remplir les cellules
+        ws.cell(row=row, column=1, value=student.name or student.username)
+        ws.cell(row=row, column=2, value=completed_exercises)
+        ws.cell(row=row, column=3, value=f'{average_score:.1f}' if average_score is not None else '-')
+        ws.cell(row=row, column=4, value=f'{completed_exercises}/{len(all_exercises)}')
+        
+        # Centrer les données
+        for col in range(1, 5):
+            ws.cell(row=row, column=col).alignment = center_alignment
+    
+    # Ajuster la largeur des colonnes
+    ws.column_dimensions['A'].width = 20
+    ws.column_dimensions['B'].width = 18
+    ws.column_dimensions['C'].width = 15
+    ws.column_dimensions['D'].width = 15
+    
+    # Créer le buffer pour Excel
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    
+    # Préparer la réponse
+    filename = f'statistiques_{class_obj.name}_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
+    
+    from flask import make_response
+    response = make_response(buffer.getvalue())
+    response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    return response
 
 if __name__ == '__main__':
     with app.app_context():
