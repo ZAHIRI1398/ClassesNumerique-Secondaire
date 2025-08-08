@@ -788,14 +788,16 @@ def edit_exercise(exercise_id):
             content = {}
             if exercise.exercise_type == 'qcm':
                 print(f"[QCM_EDIT_DEBUG] Processing QCM edit...")
+                print(f'[QCM_EDIT_DEBUG] Tous les champs du formulaire: {list(request.form.keys())}')
                 
-                # Utiliser la convention harmonisée : question_0, option_0_0, correct_0
+                # ✅ CORRECTION : Le template utilise questions[] (format tableau HTML)
+                questions_list = request.form.getlist('questions[]')
+                print(f'[QCM_EDIT_DEBUG] Questions trouvées: {questions_list}')
+                
                 questions = []
-                question_index = 0
                 
-                # Parcourir toutes les questions possibles
-                while f'question_{question_index}' in request.form:
-                    question_text = request.form.get(f'question_{question_index}', '').strip()
+                for question_index, question_text in enumerate(questions_list):
+                    question_text = question_text.strip()
                     print(f"[QCM_EDIT_DEBUG] Question {question_index}: '{question_text}'")
                     
                     if question_text:  # Si la question n'est pas vide
@@ -816,13 +818,20 @@ def edit_exercise(exercise_id):
                         print(f"[QCM_EDIT_DEBUG] Correct answer for Q{question_index}: '{correct}'")
                         
                         if options:  # Si au moins une option existe
+                            try:
+                                correct_answer = int(correct) if correct is not None else 0
+                            except ValueError:
+                                correct_answer = 0
+                            
                             questions.append({
-                                'question': question_text,
-                                'choices': options,  # Utiliser 'choices' pour compatibilité affichage
-                                'correct_answer': int(correct) if correct is not None else 0
+                                'text': question_text,  # ✅ CORRECTION : Utiliser 'text' comme dans app.py
+                                'choices': options,
+                                'correct_answer': correct_answer
                             })
-                    
-                    question_index += 1
+                        else:
+                            print(f'[QCM_EDIT_DEBUG] Question {question_index} ignorée (pas d\'options)')
+                    else:
+                        print(f'[QCM_EDIT_DEBUG] Question {question_index} ignorée (texte vide)')
                 
                 print(f"[QCM_EDIT_DEBUG] Total questions found: {len(questions)}")
                 

@@ -3007,6 +3007,59 @@ def edit_exercise(exercise_id):
                         print(f'[IMAGE_UPLOAD_ERROR] Erreur upload image: {str(e)}')
                         flash(f'Erreur lors de l\'upload de l\'image: {str(e)}', 'warning')
             
+            # ✅ TRAITEMENT DU CONTENU SPÉCIFIQUE SELON LE TYPE D'EXERCICE
+            if exercise.exercise_type == 'qcm':
+                print(f'[QCM_EDIT_DEBUG] Traitement du contenu QCM')
+                print(f'[QCM_EDIT_DEBUG] Tous les champs du formulaire: {list(request.form.keys())}')
+                
+                # ✅ CORRECTION : Le template utilise questions[] (format tableau HTML)
+                questions_list = request.form.getlist('questions[]')
+                print(f'[QCM_EDIT_DEBUG] Questions trouvées: {questions_list}')
+                
+                questions = []
+                
+                for question_index, question_text in enumerate(questions_list):
+                    question_text = question_text.strip()
+                    
+                    if question_text:  # Seulement si la question n'est pas vide
+                        # Récupérer les options pour cette question
+                        choices = []
+                        option_index = 0
+                        
+                        while f'option_{question_index}_{option_index}' in request.form:
+                            option_text = request.form.get(f'option_{question_index}_{option_index}', '').strip()
+                            if option_text:
+                                choices.append(option_text)
+                            option_index += 1
+                        
+                        # Récupérer la bonne réponse
+                        correct_answer = request.form.get(f'correct_{question_index}')
+                        if correct_answer is not None:
+                            try:
+                                correct_answer = int(correct_answer)
+                            except ValueError:
+                                correct_answer = 0
+                        
+                        print(f'[QCM_EDIT_DEBUG] Question {question_index}: {question_text}')
+                        print(f'[QCM_EDIT_DEBUG] Options: {choices}')
+                        print(f'[QCM_EDIT_DEBUG] Bonne réponse: {correct_answer}')
+                        
+                        if choices and correct_answer is not None and correct_answer < len(choices):
+                            questions.append({
+                                'text': question_text,
+                                'choices': choices,
+                                'correct_answer': correct_answer
+                            })
+                        else:
+                            print(f'[QCM_EDIT_DEBUG] Question {question_index} ignorée (options ou réponse invalide)')
+                
+                # Mettre à jour le contenu
+                content = {
+                    'questions': questions
+                }
+                exercise.content = json.dumps(content)
+                print(f'[QCM_EDIT_DEBUG] Contenu sauvegardé: {len(questions)} questions')
+            
             # Mettre à jour l'exercice en base
             exercise.title = title
             exercise.description = description

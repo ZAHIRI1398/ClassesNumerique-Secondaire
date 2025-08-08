@@ -226,7 +226,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // Validation du formulaire
         form.addEventListener('submit', function(e) {
             e.preventDefault();
-            const questions = document.querySelectorAll('.card');
+            // ✅ CORRECTION : Sélectionner uniquement les cartes de questions avec des boutons radio
+            const questions = document.querySelectorAll('.card.mb-4.shadow-sm');
             let allAnswered = true;
             let firstUnanswered = null;
             
@@ -234,7 +235,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const options = question.querySelectorAll('input[type="radio"]');
                 const answered = Array.from(options).some(option => option.checked);
                 
-                if (!answered) {
+                // ✅ CORRECTION : Vérifier seulement si la carte contient des boutons radio
+                if (options.length > 0 && !answered) {
                     allAnswered = false;
                     question.classList.add('border-danger');
                     if (!firstUnanswered) firstUnanswered = question;
