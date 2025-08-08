@@ -2915,6 +2915,34 @@ def create_exercise():
                     'words_to_underline': [w.split(',') for w in words_lists if w.strip()]
                 }
             
+            # Gestion de l'upload d'image
+            image_path = None
+            
+            # Vérifier s'il y a une image uploadée selon le type d'exercice
+            image_field_name = None
+            if exercise_type == 'fill_in_blanks':
+                image_field_name = 'fill_in_blanks_image'
+            elif exercise_type == 'qcm':
+                image_field_name = 'qcm_image'
+            elif exercise_type == 'underline_words':
+                image_field_name = 'underline_words_image'
+            
+            if image_field_name and image_field_name in request.files:
+                file = request.files[image_field_name]
+                if file and file.filename != '' and allowed_file(file.filename):
+                    try:
+                        # Générer un nom de fichier unique
+                        filename = generate_unique_filename(file.filename)
+                        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                        
+                        # Sauvegarder le fichier
+                        file.save(file_path)
+                        image_path = filename
+                        print(f'[IMAGE_UPLOAD_SUCCESS] Image sauvegardée: {filename}')
+                    except Exception as e:
+                        print(f'[IMAGE_UPLOAD_ERROR] Erreur upload image: {str(e)}')
+                        flash(f'Erreur lors de l\'upload de l\'image: {str(e)}', 'warning')
+            
             # Créer l'exercice en base
             exercise = Exercise(
                 title=title,
@@ -2922,7 +2950,8 @@ def create_exercise():
                 exercise_type=exercise_type,
                 content=json.dumps(content),
                 subject=request.form.get('subject', ''),
-                max_attempts=int(request.form.get('max_attempts', 1))
+                max_attempts=int(request.form.get('max_attempts', 1)),
+                image_path=image_path  # ✅ AJOUT CRITIQUE : Sauvegarde du chemin d'image
             )
             
             db.session.add(exercise)
@@ -2935,6 +2964,64 @@ def create_exercise():
             print(f'Erreur lors de la création: {e}')
             flash(f'Erreur lors de la création de l\'exercice: {str(e)}', 'error')
             return render_template('exercise_types/create_exercise_simple.html', form=form, exercise_types=Exercise.EXERCISE_TYPES)
+
+# Route pour éditer un exercice
+@app.route('/exercise/<int:exercise_id>/edit', methods=['GET', 'POST'])
+def edit_exercise(exercise_id):
+    """Route pour éditer un exercice existant avec support d'upload d'image"""
+    exercise = Exercise.query.get_or_404(exercise_id)
+    
+    if request.method == 'GET':
+        # Afficher le formulaire d'édition
+        return render_template('edit_exercise.html', exercise=exercise)
+    
+    if request.method == 'POST':
+        try:
+            # Récupérer les données du formulaire
+            title = request.form.get('title', '').strip()
+            description = request.form.get('description', '').strip()
+            subject = request.form.get('subject', '').strip()
+            
+            if not title:
+                flash('Le titre est obligatoire.', 'error')
+                return render_template('edit_exercise.html', exercise=exercise)
+            
+            # Gestion de l'upload d'image
+            image_path = exercise.image_path  # Conserver l'image existante par défaut
+            
+            # Vérifier s'il y a une nouvelle image uploadée
+            if 'exercise_image' in request.files:
+                file = request.files['exercise_image']
+                if file and file.filename != '' and allowed_file(file.filename):
+                    try:
+                        # Générer un nom de fichier unique
+                        filename = generate_unique_filename(file.filename)
+                        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                        
+                        # Sauvegarder le fichier
+                        file.save(file_path)
+                        image_path = filename
+                        print(f'[IMAGE_UPLOAD_SUCCESS] Image modifiée sauvegardée: {filename}')
+                        flash('Image mise à jour avec succès!', 'success')
+                    except Exception as e:
+                        print(f'[IMAGE_UPLOAD_ERROR] Erreur upload image: {str(e)}')
+                        flash(f'Erreur lors de l\'upload de l\'image: {str(e)}', 'warning')
+            
+            # Mettre à jour l'exercice en base
+            exercise.title = title
+            exercise.description = description
+            exercise.subject = subject
+            exercise.image_path = image_path  # ✅ MISE À JOUR DU CHEMIN D'IMAGE
+            
+            db.session.commit()
+            
+            flash(f'Exercice "{title}" modifié avec succès!', 'success')
+            return redirect(url_for('view_exercise', exercise_id=exercise.id))
+            
+        except Exception as e:
+            print(f'Erreur lors de la modification: {e}')
+            flash(f'Erreur lors de la modification de l\'exercice: {str(e)}', 'error')
+            return render_template('edit_exercise.html', exercise=exercise)
 
 if __name__ == '__main__':
     with app.app_context():
