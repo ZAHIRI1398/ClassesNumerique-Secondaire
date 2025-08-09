@@ -12,6 +12,31 @@
         </div>
     </div>
 
+    <!-- Filtrage par classe -->
+    {% if classes_stats %}
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h5 class="mb-0">
+                        <i class="fas fa-filter text-primary me-2"></i>Filtrer par classe
+                    </h5>
+                </div>
+                <div class="col-md-6">
+                    <select id="classFilter" class="form-select">
+                        <option value="all">📊 Toutes les classes ({{ classes_stats|length }})</option>
+                        {% for class_data in classes_stats %}
+                        <option value="class-{{ class_data.class.id }}">
+                            🎓 {{ class_data.class.name }} ({{ class_data.students|length }} élèves)
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     {% if not classes_stats %}
         <div class="alert alert-info">
             <i class="fas fa-info-circle me-2"></i>
@@ -20,7 +45,7 @@
     {% endif %}
 
     {% for class_data in classes_stats %}
-    <div class="card mb-4 shadow-sm">
+    <div class="card mb-4 shadow-sm class-card" data-class-id="class-{{ class_data.class.id }}">
         <div class="card-header bg-primary text-white">
             <div class="d-flex justify-content-between align-items-center">
                 <h2 class="h5 mb-0">
@@ -131,4 +156,74 @@
     </div>
     {% endfor %}
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const classFilter = document.getElementById('classFilter');
+    const classCards = document.querySelectorAll('.class-card');
+    
+    // Fonction de filtrage
+    function filterClasses() {
+        const selectedValue = classFilter.value;
+        
+        classCards.forEach(card => {
+            if (selectedValue === 'all') {
+                // Afficher toutes les classes
+                card.style.display = 'block';
+                card.style.animation = 'fadeIn 0.3s ease-in';
+            } else if (card.dataset.classId === selectedValue) {
+                // Afficher seulement la classe sélectionnée
+                card.style.display = 'block';
+                card.style.animation = 'fadeIn 0.3s ease-in';
+            } else {
+                // Masquer les autres classes
+                card.style.display = 'none';
+            }
+        });
+        
+        // Sauvegarder le choix dans localStorage
+        localStorage.setItem('selectedClassFilter', selectedValue);
+        
+        // Mettre à jour le compteur
+        updateClassCounter();
+    }
+    
+    // Fonction pour mettre à jour le compteur de classes visibles
+    function updateClassCounter() {
+        const visibleCards = document.querySelectorAll('.class-card[style*="block"], .class-card:not([style*="none"])');
+        const totalCards = classCards.length;
+        
+        if (classFilter.value === 'all') {
+            document.title = `Statistiques (${totalCards} classes) - Classe Numérique`;
+        } else {
+            const selectedOption = classFilter.options[classFilter.selectedIndex];
+            document.title = `Statistiques - ${selectedOption.text} - Classe Numérique`;
+        }
+    }
+    
+    // Restaurer le dernier filtre choisi
+    const savedFilter = localStorage.getItem('selectedClassFilter');
+    if (savedFilter && document.querySelector(`option[value="${savedFilter}"]`)) {
+        classFilter.value = savedFilter;
+        filterClasses();
+    }
+    
+    // Écouter les changements de filtre
+    classFilter.addEventListener('change', filterClasses);
+    
+    // Animation CSS pour les transitions
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .class-card {
+            transition: all 0.3s ease;
+        }
+    `;
+    document.head.appendChild(style);
+});
+</script>
+
 {% endblock %}
