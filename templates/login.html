@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connexion - Classe Numérique Saint Bernadette</title>
+    <title>Connexion - Classe Numérique Secondaire</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -451,13 +451,12 @@
         
     </script>
     
-    <!-- Gestion des messages flash pour afficher la modal -->
+    <!-- Gestion des messages flash - NE PAS afficher automatiquement la modal -->
     {% if get_flashed_messages() %}
     <script>
-        // Afficher la modal de connexion si il y a des erreurs
-        document.addEventListener('DOMContentLoaded', function() {
-            showLogin();
-        });
+        // Les messages d'erreur sont affichés dans la modal, mais on ne l'ouvre pas automatiquement
+        // La modal ne s'ouvrira que quand l'utilisateur clique sur "Se connecter"
+        console.log('Messages flash présents, mais modal fermée par défaut pour une meilleure UX');
     </script>
     {% endif %}
 </body>
