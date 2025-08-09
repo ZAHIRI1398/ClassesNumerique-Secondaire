@@ -299,7 +299,7 @@
                             <a href="#" class="btn-custom btn-primary-custom" onclick="showLogin()">
                                 Se connecter
                             </a>
-                            <a href="{{ url_for('register_teacher') }}" class="btn-custom btn-outline-custom">
+                            <a href="#" class="btn-custom btn-outline-custom" onclick="showRegisterChoice()">
                                 S'inscrire
                             </a>
                         </div>
@@ -432,6 +432,28 @@
         </div>
     </div>
 
+    <!-- Register Choice Modal -->
+    <div class="login-modal" id="registerChoiceModal" style="display: none;">
+        <div class="login-form">
+            <button class="close-btn" onclick="hideRegisterChoice()">&times;</button>
+            <h3>Choisissez votre profil</h3>
+            <p class="text-center mb-4">Sélectionnez le type de compte que vous souhaitez créer :</p>
+            
+            <div class="d-grid gap-3">
+                <a href="{{ url_for('register_teacher') }}" class="btn-custom btn-primary-custom w-100">
+                    <i class="fas fa-chalkboard-teacher me-2"></i> Enseignant
+                </a>
+                <a href="{{ url_for('register_student') }}" class="btn-custom btn-outline-custom w-100">
+                    <i class="fas fa-user-graduate me-2"></i> Élève
+                </a>
+            </div>
+            
+            <div class="text-center mt-3">
+                <p class="mb-0">Déjà inscrit ? <a href="#" onclick="hideRegisterChoice(); showLogin();" style="color: #667eea;">Se connecter</a></p>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         function showLogin() {
@@ -442,10 +464,25 @@
             document.getElementById('loginModal').style.display = 'none';
         }
         
+        function showRegisterChoice() {
+            document.getElementById('registerChoiceModal').style.display = 'flex';
+        }
+        
+        function hideRegisterChoice() {
+            document.getElementById('registerChoiceModal').style.display = 'none';
+        }
+        
         // Fermer la modal en cliquant à l'extérieur
         document.getElementById('loginModal').addEventListener('click', function(e) {
             if (e.target === this) {
                 hideLogin();
+            }
+        });
+        
+        // Fermer le modal de choix d'inscription en cliquant à l'extérieur
+        document.getElementById('registerChoiceModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideRegisterChoice();
             }
         });
         
