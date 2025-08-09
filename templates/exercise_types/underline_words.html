@@ -170,10 +170,11 @@
         {% endif %}
     </div>
 
-    <div class="instructions">
+    <!-- Instructions cachées pour l'interface élève -->
+    <!-- <div class="instructions">
         <i class="fas fa-info-circle"></i>
         Cliquez sur les mots à souligner dans les phrases ci-dessous.
-    </div>
+    </div> -->
 
     <!-- Affichage de l'image si elle existe -->
     {% if exercise.image_path %}
@@ -194,7 +195,7 @@
             {% for sentence_data in content.words %}
     {% set sentence_idx = loop.index0 %}
     <div class="sentence" data-sentence-id="{{ sentence_idx }}">
-        {% set words = sentence_data.text.split(' ') %}
+        {% set words = sentence_data['sentence'].split(' ') %}
         {% for word in words %}
             <span class="word" 
                   data-word-id="{{ loop.index0 }}"

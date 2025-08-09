@@ -212,11 +212,12 @@ def login():
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
+        remember_me = request.form.get('remember_me') == '1'
         
         user = User.query.filter_by(email=email).first()
         
         if user and user.check_password(password):
-            login_user(user)
+            login_user(user, remember=remember_me)
             flash('Connexion réussie !', 'success')
             return redirect(url_for('index'))
         else:
