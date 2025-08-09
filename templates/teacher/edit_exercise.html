@@ -14,7 +14,7 @@
     <div class="card">
         <div class="card-body">
             <h1 class="card-title">Modifier l'exercice</h1>
-            <form method="POST" action="{{ url_for('exercise.edit_exercise', exercise_id=exercise.id) }}">
+            <form method="POST" action="{{ url_for('edit_exercise', exercise_id=exercise.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="exercise_type" value="{{ exercise.exercise_type }}">
                 

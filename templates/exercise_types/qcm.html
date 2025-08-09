@@ -8,7 +8,7 @@
             <p class="lead">{{ exercise.description }}</p>
         </div>
         {% if current_user.is_teacher %}
-        <a href="{{ url_for('exercise.edit_exercise', exercise_id=exercise.id) }}" class="btn btn-outline-primary">
+        <a href="{{ url_for('edit_exercise', exercise_id=exercise.id) }}" class="btn btn-outline-primary">
             <i class="fas fa-edit"></i> Modifier
         </a>
         {% endif %}
@@ -85,7 +85,7 @@
         {% if current_user.is_teacher %}
         <hr>
         <p class="mb-0">
-            <a href="{{ url_for('exercise.edit_exercise', exercise_id=exercise.id) }}" class="btn btn-primary">
+            <a href="{{ url_for('edit_exercise', exercise_id=exercise.id) }}" class="btn btn-primary">
                 <i class="fas fa-edit"></i> Ajouter des questions
             </a>
         </p>
@@ -99,7 +99,7 @@
             {% if current_user.role == 'teacher' %}
                 <hr>
                 <p class="mb-0">
-                    <a href="{{ url_for('exercise.edit_exercise', exercise_id=exercise.id) }}" class="btn btn-warning">
+                    <a href="{{ url_for('edit_exercise', exercise_id=exercise.id) }}" class="btn btn-warning">
                         <i class="fas fa-edit"></i> Éditer l'exercice
                     </a>
                 </p>

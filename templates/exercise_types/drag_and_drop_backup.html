@@ -9,7 +9,7 @@
         </div>
         {% if current_user.is_teacher %}
         <div class="btn-group">
-            <a href="{{ url_for('exercise.edit_exercise', exercise_id=exercise.id) }}" class="btn btn-outline-primary">
+            <a href="{{ url_for('edit_exercise', exercise_id=exercise.id) }}" class="btn btn-outline-primary">
                 <i class="fas fa-edit"></i> Modifier
             </a>
             <form method="POST" action="{{ url_for('exercise.delete_exercise', exercise_id=exercise.id) }}" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet exercice ?');">

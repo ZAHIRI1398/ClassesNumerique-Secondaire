@@ -5,7 +5,7 @@
 {% block content %}
 <div class="container py-4">
     <h1>Créer un nouvel exercice</h1>
-    <form method="post" action="{{ url_for('create_exercise') }}" enctype="multipart/form-data">
+    <form method="post" action="{{ url_for('exercise.create_exercise') }}" enctype="multipart/form-data">
         {{ form.csrf_token }}
         
         <!-- Sélection du cours -->
@@ -634,6 +634,92 @@
                     <p class="text-muted">Aucune zone de légende créée. Cliquez sur l'image pour en ajouter.</p>
                 </div>
             </div>
+        </div>
+
+        <!-- Section Étiquetage d'image -->
+        <div id="image_labeling_section" class="exercise-type-section" style="display: none;">
+            <h3>Étiquetage d'image</h3>
+            <p class="text-muted">Créez un exercice où les élèves doivent placer des étiquettes aux bons endroits sur une image.</p>
+            
+            <!-- Upload de l'image principale -->
+            <div class="mb-4 p-3" style="border: 2px dashed #17a2b8; border-radius: 8px; background-color: #f8f9fa;">
+                <h5 class="text-info"><i class="bi bi-image"></i> Image principale</h5>
+                <p class="text-muted mb-3">Uploadez l'image sur laquelle les étiquettes seront placées</p>
+                <div class="mb-3">
+                    <input type="file" class="form-control" name="main_image" accept="image/*" id="main_image_input_create" onchange="previewMainImageCreate(this)" required>
+                    <small class="text-muted">Formats acceptés : JPG, PNG, GIF (max 5MB)</small>
+                </div>
+                <div id="main_image_preview_create" style="display: none;">
+                    <img id="main_image_preview_img_create" src="" alt="Aperçu" class="img-thumbnail" style="max-width: 400px; max-height: 300px;">
+                    <button type="button" class="btn btn-sm btn-danger ms-2" onclick="removeMainImageCreate()">Supprimer</button>
+                </div>
+            </div>
+            
+            <!-- Interface interactive pour créer l'exercice -->
+            <div id="interactive_image_editor_create" style="display: none;">
+                <div class="row">
+                    <!-- Colonne gauche : Image avec zones -->
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="bi bi-image"></i> Image à légender</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="image_container_create" style="position: relative; display: inline-block;">
+                                    <img id="editor_image_create" src="" alt="Image à légender" 
+                                         style="max-width: 100%; height: auto; cursor: crosshair;"
+                                         onclick="addZoneOnImageCreate(event)">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Colonne droite : Gestion des étiquettes et zones -->
+                    <div class="col-md-4">
+                        <!-- Étiquettes -->
+                        <div class="card mb-3">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6><i class="bi bi-tags"></i> Étiquettes</h6>
+                                <button type="button" class="btn btn-sm btn-success" onclick="addLabelCreate()">
+                                    <i class="bi bi-plus"></i> Ajouter
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div id="labels_list_create">
+                                    <p class="text-muted">Aucune étiquette ajoutée</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Zones -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h6><i class="bi bi-geo-alt"></i> Zones de placement</h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="zones_list_create">
+                                    <p class="text-muted">Cliquez sur l'image pour placer des zones</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Instructions d'aide -->
+            <div class="alert alert-info">
+                <h6><i class="bi bi-info-circle"></i> Comment créer votre exercice :</h6>
+                <ol class="mb-0">
+                    <li><strong>Uploadez une image</strong> ci-dessus</li>
+                    <li><strong>Ajoutez des étiquettes</strong> avec le bouton vert</li>
+                    <li><strong>Cliquez sur l'image</strong> pour placer les zones où les étiquettes doivent être déposées</li>
+                    <li><strong>Associez chaque zone</strong> à une étiquette</li>
+                    <li><strong>Créez l'exercice</strong> avec le bouton en bas</li>
+                </ol>
+            </div>
+            
+            <!-- Champs cachés pour la soumission -->
+            <div id="hidden_fields_create"></div>
         </div>
 
         <div class="text-center mt-4">
@@ -1372,9 +1458,54 @@ function removeLegendZone(zoneId) {
 
 // Initialiser les aperçus d'images au chargement de la page
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing simplified form...');
+    
+    // Configuration des aperçus d'images
     setupImagePreview('qcm_image_input', 'qcm_image_preview', 'qcm_image_preview_img');
     setupImagePreview('fill_in_blanks_image_input', 'fill_in_blanks_image_preview', 'fill_in_blanks_image_preview_img');
     setupImagePreview('underline_words_image_input', 'underline_words_image_preview', 'underline_words_image_preview_img');
+    
+    // Configuration de l'aperçu d'image pour l'étiquetage d'image avec activation du gestionnaire de clic
+    const imageLabelingInput = document.querySelector('input[name="image_labeling_main_image"]');
+    if (imageLabelingInput) {
+        imageLabelingInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    // Afficher l'interface interactive
+                    const interactiveEditor = document.getElementById('interactive_image_editor');
+                    const imageContainer = document.getElementById('interactive_image_container');
+                    const image = imageContainer.querySelector('img');
+                    
+                    if (interactiveEditor && imageContainer && image) {
+                        image.src = e.target.result;
+                        interactiveEditor.style.display = 'block';
+                        
+                        // Activer le gestionnaire de clic sur l'image
+                        console.log('[DEBUG] Activation du gestionnaire de clic sur l\'image');
+                        setTimeout(() => {
+                            setupImageClickHandler();
+                        }, 100); // Petit délai pour s'assurer que l'image est chargée
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+    
+    // Initialiser avec une question QCM par défaut
+    addQuestion();
+    
+    // Ajouter un gestionnaire d'événements au bouton "Ajouter un mot"
+    const addWordButton = document.querySelector('button[onclick="addWord()"]');
+    if (addWordButton) {
+        console.log('[INIT] Gestionnaire d\'événements ajouté au bouton Ajouter un mot');
+        addWordButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            addWord();
+        });
+    }
 });
 
 // Fonction de test pour diagnostiquer la soumission du formulaire
@@ -1409,6 +1540,797 @@ function testFormSubmission() {
     // form.submit();
 }
 
+// ===== FONCTIONS POUR ÉTIQUETAGE D'IMAGE =====
+
+// Fonction pour ajouter une étiquette
+function addImageLabel() {
+    const container = document.getElementById('labels_container');
+    const labelDiv = document.createElement('div');
+    labelDiv.className = 'input-group mb-2';
+    labelDiv.innerHTML = `
+        <input type="text" name="image_labels[]" class="form-control" placeholder="Entrez le texte de l'étiquette" required>
+        <button type="button" class="btn btn-danger" onclick="this.closest('.input-group').remove()">
+            <i class="bi bi-trash"></i>
+        </button>
+    `;
+    container.appendChild(labelDiv);
+}
+
+// Fonction pour ajouter une zone de placement
+function addImageZone() {
+    const container = document.getElementById('zones_container');
+    const zoneCount = container.children.length + 1;
+    
+    const zoneDiv = document.createElement('div');
+    zoneDiv.className = 'card mb-3 p-3';
+    zoneDiv.innerHTML = `
+        <h6>Zone ${zoneCount}</h6>
+        <div class="row">
+            <div class="col-md-3">
+                <label class="form-label">Position X</label>
+                <input type="number" name="zone_x[]" class="form-control" placeholder="150" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Position Y</label>
+                <input type="number" name="zone_y[]" class="form-control" placeholder="120" required>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Étiquette correspondante</label>
+                <input type="text" name="zone_label[]" class="form-control" placeholder="Le cœur" required>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="button" class="btn btn-danger" onclick="this.closest('.card').remove()">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    container.appendChild(zoneDiv);
+}
+
+// Variables globales pour l'étiquetage d'image
+let imageLabelingZones = [];
+let imageLabelingLabels = [];
+
+// Fonction pour prévisualiser l'image principale
+function previewMainImage(input) {
+    const file = input.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('main_image_preview');
+            const img = document.getElementById('main_image_preview_img');
+            img.src = e.target.result;
+            preview.style.display = 'block';
+            
+            // Créer l'interface interactive pour placer les zones
+            createInteractiveImageEditor(e.target.result);
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+// Créer l'éditeur interactif d'image
+function createInteractiveImageEditor(imageSrc) {
+    const editorContainer = document.getElementById('interactive_image_editor');
+    if (!editorContainer) return;
+    
+    editorContainer.innerHTML = `
+        <div class="card mt-3">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0"><i class="bi bi-cursor-fill"></i> Placer les zones sur l'image</h6>
+                <small>Cliquez sur l'image pour placer une zone d'étiquette</small>
+            </div>
+            <div class="card-body">
+                <div id="image_editor_container" style="position: relative; display: inline-block; border: 2px solid #ddd; border-radius: 8px; overflow: hidden;">
+                    <img id="interactive_image" 
+                         src="${imageSrc}" 
+                         alt="Image à étiqueter" 
+                         style="max-width: 600px; height: auto; display: block; cursor: crosshair;"
+                         onclick="placeZoneOnImage(event)">
+                </div>
+                <div class="mt-3">
+                    <button type="button" class="btn btn-success btn-sm" onclick="addImageLabelInteractive()">
+                        <i class="bi bi-plus-circle"></i> Ajouter une étiquette
+                    </button>
+                    <button type="button" class="btn btn-warning btn-sm ms-2" onclick="clearAllZones()">
+                        <i class="bi bi-arrow-clockwise"></i> Effacer toutes les zones
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-list-ul"></i> Étiquettes disponibles</h6>
+            </div>
+            <div class="card-body">
+                <div id="available_labels_list">
+                    <p class="text-muted">Ajoutez des étiquettes ci-dessus</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-geo-alt"></i> Zones placées</h6>
+            </div>
+            <div class="card-body">
+                <div id="placed_zones_list">
+                    <p class="text-muted">Cliquez sur l'image pour placer des zones</p>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    editorContainer.style.display = 'block';
+}
+
+// Placer une zone sur l'image
+function placeZoneOnImage(event) {
+    if (imageLabelingLabels.length === 0) {
+        alert('Veuillez d\'abord ajouter au moins une étiquette !');
+        return;
+    }
+    
+    const rect = event.target.getBoundingClientRect();
+    const x = event.offsetX;
+    const y = event.offsetY;
+    
+    // Demander quelle étiquette associer à cette zone
+    let labelOptions = imageLabelingLabels.map((label, index) => `${index + 1}. ${label}`).join('\n');
+    const labelChoice = prompt(`Choisissez l'étiquette pour cette zone :\n\n${labelOptions}\n\nEntrez le numéro :`);
+    
+    if (!labelChoice || isNaN(labelChoice) || labelChoice < 1 || labelChoice > imageLabelingLabels.length) {
+        return;
+    }
+    
+    const selectedLabel = imageLabelingLabels[labelChoice - 1];
+    const zoneId = imageLabelingZones.length;
+    
+    // Créer la zone
+    const zone = {
+        id: zoneId,
+        x: x,
+        y: y,
+        label: selectedLabel
+    };
+    
+    imageLabelingZones.push(zone);
+    
+    // Ajouter le marqueur visuel sur l'image
+    const imageContainer = document.getElementById('image_editor_container');
+    const marker = document.createElement('div');
+    marker.className = 'zone-marker';
+    marker.dataset.zoneId = zoneId;
+    marker.style.cssText = `
+        position: absolute; 
+        left: ${x}px; 
+        top: ${y}px; 
+        width: 24px; 
+        height: 24px; 
+        background-color: #28a745; 
+        border: 3px solid #fff; 
+        border-radius: 50%; 
+        transform: translate(-50%, -50%); 
+        cursor: pointer;
+        z-index: 10;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    `;
+    marker.title = selectedLabel;
+    marker.onclick = function(e) {
+        e.stopPropagation();
+        removeZoneFromImage(zoneId);
+    };
+    
+    imageContainer.appendChild(marker);
+    
+    // Mettre à jour la liste des zones placées
+    updatePlacedZonesList();
+    updateHiddenFormFields();
+}
+
+// Ajouter une étiquette de façon interactive
+function addImageLabelInteractive() {
+    console.log('[DEBUG] addImageLabelInteractive() appelée');
+    
+    // Créer une interface moderne au lieu du prompt()
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    `;
+    
+    modal.innerHTML = `
+        <div style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); max-width: 400px; width: 90%;">
+            <h5 style="margin-bottom: 20px; color: #333;">Ajouter une étiquette</h5>
+            <input type="text" id="label_input" placeholder="Entrez le texte de l'étiquette..." 
+                   style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; margin-bottom: 20px; font-size: 16px;">
+            <div style="text-align: right;">
+                <button onclick="cancelAddLabel()" style="padding: 8px 15px; margin-right: 10px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">Annuler</button>
+                <button onclick="confirmAddLabel()" style="padding: 8px 15px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Ajouter</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    document.getElementById('label_input').focus();
+    
+    // Permettre la validation avec Entrée
+    document.getElementById('label_input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            confirmAddLabel();
+        }
+    });
+}
+
+// Confirmer l'ajout d'étiquette
+function confirmAddLabel() {
+    const input = document.getElementById('label_input');
+    const labelText = input.value.trim();
+    
+    if (!labelText) {
+        alert('Veuillez saisir un texte pour l\'étiquette');
+        return;
+    }
+    
+    console.log('[DEBUG] Ajout de l\'étiquette:', labelText);
+    imageLabelingLabels.push(labelText);
+    console.log('[DEBUG] Liste des étiquettes:', imageLabelingLabels);
+    updateAvailableLabelsList();
+    updateHiddenFormFields();
+    
+    // Fermer le modal
+    const modal = document.querySelector('div[style*="position: fixed"]');
+    if (modal) modal.remove();
+}
+
+// Annuler l'ajout d'étiquette
+function cancelAddLabel() {
+    console.log('[DEBUG] Ajout d\'étiquette annulé');
+    const modal = document.querySelector('div[style*="position: fixed"]');
+    if (modal) modal.remove();
+}
+
+// ===== FONCTIONS POUR L'INTERFACE DE CRÉATION IMAGE_LABELING =====
+
+// Variables globales pour la création
+let createLabels = [];
+let createZones = [];
+
+// Prévisualiser l'image principale (création)
+function previewMainImageCreate(input) {
+    console.log('[CREATE_DEBUG] Prévisualisation image principale');
+    const file = input.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            // Afficher l'aperçu basique
+            const preview = document.getElementById('main_image_preview_create');
+            const img = document.getElementById('main_image_preview_img_create');
+            img.src = e.target.result;
+            preview.style.display = 'block';
+            
+            // Afficher l'éditeur interactif
+            const editor = document.getElementById('interactive_image_editor_create');
+            const editorImg = document.getElementById('editor_image_create');
+            editorImg.src = e.target.result;
+            editor.style.display = 'block';
+            
+            console.log('[CREATE_DEBUG] Interface interactive activée');
+        };
+        reader.readAsDataURL(file);
+    } else {
+        document.getElementById('main_image_preview_create').style.display = 'none';
+        document.getElementById('interactive_image_editor_create').style.display = 'none';
+    }
+}
+
+// Supprimer l'image principale (création)
+function removeMainImageCreate() {
+    console.log('[CREATE_DEBUG] Suppression image principale');
+    document.getElementById('main_image_input_create').value = '';
+    document.getElementById('main_image_preview_create').style.display = 'none';
+    document.getElementById('interactive_image_editor_create').style.display = 'none';
+    
+    // Réinitialiser les données
+    createLabels = [];
+    createZones = [];
+    updateLabelsListCreate();
+    updateZonesListCreate();
+    updateHiddenFieldsCreate();
+}
+
+// Ajouter une étiquette (création)
+function addLabelCreate() {
+    console.log('[CREATE_DEBUG] Ajout d\'une étiquette');
+    const labelText = prompt('Entrez le texte de l\'étiquette :');
+    
+    if (!labelText || !labelText.trim()) {
+        console.log('[CREATE_DEBUG] Ajout annulé - texte vide');
+        return;
+    }
+    
+    const trimmedText = labelText.trim();
+    createLabels.push(trimmedText);
+    console.log('[CREATE_DEBUG] Étiquette ajoutée:', trimmedText);
+    console.log('[CREATE_DEBUG] Total étiquettes:', createLabels.length);
+    
+    updateLabelsListCreate();
+    updateHiddenFieldsCreate();
+}
+
+// Supprimer une étiquette (création)
+function removeLabelCreate(index) {
+    console.log('[CREATE_DEBUG] Suppression étiquette index:', index);
+    createLabels.splice(index, 1);
+    
+    // Supprimer aussi les zones associées à cette étiquette
+    const removedLabel = createLabels[index];
+    createZones = createZones.filter(zone => zone.label !== removedLabel);
+    
+    updateLabelsListCreate();
+    updateZonesListCreate();
+    updateHiddenFieldsCreate();
+}
+
+// Mettre à jour la liste des étiquettes (création)
+function updateLabelsListCreate() {
+    const container = document.getElementById('labels_list_create');
+    
+    if (createLabels.length === 0) {
+        container.innerHTML = '<p class="text-muted">Aucune étiquette ajoutée</p>';
+        return;
+    }
+    
+    let html = '';
+    createLabels.forEach((label, index) => {
+        html += `
+            <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
+                <span><strong>Étiquette ${index + 1}:</strong> ${label}</span>
+                <button type="button" class="btn btn-sm btn-danger" onclick="removeLabelCreate(${index})">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+// Ajouter une zone sur l'image (création)
+function addZoneOnImageCreate(event) {
+    console.log('[CREATE_DEBUG] Clic sur image pour ajouter zone');
+    
+    if (createLabels.length === 0) {
+        alert('Veuillez d\'abord ajouter au moins une étiquette !');
+        return;
+    }
+    
+    const rect = event.target.getBoundingClientRect();
+    const x = event.offsetX;
+    const y = event.offsetY;
+    
+    // Calculer les coordonnées en pourcentages pour compatibilité multi-résolution
+    const imageWidth = event.target.naturalWidth || event.target.width;
+    const imageHeight = event.target.naturalHeight || event.target.height;
+    const displayWidth = event.target.width;
+    const displayHeight = event.target.height;
+    
+    // Convertir les coordonnées de clic en coordonnées relatives à l'image originale
+    const relativeX = (x / displayWidth) * imageWidth;
+    const relativeY = (y / displayHeight) * imageHeight;
+    
+    console.log('[CREATE_DEBUG] Position clic: x=' + x + ', y=' + y);
+    console.log('[CREATE_DEBUG] Taille affichage: ' + displayWidth + 'x' + displayHeight);
+    console.log('[CREATE_DEBUG] Taille originale: ' + imageWidth + 'x' + imageHeight);
+    console.log('[CREATE_DEBUG] Position relative: x=' + relativeX + ', y=' + relativeY);
+    
+    // Proposer les étiquettes disponibles
+    let labelOptions = createLabels.map((label, index) => `${index + 1}. ${label}`).join('\n');
+    const labelChoice = prompt(`Choisissez l'étiquette pour cette zone :\n\n${labelOptions}\n\nEntrez le numéro :`);
+    
+    if (!labelChoice || isNaN(labelChoice) || labelChoice < 1 || labelChoice > createLabels.length) {
+        console.log('[CREATE_DEBUG] Choix d\'étiquette annulé ou invalide');
+        return;
+    }
+    
+    const selectedLabel = createLabels[labelChoice - 1];
+    console.log('[CREATE_DEBUG] Étiquette sélectionnée:', selectedLabel);
+    
+    // Vérifier si cette étiquette a déjà une zone
+    const existingZone = createZones.find(zone => zone.label === selectedLabel);
+    if (existingZone) {
+        const replace = confirm(`L'étiquette "${selectedLabel}" a déjà une zone. Voulez-vous la remplacer ?`);
+        if (!replace) {
+            return;
+        }
+        // Supprimer l'ancienne zone
+        createZones = createZones.filter(zone => zone.label !== selectedLabel);
+        // Supprimer le marqueur visuel
+        const oldMarker = document.querySelector(`[data-zone-label="${selectedLabel}"]`);
+        if (oldMarker) oldMarker.remove();
+    }
+    
+    // Créer la nouvelle zone avec coordonnées relatives
+    const zone = {
+        x: Math.round(relativeX),
+        y: Math.round(relativeY),
+        label: selectedLabel
+    };
+    
+    createZones.push(zone);
+    console.log('[CREATE_DEBUG] Zone ajoutée avec coordonnées relatives:', zone);
+    
+    // Ajouter le marqueur visuel sur l'image (utiliser les coordonnées d'affichage pour le marqueur)
+    addVisualMarkerCreate(x, y, selectedLabel);
+    
+    updateZonesListCreate();
+    updateHiddenFieldsCreate();
+}
+
+// Ajouter un marqueur visuel sur l'image (création)
+function addVisualMarkerCreate(x, y, label) {
+    const container = document.getElementById('image_container_create');
+    
+    const marker = document.createElement('div');
+    marker.className = 'zone-marker';
+    marker.dataset.zoneLabel = label;
+    marker.style.cssText = `
+        position: absolute;
+        left: ${x}px;
+        top: ${y}px;
+        width: 20px;
+        height: 20px;
+        background-color: #007bff;
+        border: 2px solid #fff;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        cursor: pointer;
+        z-index: 10;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    `;
+    marker.title = label;
+    marker.onclick = function() {
+        removeZoneCreate(label);
+    };
+    
+    container.appendChild(marker);
+}
+
+// Supprimer une zone (création)
+function removeZoneCreate(label) {
+    console.log('[CREATE_DEBUG] Suppression zone pour étiquette:', label);
+    
+    // Supprimer de la liste
+    createZones = createZones.filter(zone => zone.label !== label);
+    
+    // Supprimer le marqueur visuel
+    const marker = document.querySelector(`[data-zone-label="${label}"]`);
+    if (marker) marker.remove();
+    
+    updateZonesListCreate();
+    updateHiddenFieldsCreate();
+}
+
+// Mettre à jour la liste des zones (création)
+function updateZonesListCreate() {
+    const container = document.getElementById('zones_list_create');
+    
+    if (createZones.length === 0) {
+        container.innerHTML = '<p class="text-muted">Cliquez sur l\'image pour placer des zones</p>';
+        return;
+    }
+    
+    let html = '';
+    createZones.forEach((zone, index) => {
+        html += `
+            <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
+                <div>
+                    <strong>Zone ${index + 1}:</strong> ${zone.label}<br>
+                    <small class="text-muted">Position: (${zone.x}, ${zone.y})</small>
+                </div>
+                <button type="button" class="btn btn-sm btn-danger" onclick="removeZoneCreate('${zone.label}')">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+// Mettre à jour les champs cachés pour la soumission (création)
+function updateHiddenFieldsCreate() {
+    const container = document.getElementById('hidden_fields_create');
+    let html = '';
+    
+    // Champs pour les étiquettes
+    createLabels.forEach((label, index) => {
+        html += `<input type="hidden" name="image_labels[]" value="${label}">`;
+    });
+    
+    // Champs pour les zones
+    createZones.forEach((zone, index) => {
+        html += `<input type="hidden" name="zone_x[]" value="${zone.x}">`;
+        html += `<input type="hidden" name="zone_y[]" value="${zone.y}">`;
+        html += `<input type="hidden" name="zone_label[]" value="${zone.label}">`;
+    });
+    
+    container.innerHTML = html;
+    console.log('[CREATE_DEBUG] Champs cachés mis à jour:', createLabels.length, 'étiquettes,', createZones.length, 'zones');
+}
+
+// Mettre à jour la liste des étiquettes disponibles
+function updateAvailableLabelsList() {
+    const container = document.getElementById('available_labels_list');
+    if (imageLabelingLabels.length === 0) {
+        container.innerHTML = '<p class="text-muted">Ajoutez des étiquettes ci-dessus</p>';
+        return;
+    }
+    
+    container.innerHTML = imageLabelingLabels.map((label, index) => `
+        <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
+            <span><strong>${index + 1}.</strong> ${label}</span>
+            <button type="button" class="btn btn-sm btn-danger" onclick="removeLabelInteractive(${index})">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    `).join('');
+}
+
+// Supprimer une étiquette
+function removeLabelInteractive(index) {
+    imageLabelingLabels.splice(index, 1);
+    updateAvailableLabelsList();
+    updateHiddenFormFields();
+}
+
+// Mettre à jour la liste des zones placées
+function updatePlacedZonesList() {
+    const container = document.getElementById('placed_zones_list');
+    if (imageLabelingZones.length === 0) {
+        container.innerHTML = '<p class="text-muted">Cliquez sur l\'image pour placer des zones</p>';
+        return;
+    }
+    
+    container.innerHTML = imageLabelingZones.map((zone, index) => `
+        <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-success bg-opacity-10 border border-success rounded">
+            <span><strong>Zone ${index + 1}:</strong> ${zone.label} <small class="text-muted">(${zone.x}, ${zone.y})</small></span>
+            <button type="button" class="btn btn-sm btn-danger" onclick="removeZoneFromImage(${zone.id})">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    `).join('');
+}
+
+// Supprimer une zone de l'image
+function removeZoneFromImage(zoneId) {
+    // Supprimer de la liste
+    imageLabelingZones = imageLabelingZones.filter(zone => zone.id !== zoneId);
+    
+    // Supprimer le marqueur visuel
+    const marker = document.querySelector(`[data-zone-id="${zoneId}"]`);
+    if (marker) marker.remove();
+    
+    updatePlacedZonesList();
+    updateHiddenFormFields();
+}
+
+// Effacer toutes les zones
+function clearAllZones() {
+    imageLabelingZones = [];
+    document.querySelectorAll('.zone-marker').forEach(marker => marker.remove());
+    updatePlacedZonesList();
+    updateHiddenFormFields();
+}
+
+// Gestionnaire de clic sur l'image pour placer les zones
+function setupImageClickHandler() {
+    const imageContainer = document.getElementById('interactive_image_container');
+    const image = imageContainer.querySelector('img');
+    
+    if (!image) {
+        console.log('[DEBUG] Image non trouvée pour le gestionnaire de clic');
+        return;
+    }
+    
+    console.log('[DEBUG] Gestionnaire de clic configuré sur l\'image');
+    
+    image.style.cursor = 'crosshair';
+    image.addEventListener('click', function(event) {
+        console.log('[DEBUG] Clic sur l\'image détecté');
+        
+        if (imageLabelingLabels.length === 0) {
+            alert('Veuillez d\'abord ajouter au moins une étiquette');
+            return;
+        }
+        
+        // Calculer les coordonnées relatives à l'image
+        const rect = image.getBoundingClientRect();
+        const x = ((event.clientX - rect.left) / rect.width * 100).toFixed(1);
+        const y = ((event.clientY - rect.top) / rect.height * 100).toFixed(1);
+        
+        console.log('[DEBUG] Coordonnées calculées:', x + '%', y + '%');
+        
+        // Demander quelle étiquette associer
+        showLabelSelectionModal(x, y);
+    });
+}
+
+// Modal de sélection d'étiquette pour une zone
+function showLabelSelectionModal(x, y) {
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    `;
+    
+    const availableLabels = imageLabelingLabels.filter(label => 
+        !imageLabelingZones.some(zone => zone.label === label)
+    );
+    
+    if (availableLabels.length === 0) {
+        alert('Toutes les étiquettes ont déjà été placées');
+        return;
+    }
+    
+    modal.innerHTML = `
+        <div style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); max-width: 400px; width: 90%;">
+            <h5 style="margin-bottom: 20px; color: #333;">Choisir une étiquette</h5>
+            <p style="margin-bottom: 15px; color: #666;">Position: ${x}%, ${y}%</p>
+            <select id="zone_label_select" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; margin-bottom: 20px; font-size: 16px;">
+                <option value="">-- Sélectionnez une étiquette --</option>
+                ${availableLabels.map(label => `<option value="${label}">${label}</option>`).join('')}
+            </select>
+            <div style="text-align: right;">
+                <button onclick="cancelZonePlacement()" style="padding: 8px 15px; margin-right: 10px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">Annuler</button>
+                <button onclick="confirmZonePlacement(${x}, ${y})" style="padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Placer</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    document.getElementById('zone_label_select').focus();
+}
+
+// Confirmer le placement d'une zone
+function confirmZonePlacement(x, y) {
+    const select = document.getElementById('zone_label_select');
+    const selectedLabel = select.value;
+    
+    if (!selectedLabel) {
+        alert('Veuillez sélectionner une étiquette');
+        return;
+    }
+    
+    // Créer la zone
+    const zone = {
+        id: Date.now(),
+        x: parseFloat(x),
+        y: parseFloat(y),
+        label: selectedLabel
+    };
+    
+    imageLabelingZones.push(zone);
+    console.log('[DEBUG] Zone ajoutée:', zone);
+    
+    // Créer le marqueur visuel
+    createZoneMarker(zone);
+    
+    // Mettre à jour les listes
+    updatePlacedZonesList();
+    updateHiddenFormFields();
+    
+    // Fermer le modal
+    const modal = document.querySelector('div[style*="position: fixed"]');
+    if (modal) modal.remove();
+}
+
+// Annuler le placement d'une zone
+function cancelZonePlacement() {
+    const modal = document.querySelector('div[style*="position: fixed"]');
+    if (modal) modal.remove();
+}
+
+// Créer un marqueur visuel pour une zone
+function createZoneMarker(zone) {
+    const imageContainer = document.getElementById('interactive_image_container');
+    const marker = document.createElement('div');
+    
+    marker.className = 'zone-marker';
+    marker.setAttribute('data-zone-id', zone.id);
+    marker.style.cssText = `
+        position: absolute;
+        left: ${zone.x}%;
+        top: ${zone.y}%;
+        width: 20px;
+        height: 20px;
+        background: #007bff;
+        border: 2px solid white;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        cursor: pointer;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        z-index: 100;
+    `;
+    
+    marker.title = zone.label;
+    marker.onclick = function() {
+        if (confirm(`Supprimer la zone "${zone.label}" ?`)) {
+            removeZoneFromImage(zone.id);
+        }
+    };
+    
+    imageContainer.appendChild(marker);
+    console.log('[DEBUG] Marqueur visuel créé pour:', zone.label);
+}
+
+// Mettre à jour les champs cachés du formulaire
+function updateHiddenFormFields() {
+    // Supprimer les anciens champs cachés
+    document.querySelectorAll('input[name^="image_labels"], input[name^="zone_x"], input[name^="zone_y"], input[name^="zone_label"]').forEach(input => {
+        if (input.closest('#interactive_image_editor')) return; // Ne pas supprimer ceux de l'éditeur
+        input.remove();
+    });
+    
+    const form = document.querySelector('form');
+    
+    // Ajouter les étiquettes
+    imageLabelingLabels.forEach(label => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'image_labels[]';
+        input.value = label;
+        form.appendChild(input);
+    });
+    
+    // Ajouter les zones
+    imageLabelingZones.forEach(zone => {
+        const inputX = document.createElement('input');
+        inputX.type = 'hidden';
+        inputX.name = 'zone_x[]';
+        inputX.value = zone.x;
+        form.appendChild(inputX);
+        
+        const inputY = document.createElement('input');
+        inputY.type = 'hidden';
+        inputY.name = 'zone_y[]';
+        inputY.value = zone.y;
+        form.appendChild(inputY);
+        
+        const inputLabel = document.createElement('input');
+        inputLabel.type = 'hidden';
+        inputLabel.name = 'zone_label[]';
+        inputLabel.value = zone.label;
+        form.appendChild(inputLabel);
+    });
+}
+
+// Fonction pour supprimer l'image principale
+function removeMainImage() {
+    const input = document.getElementById('main_image_input');
+    const preview = document.getElementById('main_image_preview');
+    input.value = '';
+    preview.style.display = 'none';
+}
+
 // Initialiser l'affichage au chargement de la page
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing simplified form...');
@@ -1434,6 +2356,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     } else {
         console.error('[ERROR] Section word_search_section non trouvée');
+    }
+    
+    // Ajouter gestionnaire pour la prévisualisation d'image principale
+    const mainImageInput = document.getElementById('main_image_input');
+    if (mainImageInput) {
+        mainImageInput.addEventListener('change', function() {
+            previewMainImage(this);
+        });
     }
     
     // Écouter les changements de type d'exercice

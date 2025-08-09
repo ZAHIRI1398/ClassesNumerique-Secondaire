@@ -7,7 +7,7 @@ import unicodedata
 from datetime import datetime, timedelta
 from functools import wraps
 
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, session
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, session, current_app
 from flask_login import login_user, login_required, logout_user, current_user
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash
@@ -45,7 +45,7 @@ csrf = CSRFProtect()
 csrf.init_app(app)
 
 # Register blueprints
-# app.register_blueprint(exercise_bp, url_prefix='/exercise')  # SUPPRIMÉ - Dupliqué avec ligne 77
+app.register_blueprint(exercise_bp, url_prefix='/exercise')
 
 # Ajout du filtre shuffle pour Jinja2
 @app.template_filter('shuffle')
@@ -82,8 +82,7 @@ def allowed_file(filename):
 from extensions import init_extensions
 init_extensions(app)
 
-# Enregistrement des blueprints
-app.register_blueprint(exercise_bp, url_prefix='/exercise')
+# Enregistrement des blueprints (déjà fait ligne 48)
 
 # Fonctions pour les filtres Jinja2
 def enumerate_filter(iterable, start=0):
@@ -626,8 +625,9 @@ def exercise_library():
                          selected_level=level)
 
 @app.route('/exercise/<int:exercise_id>')
+@app.route('/exercise/<int:exercise_id>/<int:course_id>')
 # @login_required  # TEMPORAIREMENT DÉSACTIVÉ POUR TEST
-def view_exercise(exercise_id):
+def view_exercise(exercise_id, course_id=None):
     try:
         app.logger.info(f'Accessing exercise {exercise_id}')
         exercise = Exercise.query.get_or_404(exercise_id)
@@ -1896,14 +1896,18 @@ def submit_answer(exercise_id, course_id=0):
 
     elif exercise.exercise_type == 'underline_words':
         content = exercise.get_content()
-        if not isinstance(content, dict) or 'sentences' not in content:
+        
+        # Gérer les deux structures possibles : 'sentences' ou 'words'
+        sentences_data = content.get('sentences') or content.get('words', [])
+        
+        if not isinstance(content, dict) or not sentences_data:
             flash('Structure de l\'exercice invalide.', 'error')
             return redirect(url_for('view_exercise', exercise_id=exercise_id, course_id=course_id))
 
-        total_sentences = len(content['sentences'])
+        total_sentences = len(sentences_data)
         correct_sentences = 0
 
-        for i, sentence_data in enumerate(content['sentences']):
+        for i, sentence_data in enumerate(sentences_data):
             student_answers = request.form.getlist(f'underlined_words_{i}[]')
             correct_words = set(word.lower() for word in sentence_data['words_to_underline'])
             student_words = set(word.lower() for word in student_answers)
@@ -2680,390 +2684,230 @@ def handle_exercise_answer(exercise_id):
                 'total_sentences': total_sentences,
                 'details': feedback
             }
-            
             # Pour dictation, on utilise le score en pourcentage
             answers = user_answers
         
-        elif exercise.exercise_type == 'legend':
-            # Gestion des exercices de légende
+        elif exercise.exercise_type == 'image_labeling':
+            # Gestion des exercices d'étiquetage d'image
             content = json.loads(exercise.content)
-            app.logger.info(f"[LEGEND_DEBUG] Processing legend exercise {exercise_id}")
-            app.logger.info(f"[LEGEND_DEBUG] Form data: {dict(request.form)}")
+            app.logger.info(f"[IMAGE_LABELING_DEBUG] Processing image_labeling exercise {exercise_id}")
+            app.logger.info(f"[IMAGE_LABELING_DEBUG] Form data: {dict(request.form)}")
             
             # Récupérer les zones définies dans l'exercice
             zones = content.get('zones', [])
             if not zones:
-                app.logger.error(f"[LEGEND_DEBUG] No zones found in exercise content")
+                app.logger.error(f"[IMAGE_LABELING_DEBUG] No zones found in exercise content")
                 flash('Erreur: aucune zone trouvée dans l\'exercice.', 'error')
                 return redirect(url_for('view_exercise', exercise_id=exercise_id))
             
-            app.logger.info(f"[LEGEND_DEBUG] Found {len(zones)} zones to check")
+            app.logger.info(f"[IMAGE_LABELING_DEBUG] Found {len(zones)} zones to check")
             
-            # Calculer le score pour chaque zone
+            # Récupérer les réponses de l'utilisateur depuis le JSON
+            user_answers_json = request.form.get('user_answers', '{}')
+            try:
+                user_answers_data = json.loads(user_answers_json)
+                app.logger.info(f"[IMAGE_LABELING_DEBUG] User answers: {user_answers_data}")
+            except json.JSONDecodeError:
+                app.logger.error(f"[IMAGE_LABELING_DEBUG] Invalid JSON in user_answers: {user_answers_json}")
+                user_answers_data = {}
+            
+            # Calculer le score
             total_zones = len(zones)
             correct_zones = 0
             feedback = []
-            user_answers = {}
             
-            for zone in zones:
-                zone_id = zone.get('id')
-                expected_legend_id = str(zone_id)  # L'ID de la zone correspond à l'ID de sa légende
+            for i, zone in enumerate(zones):
+                zone_id = str(i + 1)  # Les zones sont numérotées à partir de 1
+                expected_label = zone.get('label', '')
+                user_label = user_answers_data.get(zone_id, '')
                 
-                # Récupérer la réponse de l'utilisateur pour cette zone
-                user_answer = request.form.get(f'zone_{zone_id}_answer', '').strip()
-                user_answers[f'zone_{zone_id}_answer'] = user_answer
-                
-                app.logger.info(f"[LEGEND_DEBUG] Zone {zone_id}: user='{user_answer}' vs expected='{expected_legend_id}'")
-                
-                # Vérifier si la réponse est correcte
-                is_correct = user_answer == expected_legend_id
+                is_correct = user_label.lower().strip() == expected_label.lower().strip()
                 if is_correct:
                     correct_zones += 1
                 
-                # Ajouter au feedback
                 feedback.append({
                     'zone_id': zone_id,
-                    'zone_legend': zone.get('legend', ''),
-                    'user_answer': user_answer,
-                    'expected_answer': expected_legend_id,
+                    'expected_label': expected_label,
+                    'user_label': user_label,
                     'is_correct': is_correct,
-                    'position': {'x': zone.get('x'), 'y': zone.get('y')}
+                    'status': 'Correct' if is_correct else f'Attendu: {expected_label}, Réponse: {user_label}'
                 })
+                
+                app.logger.info(f"[IMAGE_LABELING_DEBUG] Zone {zone_id}: expected='{expected_label}', user='{user_label}', correct={is_correct}")
             
             # Calculer le score final
-            score = correct_zones
             max_score = total_zones
+            score_count = correct_zones
+            score = round((score_count / max_score) * 100) if max_score > 0 else 0
             
-            app.logger.info(f"[LEGEND_DEBUG] Final score: {score}/{max_score} zones correct")
+            app.logger.info(f"[IMAGE_LABELING_DEBUG] Final score: {score_count}/{max_score} = {score}%")
             
             feedback_summary = {
                 'score': score,
-                'max_score': max_score,
                 'correct_zones': correct_zones,
                 'total_zones': total_zones,
-                'percentage': round((score / max_score * 100) if max_score > 0 else 0, 1),
                 'details': feedback
             }
             
-            # Pour legend, on utilise le score en nombre de zones correctes
-            answers = user_answers
+            # Pour image_labeling, on utilise le score en pourcentage
+            answers = user_answers_data
         
         # Créer une nouvelle tentative
-        # Pour drag_and_drop, pairs, underline_words, dictation et legend, feedback est feedback_summary (sinon feedback dict habituel)
-        if exercise.exercise_type in ['drag_and_drop', 'pairs', 'underline_words', 'dictation', 'legend']:
+        # Pour drag_and_drop, pairs, underline_words, dictation, image_labeling, feedback est feedback_summary (sinon feedback dict habituel)
+        if exercise.exercise_type in ['drag_and_drop', 'pairs', 'underline_words', 'dictation', 'image_labeling']:
             feedback_to_save = feedback_summary
         else:
             feedback_to_save = feedback
             
         attempt = ExerciseAttempt(
-            exercise_id=exercise_id,
             student_id=current_user.id,
+            exercise_id=exercise.id,
             answers=json.dumps(answers),
             score=score,
             feedback=json.dumps(feedback_to_save)
         )
         
-        try:
-            db.session.add(attempt)
-            db.session.commit()
-            flash(f'Réponses enregistrées ! Score : {score}/{max_score}', 'success')
-        except Exception as e:
-            db.session.rollback()
-            flash('Une erreur est survenue lors de l\'enregistrement de votre tentative.', 'error')
-            app.logger.error(f'Erreur lors de l\'enregistrement de la tentative : {str(e)}')
+        db.session.add(attempt)
+        db.session.commit()
         
-        return redirect(url_for('view_exercise', exercise_id=exercise_id))
+        # Créer un message de feedback pour l'utilisateur
+        if score >= 80:
+            flash(f'Excellent ! Vous avez obtenu {score:.1f}% !', 'success')
+        elif score >= 60:
+            flash(f'Bien joué ! Vous avez obtenu {score:.1f}%.', 'info')
+        else:
+            flash(f'Vous avez obtenu {score:.1f}%. Continuez vos efforts !', 'warning')
+        
+        # Rediriger vers l'exercice avec le feedback
+        return redirect(url_for('view_exercise', exercise_id=exercise_id, course_id=course_id))
+    
     except Exception as e:
-        app.logger.error(f'Erreur lors de la soumission de l\'exercice : {str(e)}')
-        flash('Une erreur est survenue lors de la soumission de l\'exercice.', 'error')
-        return redirect(url_for('view_exercise', exercise_id=exercise_id))
+        app.logger.error(f"Erreur lors de la soumission: {e}")
+        return jsonify({'success': False, 'error': 'Une erreur est survenue'}), 500
 
-# Route pour créer un exercice
-@app.route('/test-form')
-def test_form():
-    return render_template('test_form.html')
-
-@app.route('/basic-test')
-def basic_test():
-    return render_template('basic_test.html')
-
-# Debug test route removed to restore normal operation
-
-@app.route('/exercise/create', methods=['GET', 'POST'])
-@login_required
-@teacher_required
-def create_exercise():
-    from forms import ExerciseForm
-    form = ExerciseForm()
-    
-    if request.method == 'GET':
-        return render_template('exercise_types/create_exercise_simple.html', form=form, exercise_types=Exercise.EXERCISE_TYPES)
-    
-    if request.method == 'POST':
-        # Validation basique
-        exercise_type = request.form.get('exercise_type')
-        title = request.form.get('title')
-        
-        if not exercise_type:
-            flash('Le type d\'exercice est requis.', 'error')
-            return render_template('exercise_types/create_exercise_simple.html', form=form, exercise_types=Exercise.EXERCISE_TYPES)
-        
-        if not title:
-            flash('Le titre est requis.', 'error')
-            return render_template('exercise_types/create_exercise_simple.html', form=form, exercise_types=Exercise.EXERCISE_TYPES)
-        
-        try:
-            # Créer l'exercice
-            content = {}
-            
-            if exercise_type == 'fill_in_blanks':
-                # Traitement pour texte à trous
-                sentences = request.form.getlist('fill_in_blanks_sentences[]')
-                words = request.form.getlist('fill_in_blanks_words[]')
-                
-                # Filtrer les phrases et mots vides
-                filtered_sentences = [s for s in sentences if s.strip()]
-                filtered_words = [w for w in words if w.strip()]
-                
-                # Validation
-                if not filtered_sentences:
-                    flash('Au moins une phrase est requise pour un exercice "Texte à trous".', 'error')
-                    return render_template('exercise_types/create_exercise_simple.html', form=form, exercise_types=Exercise.EXERCISE_TYPES)
-                
-                if not filtered_words:
-                    flash('Au moins un mot de réponse est requis pour un exercice "Texte à trous".', 'error')
-                    return render_template('exercise_types/create_exercise_simple.html', form=form, exercise_types=Exercise.EXERCISE_TYPES)
-                
-                content = {
-                    'sentences': filtered_sentences,
-                    'words': filtered_words
-                }
-                
-            elif exercise_type == 'qcm':
-                # Traitement pour QCM
-                questions = []
-                i = 0
-                while f'question_{i}' in request.form:
-                    question_text = request.form.get(f'question_{i}')
-                    options = []
-                    j = 0
-                    while f'option_{i}_{j}' in request.form:
-                        options.append(request.form.get(f'option_{i}_{j}'))
-                        j += 1
-                    correct = int(request.form.get(f'correct_{i}', 0))
-                    
-                    questions.append({
-                        'question': question_text,
-                        'options': options,
-                        'correct': correct
-                    })
-                    i += 1
-                
-                content = {'questions': questions}
-            
-            elif exercise_type == 'word_search':
-                # Traitement pour mots mêlés - LOGIQUE CORRIGÉE
-                print(f'[WORD_SEARCH_CREATE_DEBUG] Form data: {dict(request.form)}')
-                
-                # Récupérer les mots depuis les champs word_search_words[]
-                words_from_fields = request.form.getlist('word_search_words[]')
-                print(f'[WORD_SEARCH_CREATE_DEBUG] Words from fields: {words_from_fields}')
-                
-                # Traiter chaque champ (peut contenir des mots séparés par des virgules)
-                all_words = []
-                for field_value in words_from_fields:
-                    if field_value and field_value.strip():
-                        # Si le champ contient des virgules, séparer les mots
-                        if ',' in field_value:
-                            words_in_field = [w.strip().upper() for w in field_value.split(',') if w.strip()]
-                            all_words.extend(words_in_field)
-                        else:
-                            # Sinon, ajouter le mot unique
-                            all_words.append(field_value.strip().upper())
-                
-                print(f'[WORD_SEARCH_CREATE_DEBUG] All words processed: {all_words}')
-                
-                # Validation
-                if not all_words:
-                    flash('Au moins un mot est requis pour un exercice "Mots mêlés".', 'error')
-                    return render_template('exercise_types/create_exercise_simple.html', form=form, exercise_types=Exercise.EXERCISE_TYPES)
-                
-                if len(all_words) < 3:
-                    flash('Au minimum 3 mots sont recommandés pour un exercice "Mots mêlés".', 'warning')
-                
-                # Supprimer les doublons tout en préservant l'ordre
-                unique_words = []
-                for word in all_words:
-                    if word not in unique_words:
-                        unique_words.append(word)
-                
-                print(f'[WORD_SEARCH_CREATE_DEBUG] Final unique words: {unique_words}')
-                
-                content = {
-                    'words': unique_words,
-                    'grid_width': int(request.form.get('grid_width', 15)),
-                    'grid_height': int(request.form.get('grid_height', 15))
-                }
-            
-            elif exercise_type == 'underline_words':
-                # Traitement pour souligner les mots
-                sentences = request.form.getlist('underline_sentences[]')
-                words_lists = request.form.getlist('underline_words[]')
-                
-                content = {
-                    'sentences': [s for s in sentences if s.strip()],
-                    'words_to_underline': [w.split(',') for w in words_lists if w.strip()]
-                }
-            
-            # Gestion de l'upload d'image
-            image_path = None
-            
-            # Vérifier s'il y a une image uploadée selon le type d'exercice
-            image_field_name = None
-            if exercise_type == 'fill_in_blanks':
-                image_field_name = 'fill_in_blanks_image'
-            elif exercise_type == 'qcm':
-                image_field_name = 'qcm_image'
-            elif exercise_type == 'underline_words':
-                image_field_name = 'underline_words_image'
-            
-            if image_field_name and image_field_name in request.files:
-                file = request.files[image_field_name]
-                if file and file.filename != '' and allowed_file(file.filename):
-                    try:
-                        # Générer un nom de fichier unique
-                        filename = generate_unique_filename(file.filename)
-                        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                        
-                        # Sauvegarder le fichier
-                        file.save(file_path)
-                        image_path = filename
-                        print(f'[IMAGE_UPLOAD_SUCCESS] Image sauvegardée: {filename}')
-                    except Exception as e:
-                        print(f'[IMAGE_UPLOAD_ERROR] Erreur upload image: {str(e)}')
-                        flash(f'Erreur lors de l\'upload de l\'image: {str(e)}', 'warning')
-            
-            # Créer l'exercice en base
-            exercise = Exercise(
-                title=title,
-                description=request.form.get('description', ''),
-                exercise_type=exercise_type,
-                content=json.dumps(content),
-                subject=request.form.get('subject', ''),
-                max_attempts=int(request.form.get('max_attempts', 1)),
-                image_path=image_path  # ✅ AJOUT CRITIQUE : Sauvegarde du chemin d'image
-            )
-            
-            db.session.add(exercise)
-            db.session.commit()
-            
-            flash(f'Exercice "{title}" créé avec succès!', 'success')
-            return redirect(url_for('view_exercise', exercise_id=exercise.id))
-            
-        except Exception as e:
-            print(f'Erreur lors de la création: {e}')
-            flash(f'Erreur lors de la création de l\'exercice: {str(e)}', 'error')
-            return render_template('exercise_types/create_exercise_simple.html', form=form, exercise_types=Exercise.EXERCISE_TYPES)
-
-# Route pour éditer un exercice
 @app.route('/exercise/<int:exercise_id>/edit', methods=['GET', 'POST'])
+@login_required
 def edit_exercise(exercise_id):
-    """Route pour éditer un exercice existant avec support d'upload d'image"""
+    """Route pour éditer un exercice existant"""
     exercise = Exercise.query.get_or_404(exercise_id)
     
     if request.method == 'GET':
-        # Afficher le formulaire d'édition
-        return render_template('edit_exercise.html', exercise=exercise)
+        # Charger le contenu de l'exercice
+        content = exercise.get_content() if hasattr(exercise, 'get_content') else {}
+        if not content and exercise.content:
+            try:
+                content = json.loads(exercise.content)
+            except:
+                content = {}
+        
+        # Utiliser le template spécifique selon le type d'exercice
+        if exercise.exercise_type == 'qcm':
+            return render_template('exercise_types/qcm_edit.html', exercise=exercise, content=content)
+        elif exercise.exercise_type == 'fill_in_blanks':
+            return render_template('exercise_types/fill_in_blanks_edit.html', exercise=exercise, content=content)
+        elif exercise.exercise_type == 'underline_words':
+            return render_template('exercise_types/underline_words_edit.html', exercise=exercise, content=content)
+        elif exercise.exercise_type == 'drag_and_drop':
+            return render_template('exercise_types/drag_and_drop_edit.html', exercise=exercise, content=content)
+        elif exercise.exercise_type == 'pairs':
+            return render_template('exercise_types/pairs_edit.html', exercise=exercise, content=content)
+        elif exercise.exercise_type == 'word_search':
+            return render_template('exercise_types/word_search_edit.html', exercise=exercise, content=content)
+        elif exercise.exercise_type == 'dictation':
+            return render_template('exercise_types/dictation_edit.html', exercise=exercise, content=content)
+        elif exercise.exercise_type == 'image_labeling':
+            return render_template('exercise_types/image_labeling_edit.html', exercise=exercise, content=content)
+        else:
+            # Template générique pour les autres types
+            return render_template('edit_exercise.html', exercise=exercise, content=content)
     
-    if request.method == 'POST':
+    elif request.method == 'POST':
         try:
-            # Récupérer les données du formulaire
-            title = request.form.get('title', '').strip()
-            description = request.form.get('description', '').strip()
-            subject = request.form.get('subject', '').strip()
-            
-            if not title:
-                flash('Le titre est obligatoire.', 'error')
-                return render_template('edit_exercise.html', exercise=exercise)
+            # Mettre à jour les champs de base
+            exercise.title = request.form.get('title', exercise.title)
+            exercise.description = request.form.get('description', exercise.description)
+            exercise.subject = request.form.get('subject', exercise.subject)
             
             # Gestion de l'upload d'image
-            image_path = exercise.image_path  # Conserver l'image existante par défaut
-            
-            # Vérifier s'il y a une nouvelle image uploadée
             if 'exercise_image' in request.files:
                 file = request.files['exercise_image']
                 if file and file.filename != '' and allowed_file(file.filename):
-                    try:
-                        # Générer un nom de fichier unique
-                        filename = generate_unique_filename(file.filename)
-                        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                        
-                        # Sauvegarder le fichier
-                        file.save(file_path)
-                        image_path = filename
-                        print(f'[IMAGE_UPLOAD_SUCCESS] Image modifiée sauvegardée: {filename}')
-                        flash('Image mise à jour avec succès!', 'success')
-                    except Exception as e:
-                        print(f'[IMAGE_UPLOAD_ERROR] Erreur upload image: {str(e)}')
-                        flash(f'Erreur lors de l\'upload de l\'image: {str(e)}', 'warning')
+                    filename = generate_unique_filename(file.filename)
+                    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                    file.save(filepath)
+                    exercise.image_path = f'static/uploads/{filename}'
+                    app.logger.info(f"[EDIT_DEBUG] Image sauvegardée: {exercise.image_path}")
             
-            # ✅ TRAITEMENT DU CONTENU SPÉCIFIQUE SELON LE TYPE D'EXERCICE
+            # Traitement spécifique par type d'exercice
             if exercise.exercise_type == 'qcm':
-                print(f'[QCM_EDIT_DEBUG] Traitement du contenu QCM')
-                print(f'[QCM_EDIT_DEBUG] Tous les champs du formulaire: {list(request.form.keys())}')
+                current_app.logger.info(f'[QCM_EDIT_DEBUG] Traitement du contenu QCM')
+                current_app.logger.info(f'[QCM_EDIT_DEBUG] Tous les champs du formulaire: {list(request.form.keys())}')
                 
-                # ✅ CORRECTION : Le template utilise questions[] (format tableau HTML)
-                questions_list = request.form.getlist('questions[]')
-                print(f'[QCM_EDIT_DEBUG] Questions trouvées: {questions_list}')
+                # Récupérer les questions du formulaire
+                questions_data = request.form.getlist('questions[]')
+                current_app.logger.info(f'[QCM_EDIT_DEBUG] Questions trouvées: {questions_data}')
+                
+                # Validation des questions
+                if not questions_data or not any(q.strip() for q in questions_data):
+                    flash('Veuillez ajouter au moins une question.', 'error')
+                    return render_template('edit_exercise.html', exercise=exercise)
                 
                 questions = []
-                
-                for question_index, question_text in enumerate(questions_list):
-                    question_text = question_text.strip()
+                for i, question_text in enumerate(questions_data):
+                    if not question_text.strip():
+                        continue
                     
-                    if question_text:  # Seulement si la question n'est pas vide
-                        # Récupérer les options pour cette question
-                        choices = []
-                        option_index = 0
-                        
-                        while f'option_{question_index}_{option_index}' in request.form:
-                            option_text = request.form.get(f'option_{question_index}_{option_index}', '').strip()
-                            if option_text:
-                                choices.append(option_text)
+                    # Récupérer les options pour cette question
+                    options = []
+                    option_index = 0
+                    while True:
+                        option_key = f'option_{i}_{option_index}'
+                        if option_key in request.form:
+                            option_value = request.form[option_key].strip()
+                            if option_value:
+                                options.append(option_value)
                             option_index += 1
-                        
-                        # Récupérer la bonne réponse
-                        correct_answer = request.form.get(f'correct_{question_index}')
-                        if correct_answer is not None:
-                            try:
-                                correct_answer = int(correct_answer)
-                            except ValueError:
-                                correct_answer = 0
-                        
-                        print(f'[QCM_EDIT_DEBUG] Question {question_index}: {question_text}')
-                        print(f'[QCM_EDIT_DEBUG] Options: {choices}')
-                        print(f'[QCM_EDIT_DEBUG] Bonne réponse: {correct_answer}')
-                        
-                        if choices and correct_answer is not None and correct_answer < len(choices):
-                            questions.append({
-                                'text': question_text,
-                                'choices': choices,
-                                'correct_answer': correct_answer
-                            })
                         else:
-                            print(f'[QCM_EDIT_DEBUG] Question {question_index} ignorée (options ou réponse invalide)')
+                            break
+                    
+                    # Récupérer la réponse correcte
+                    correct_key = f'correct_{i}'
+                    correct_answer = 0
+                    if correct_key in request.form:
+                        try:
+                            correct_answer = int(request.form[correct_key])
+                        except (ValueError, TypeError):
+                            correct_answer = 0
+                    
+                    # Validation de la question
+                    if len(options) < 2:
+                        flash(f'La question {i+1} doit avoir au moins 2 options.', 'error')
+                        return render_template('edit_exercise.html', exercise=exercise)
+                    
+                    if correct_answer >= len(options):
+                        flash(f'La réponse correcte de la question {i+1} est invalide.', 'error')
+                        return render_template('edit_exercise.html', exercise=exercise)
+                    
+                    questions.append({
+                        'text': question_text.strip(),
+                        'choices': options,
+                        'correct_answer': correct_answer,
+                        'options': []  # Pour compatibilité avec l'ancien format
+                    })
+                
+                if not questions:
+                    flash('Veuillez ajouter au moins une question valide.', 'error')
+                    return render_template('edit_exercise.html', exercise=exercise)
                 
                 # Mettre à jour le contenu
-                content = {
-                    'questions': questions
-                }
+                content = {'questions': questions}
                 exercise.content = json.dumps(content)
-                print(f'[QCM_EDIT_DEBUG] Contenu sauvegardé: {len(questions)} questions')
-            
+                current_app.logger.info(f'[QCM_EDIT_DEBUG] Contenu sauvegardé: {len(questions)} questions')
+                
             elif exercise.exercise_type == 'fill_in_blanks':
                 print(f'[FILL_BLANKS_EDIT_DEBUG] Traitement du contenu Texte à trous')
                 print(f'[FILL_BLANKS_EDIT_DEBUG] Tous les champs du formulaire: {list(request.form.keys())}')
-                
+
                 # Récupérer les phrases et mots du formulaire
                 sentences = request.form.getlist('sentences[]')
                 words = request.form.getlist('words[]')
@@ -3215,6 +3059,81 @@ def edit_exercise(exercise_id):
                 }
                 exercise.content = json.dumps(content)
                 print(f'[UNDERLINE_EDIT_DEBUG] Contenu sauvegardé: {len(sentences)} phrases, {len(words_to_underline)} mots à souligner')
+            
+            elif exercise.exercise_type == 'image_labeling':
+                current_app.logger.info(f'[IMAGE_LABELING_EDIT_DEBUG] Traitement du contenu Image Labeling (format compatible)')
+                current_app.logger.info(f'[IMAGE_LABELING_EDIT_DEBUG] Tous les champs du formulaire: {list(request.form.keys())}')
+                
+                # Récupérer les étiquettes (format compatible avec création)
+                labels = request.form.getlist('image_labels[]')
+                labels = [label.strip() for label in labels if label.strip()]
+                current_app.logger.info(f'[IMAGE_LABELING_EDIT_DEBUG] Étiquettes trouvées: {labels}')
+                
+                # Récupérer les zones (format compatible avec création)
+                zone_x_list = request.form.getlist('zone_x[]')
+                zone_y_list = request.form.getlist('zone_y[]')
+                zone_label_list = request.form.getlist('zone_label[]')
+                
+                current_app.logger.info(f'[IMAGE_LABELING_EDIT_DEBUG] Zones X: {zone_x_list}')
+                current_app.logger.info(f'[IMAGE_LABELING_EDIT_DEBUG] Zones Y: {zone_y_list}')
+                current_app.logger.info(f'[IMAGE_LABELING_EDIT_DEBUG] Zones Labels: {zone_label_list}')
+                
+                # Construire les zones
+                zones = []
+                for i in range(min(len(zone_x_list), len(zone_y_list), len(zone_label_list))):
+                    try:
+                        x = int(zone_x_list[i])
+                        y = int(zone_y_list[i])
+                        label = zone_label_list[i].strip()
+                        
+                        if label:  # Seulement ajouter si le label n'est pas vide
+                            zones.append({
+                                'x': x,
+                                'y': y,
+                                'label': label
+                            })
+                            current_app.logger.info(f'[IMAGE_LABELING_EDIT_DEBUG] Zone {i}: x={x}, y={y}, label="{label}"')
+                    except (ValueError, TypeError) as e:
+                        current_app.logger.error(f'[IMAGE_LABELING_EDIT_DEBUG] Erreur conversion zone {i}: {e}')
+                
+                # Gestion de l'image principale
+                main_image = exercise.content and json.loads(exercise.content).get('main_image', '') if exercise.content else ''
+                if 'main_image' in request.files:
+                    file = request.files['main_image']
+                    if file and file.filename != '' and allowed_file(file.filename):
+                        filename = generate_unique_filename(file.filename)
+                        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                        file.save(filepath)
+                        main_image = f'static/uploads/{filename}'
+                        current_app.logger.info(f"[IMAGE_LABELING_EDIT_DEBUG] Nouvelle image principale: {main_image}")
+                
+                # Validation
+                if not labels:
+                    flash('Veuillez ajouter au moins une étiquette.', 'error')
+                    return render_template('exercise_types/image_labeling_edit.html', exercise=exercise, content=json.loads(exercise.content) if exercise.content else {})
+                
+                if not zones:
+                    flash('Veuillez ajouter au moins une zone de placement.', 'error')
+                    return render_template('exercise_types/image_labeling_edit.html', exercise=exercise, content=json.loads(exercise.content) if exercise.content else {})
+                
+                if not main_image:
+                    flash('Veuillez ajouter une image principale.', 'error')
+                    return render_template('exercise_types/image_labeling_edit.html', exercise=exercise, content=json.loads(exercise.content) if exercise.content else {})
+                
+                # Validation critique : vérifier la cohérence entre étiquettes et zones
+                if len(labels) != len(zones):
+                    flash(f'Erreur de cohérence : {len(labels)} étiquettes mais {len(zones)} zones. Il faut le même nombre d\'étiquettes et de zones.', 'error')
+                    current_app.logger.error(f'[IMAGE_LABELING_EDIT_DEBUG] Incohérence: {len(labels)} étiquettes vs {len(zones)} zones')
+                    return render_template('exercise_types/image_labeling_edit.html', exercise=exercise, content=json.loads(exercise.content) if exercise.content else {})
+                
+                # Mettre à jour le contenu (format standard)
+                content = {
+                    'main_image': main_image,
+                    'labels': labels,
+                    'zones': zones
+                }
+                exercise.content = json.dumps(content)
+                current_app.logger.info(f'[IMAGE_LABELING_EDIT_DEBUG] Contenu sauvegardé: {len(labels)} étiquettes, {len(zones)} zones (format compatible)')
             
             elif exercise.exercise_type == 'pairs':
                 print(f'[PAIRS_EDIT_DEBUG] Traitement du contenu Association de paires')
@@ -3532,20 +3451,15 @@ def edit_exercise(exercise_id):
                         'zones': zones,
                         'elements': elements
                     }
-                    current_app.logger.info(f'[LEGEND_EDIT_DEBUG] Mode classique: {len(zones)} zones')
-                
-                exercise.content = json.dumps(content)
                 current_app.logger.info(f'[LEGEND_EDIT_DEBUG] Contenu sauvegardé avec succès - Mode: {legend_mode}, Image: {main_image_path}')
             
-            # Mettre à jour l'exercice en base
-            exercise.title = title
-            exercise.description = description
-            exercise.subject = subject
-            exercise.image_path = image_path  # ✅ MISE À JOUR DU CHEMIN D'IMAGE
+            # Mettre à jour l'exercice en base (les champs de base sont déjà mis à jour au début de la fonction POST)
+            # exercise.title, exercise.description, exercise.subject sont déjà mis à jour aux lignes 2751-2753
+            # exercise.image_path est mis à jour lors de l'upload d'image aux lignes 2756-2763
             
             db.session.commit()
             
-            flash(f'Exercice "{title}" modifié avec succès!', 'success')
+            flash(f'Exercice "{exercise.title}" modifié avec succès!', 'success')
             return redirect(url_for('view_exercise', exercise_id=exercise.id))
             
         except Exception as e:
@@ -3837,10 +3751,293 @@ def export_class_excel(class_id):
     
     from flask import make_response
     response = make_response(buffer.getvalue())
-    response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+# ===== ROUTE D'ÉDITION D'EXERCICE SUPPRIMÉE =====
+# Cette route était en conflit avec la route robuste /exercise/edit_exercise/<int:exercise_id>
+# La logique robuste est maintenant dans la route ci-dessous
+
+# ===== ROUTE D'ÉDITION D'EXERCICE BLUEPRINT =====
+
+@app.route('/exercise/edit_exercise/<int:exercise_id>', methods=['GET', 'POST'])
+@login_required
+def edit_exercise_blueprint(exercise_id):
+    """Route d'édition d'exercice avec logique légende complète"""
+    print(f'[EDIT_POST_DEBUG] POST request received for exercise {exercise_id}')
+    print(f'[EDIT_POST_DEBUG] Form data keys: {list(request.form.keys())}')
+    print(f'[EDIT_POST_DEBUG] Form data: {dict(request.form)}')
     
-    return response
+    exercise = Exercise.query.get_or_404(exercise_id)
+    
+    if request.method == 'GET':
+        print(f'[EDIT_DEBUG] Exercise ID: {exercise_id}')
+        print(f'[EDIT_DEBUG] Exercise type: {repr(exercise.exercise_type)}')
+        print(f'[EDIT_DEBUG] Exercise title: {repr(exercise.title)}')
+        print(f'[EDIT_DEBUG] Template path: {repr("exercise_types/legend_edit.html")}')
+        
+        content = json.loads(exercise.content) if exercise.content else {}
+        print(f'[EDIT_DEBUG] Content type: {type(content)}')
+        print(f'[EDIT_DEBUG] Content keys: {list(content.keys()) if isinstance(content, dict) else "Not a dict"}')
+        
+        attempts = ExerciseAttempt.query.filter_by(exercise_id=exercise_id).all()
+        print(f'[EDIT_DEBUG] Attempts count: {len(attempts)}')
+        
+        # Rediriger vers le template d'édition approprié selon le type
+        if exercise.exercise_type == 'legend':
+            return render_template('exercise_types/legend_edit.html', exercise=exercise)
+        else:
+            return render_template('edit_exercise.html', exercise=exercise)
+    
+    if request.method == 'POST':
+        print(f'[EDIT_POST_DEBUG] Title: {repr(request.form.get("title", ""))}')
+        print(f'[EDIT_POST_DEBUG] Subject: {repr(request.form.get("subject", ""))}')
+        print(f'[EDIT_POST_DEBUG] Description: {repr(request.form.get("description", ""))}')
+        
+        try:
+            # Mise à jour des champs de base
+            if 'title' in request.form:
+                exercise.title = request.form['title']
+            if 'description' in request.form:
+                exercise.description = request.form['description']
+            
+            # TRAITEMENT SPÉCIFIQUE POUR LES EXERCICES LÉGENDE
+            if exercise.exercise_type == 'legend':
+                print(f'[LEGEND_EDIT_DEBUG] Traitement du contenu LÉGENDE')
+                print(f'[LEGEND_EDIT_DEBUG] Tous les champs du formulaire: {list(request.form.keys())}')
+                
+                current_content = json.loads(exercise.content) if exercise.content else {}
+                
+                # Collecter toutes les zones depuis le formulaire
+                zone_indices = set()
+                for key in request.form.keys():
+                    print(f'[LEGEND_EDIT_DEBUG] Examen clé: {key}')
+                    if key.startswith('zone_') and key.endswith('_x'):
+                        # Extraction robuste de l'index de zone
+                        parts = key.split('_')
+                        print(f'[LEGEND_EDIT_DEBUG] Parts de {key}: {parts}')
+                        if len(parts) >= 3:
+                            try:
+                                zone_index = int(parts[1])
+                                zone_indices.add(zone_index)
+                                print(f'[LEGEND_EDIT_DEBUG] Zone détectée: {zone_index}')
+                            except ValueError:
+                                print(f'[LEGEND_EDIT_DEBUG] Index de zone invalide: {key}')
+                
+                print(f'[LEGEND_EDIT_DEBUG] Zones trouvées: {sorted(zone_indices)}')
+                
+                # Construire la liste des zones
+                zones = []
+                elements = []
+                
+                for zone_index in sorted(zone_indices):
+                    x_key = f'zone_{zone_index}_x'
+                    y_key = f'zone_{zone_index}_y'
+                    legend_key = f'zone_{zone_index}_legend'
+                    
+                    print(f'[LEGEND_EDIT_DEBUG] Recherche zone {zone_index}: {x_key}, {y_key}, {legend_key}')
+                    print(f'[LEGEND_EDIT_DEBUG] Présent dans form: x={x_key in request.form}, y={y_key in request.form}, legend={legend_key in request.form}')
+                    
+                    if all(key in request.form for key in [x_key, y_key, legend_key]):
+                        try:
+                            x_raw = request.form[x_key]
+                            y_raw = request.form[y_key]
+                            legend_raw = request.form[legend_key]
+                            
+                            print(f'[LEGEND_EDIT_DEBUG] Valeurs brutes zone {zone_index}: x="{x_raw}", y="{y_raw}", legend="{legend_raw}"')
+                            
+                            x = int(float(x_raw))
+                            y = int(float(y_raw))
+                            legend = legend_raw.strip()
+                            
+                            print(f'[LEGEND_EDIT_DEBUG] Valeurs converties zone {zone_index}: x={x}, y={y}, legend="{legend}", legend_empty={not legend}')
+                            
+                            if legend:  # Ne sauvegarder que les zones avec légende
+                                zone_data = {
+                                    'id': zone_index,
+                                    'x': x,
+                                    'y': y,
+                                    'legend': legend,
+                                    'name': legend
+                                }
+                                zones.append(zone_data)
+                                
+                                # Ajouter aussi à la liste des éléments draggables
+                                elements.append({
+                                    'id': zone_index,
+                                    'text': legend,
+                                    'type': 'text'
+                                })
+                                
+                                print(f'[LEGEND_EDIT_DEBUG] Zone {zone_index} ACCEPTÉE: x={x}, y={y}, legend="{legend}"')
+                            else:
+                                print(f'[LEGEND_EDIT_DEBUG] Zone {zone_index} REJETÉE: légende vide')
+                        except (ValueError, TypeError) as e:
+                            print(f'[LEGEND_EDIT_DEBUG] Erreur parsing zone {zone_index}: {e}')
+                    else:
+                        print(f'[LEGEND_EDIT_DEBUG] Zone {zone_index} IGNORÉE: champs manquants')
+                
+                print(f'[LEGEND_EDIT_DEBUG] RÉSULTAT FINAL: {len(zones)} zones acceptées')
+                
+                # Validation finale
+                if not zones:
+                    print(f'[LEGEND_EDIT_DEBUG] ERREUR: Aucune zone valide trouvée!')
+                    print(f'[LEGEND_EDIT_DEBUG] Zones détectées mais rejetées: {len(zone_indices)} zones')
+                    flash('Veuillez ajouter au moins une zone avec sa légende.', 'error')
+                    return render_template('exercise_types/legend_edit.html', exercise=exercise)
+                
+                # Mettre à jour le contenu
+                current_content['zones'] = zones
+                current_content['elements'] = elements
+                current_content['mode'] = current_content.get('mode', 'classic')
+                
+                # Mettre à jour les instructions si présentes
+                if 'legend_instructions' in request.form:
+                    current_content['instructions'] = request.form['legend_instructions']
+                
+                # Conserver l'image principale si elle existe
+                if exercise.image_path and 'main_image' not in current_content:
+                    current_content['main_image'] = exercise.image_path
+                
+                exercise.content = json.dumps(current_content)
+                print(f'[LEGEND_EDIT_DEBUG] Contenu sauvegardé avec {len(zones)} zones')
+            
+            # Sauvegarder en base
+            db.session.commit()
+            flash('Exercice modifié avec succès !', 'success')
+            print(f'[LEGEND_EDIT_DEBUG] Exercice {exercise_id} sauvegardé avec succès')
+            
+            return render_template('exercise_types/legend_edit.html', exercise=exercise)
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f'[LEGEND_EDIT_DEBUG] Erreur lors de la sauvegarde: {e}')
+            flash(f'Erreur lors de la modification: {str(e)}', 'error')
+            return render_template('exercise_types/legend_edit.html', exercise=exercise)
+
+@app.route('/exercise/<int:exercise_id>/edit', methods=['GET', 'POST'])
+# @login_required  # TEMPORAIREMENT DÉSACTIVÉ POUR TEST
+def edit_exercise_robust(exercise_id):
+    """Route robuste d'édition d'exercice avec logique avancée de parsing des zones légende"""
+    exercise = Exercise.query.get_or_404(exercise_id)
+    
+    if request.method == 'GET':
+        # Affichage du formulaire d'édition
+        return render_template('legend_edit.html', exercise=exercise)
+    
+    if request.method == 'POST':
+        app.logger.info(f"[LEGEND_EDIT_DEBUG] Processing legend edit for exercise {exercise_id}")
+        
+        # Récupération des données du formulaire
+        title = request.form.get('title', '').strip()
+        instructions = request.form.get('instructions', '').strip()
+        
+        if not title or not instructions:
+            flash('Le titre et les instructions sont obligatoires.', 'error')
+            return render_template('legend_edit.html', exercise=exercise)
+        
+        # Mise à jour des champs de base
+        exercise.title = title
+        exercise.instructions = instructions
+        
+        try:
+            # Parsing du contenu existant
+            content = json.loads(exercise.content) if exercise.content else {}
+            app.logger.info(f"[LEGEND_EDIT_DEBUG] Contenu existant: {content}")
+            
+            # Récupération de tous les champs zone_* du formulaire
+            zone_fields = {}
+            for key, value in request.form.items():
+                if key.startswith('zone_'):
+                    zone_fields[key] = value
+                    app.logger.info(f"[LEGEND_EDIT_DEBUG] Champ trouvé: {key} = {value}")
+            
+            # Parsing des zones avec logique robuste - SCAN COMPLET
+            zone_indices = set()
+            zones_data = {}
+            
+            # Scanner TOUS les champs zone_* pour détecter tous les indices
+            for key in zone_fields:
+                if key.startswith('zone_') and ('_x' in key or '_y' in key or '_legend' in key):
+                    parts = key.split('_')
+                    if len(parts) >= 3:
+                        zone_index = parts[1]
+                        field_type = '_'.join(parts[2:])  # x, y, ou legend
+                        
+                        if zone_index not in zones_data:
+                            zones_data[zone_index] = {}
+                        
+                        zones_data[zone_index][field_type] = zone_fields[key]
+                        try:
+                            zone_indices.add(int(zone_index))
+                        except ValueError:
+                            app.logger.warning(f"[LEGEND_EDIT_DEBUG] Index de zone invalide: {zone_index}")
+            
+            app.logger.info(f"[LEGEND_EDIT_DEBUG] Zones trouvées: {sorted(zone_indices)}")
+            app.logger.info(f"[LEGEND_EDIT_DEBUG] Données zones: {zones_data}")
+            
+            # Construction des zones pour le JSON
+            zones = []
+            elements = []
+            
+            for zone_index in sorted(zone_indices):
+                zone_data = zones_data[str(zone_index)]
+                
+                # Validation des données de la zone
+                if 'x' in zone_data and 'y' in zone_data and 'legend' in zone_data:
+                    try:
+                        x = int(zone_data['x'])
+                        y = int(zone_data['y'])
+                        legend = zone_data['legend'].strip()
+                        
+                        if legend:  # Seulement si la légende n'est pas vide
+                            zone = {
+                                'x': x,
+                                'y': y,
+                                'legend': legend
+                            }
+                            zones.append(zone)
+                            
+                            # Ajout de l'élément correspondant
+                            element = {
+                                'id': f'element_{len(elements) + 1}',
+                                'text': legend
+                            }
+                            elements.append(element)
+                            
+                            app.logger.info(f"[LEGEND_EDIT_DEBUG] Zone {zone_index}: x={x}, y={y}, legend='{legend}'")
+                    except (ValueError, TypeError) as e:
+                        app.logger.error(f"[LEGEND_EDIT_DEBUG] Erreur parsing zone {zone_index}: {e}")
+                        continue
+                else:
+                    app.logger.warning(f"[LEGEND_EDIT_DEBUG] Zone {zone_index} incomplète: {zone_data}")
+            
+            if not zones:
+                flash('Veuillez ajouter au moins une zone avec sa légende.', 'error')
+                return render_template('legend_edit.html', exercise=exercise)
+            
+            # Mise à jour du contenu JSON
+            content.update({
+                'mode': content.get('mode', 'classic'),
+                'instructions': instructions,
+                'main_image': content.get('main_image', ''),
+                'zones': zones,
+                'elements': elements
+            })
+            
+            exercise.content = json.dumps(content, ensure_ascii=False)
+            
+            # Sauvegarde en base
+            db.session.commit()
+            
+            app.logger.info(f"[LEGEND_EDIT_DEBUG] Contenu sauvegardé avec succès: {len(zones)} zones")
+            flash('Exercice modifié avec succès !', 'success')
+            
+            return redirect(url_for('exercise_library'))
+            
+        except Exception as e:
+            db.session.rollback()
+            app.logger.error(f"[LEGEND_EDIT_DEBUG] Erreur lors de la sauvegarde: {e}")
+            flash(f'Erreur lors de la modification: {str(e)}', 'error')
+            return render_template('legend_edit.html', exercise=exercise)
 
 if __name__ == '__main__':
     with app.app_context():

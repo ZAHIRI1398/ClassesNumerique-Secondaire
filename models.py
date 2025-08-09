@@ -167,7 +167,7 @@ class Exercise(db.Model):
         ('underline_words', 'Souligner les mots'),
         ('drag_and_drop', 'Glisser-déposer'),
         ('dictation', 'Dictée'),
-        ('legend', 'Légende'),
+        ('image_labeling', 'Étiquetage d\'image'),
     ]
     
     id = db.Column(db.Integer, primary_key=True)

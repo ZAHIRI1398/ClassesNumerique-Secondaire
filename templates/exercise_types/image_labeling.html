@@ -1,0 +1,377 @@
+{% extends "base.html" %}
+
+{% block title %}{{ exercise.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">{{ exercise.title }}</h4>
+                    <p class="mb-0 mt-2">{{ exercise.description }}</p>
+                </div>
+                <div class="card-body">
+                    {% if exercise.image_path %}
+                    <div class="text-center mb-3">
+                        <img src="{{ url_for('static', filename='uploads/' + exercise.image_path.split('/')[-1]) }}" 
+                             alt="Image de l'exercice" class="img-fluid" style="max-height: 400px;">
+                    </div>
+                    {% endif %}
+
+                    <div class="row">
+                        <!-- Zone d'image avec zones de dépôt -->
+                        <div class="col-md-8">
+                            <div class="image-container border rounded p-3" style="position: relative !important; min-height: 500px; background-color: #f8f9fa; overflow: visible !important; display: block !important; width: 100%;">
+                                {% if content and content.main_image %}
+                                <div style="position: relative !important; display: inline-block !important; width: 100%;">
+                                    <img id="main-image" src="{{ url_for('static', filename='uploads/' + content.main_image.split('/')[-1]) }}" 
+                                         alt="Image principale" class="img-fluid" style="max-height: 450px; width: 100%; display: block;"
+                                         onload="adjustZonePositions()">
+                                     
+                                    <!-- Zones à placer sur l'image (COORDONNÉES ADAPTATIVES) -->
+                                    {% if content and content.zones %}
+                                        {% for zone in content.zones %}
+                                            <div class="drop-zone" 
+                                                 data-zone-id="{{ loop.index }}"
+                                                 data-expected-label="{{ zone.label }}"
+                                                 data-original-x="{{ zone.x }}"
+                                                 data-original-y="{{ zone.y }}"
+                                                 style="position: absolute !important; 
+                                                        left: {{ zone.x }}px !important; 
+                                                        top: {{ zone.y }}px !important;
+                                                        background-color: rgba(255, 255, 255, 0.95) !important; 
+                                                        border: 2px dashed #007bff !important; 
+                                                        border-radius: 6px !important; 
+                                                        cursor: pointer !important; 
+                                                        width: 110px !important; 
+                                                        height: 45px !important; 
+                                                        z-index: 100 !important;
+                                                        pointer-events: auto !important; 
+                                                        text-align: center !important;
+                                                        box-shadow: 0 3px 10px rgba(0,0,0,0.3) !important;
+                                                        display: flex !important;
+                                                        align-items: center !important;
+                                                        justify-content: center !important;
+                                                        font-size: 12px !important;
+                                                        color: #666 !important;
+                                                        font-style: italic !important;">
+                                                Déposer ici
+                                            </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                                
+                                <script>
+                                // Fonction pour ajuster les positions des zones selon la taille d'affichage
+                                function adjustZonePositions() {
+                                    const image = document.getElementById('main-image');
+                                    const zones = document.querySelectorAll('.drop-zone');
+                                    
+                                    if (!image || zones.length === 0) return;
+                                    
+                                    // Attendre que l'image soit complètement chargée
+                                    setTimeout(() => {
+                                        const displayWidth = image.clientWidth;
+                                        const displayHeight = image.clientHeight;
+                                        const naturalWidth = image.naturalWidth;
+                                        const naturalHeight = image.naturalHeight;
+                                        
+                                        console.log('[ZONE_ADJUST] Taille affichage: ' + displayWidth + 'x' + displayHeight);
+                                        console.log('[ZONE_ADJUST] Taille originale: ' + naturalWidth + 'x' + naturalHeight);
+                                        
+                                        zones.forEach((zone, index) => {
+                                            const originalX = parseInt(zone.dataset.originalX);
+                                            const originalY = parseInt(zone.dataset.originalY);
+                                            
+                                            // Calculer les nouvelles positions adaptées à la taille d'affichage
+                                            const newX = (originalX / naturalWidth) * displayWidth;
+                                            const newY = (originalY / naturalHeight) * displayHeight;
+                                            
+                                            console.log('[ZONE_ADJUST] Zone ' + (index + 1) + ': (' + originalX + ',' + originalY + ') → (' + Math.round(newX) + ',' + Math.round(newY) + ')');
+                                            
+                                            zone.style.left = Math.round(newX) + 'px';
+                                            zone.style.top = Math.round(newY) + 'px';
+                                        });
+                                    }, 100);
+                                }
+                                
+                                // Réajuster les positions si la fenêtre est redimensionnée
+                                window.addEventListener('resize', adjustZonePositions);
+                                </script>
+                                {% else %}
+                                <div class="text-center text-muted">
+                                    <i class="fas fa-image fa-3x mb-3"></i>
+                                    <p>Image principale non disponible</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+
+                        </div>
+
+                        <!-- Étiquettes à glisser -->
+                        <div class="col-md-4">
+                            <h5 class="mb-3">Étiquettes à placer :</h5>
+                            
+
+                            
+                            <div id="labels-container" class="d-flex flex-column gap-2">
+                                {% if content and content.zones %}
+                                    {% for zone in content.zones %}
+                                    <div class="label-item draggable btn btn-outline-secondary text-start" 
+                                         draggable="true" 
+                                         data-label="{{ zone.label }}"
+                                         style="cursor: grab;">
+                                        {{ zone.label }}
+                                    </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <!-- Étiquettes de test statiques - limitées aux 3 zones disponibles -->
+                                    <div class="label-item draggable btn btn-outline-secondary text-start" 
+                                         draggable="true" 
+                                         data-label="Trachée"
+                                         style="cursor: grab;">
+                                        Trachée
+                                    </div>
+                                    <div class="label-item draggable btn btn-outline-secondary text-start" 
+                                         draggable="true" 
+                                         data-label="Foie"
+                                         style="cursor: grab;">
+                                        Foie
+                                    </div>
+                                    <div class="label-item draggable btn btn-outline-secondary text-start" 
+                                         draggable="true" 
+                                         data-label="Estomac"
+                                         style="cursor: grab;">
+                                        Estomac
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Formulaire de soumission -->
+                    <form id="exercise-form" method="POST" action="{{ url_for('handle_exercise_answer', exercise_id=exercise.id) }}" class="mt-4">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <input type="hidden" id="user-answers" name="user_answers" value="">
+                        
+                        <div class="text-center">
+                            <button type="button" id="verify-btn" class="btn btn-success btn-lg me-3">
+                                <i class="fas fa-check"></i> Vérifier
+                            </button>
+                            <button type="button" id="reset-btn" class="btn btn-warning btn-lg">
+                                <i class="fas fa-undo"></i> Recommencer
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Zone de feedback -->
+                    <div id="feedback" class="mt-4" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.drop-zone {
+    transition: all 0.3s ease;
+}
+
+.drop-zone.drag-over {
+    border-color: #28a745 !important;
+    background-color: rgba(40, 167, 69, 0.1) !important;
+}
+
+.drop-zone.filled {
+    border-color: #28a745;
+    background-color: rgba(40, 167, 69, 0.2);
+    border-style: solid;
+}
+
+.drop-zone.correct {
+    border-color: #28a745;
+    background-color: rgba(40, 167, 69, 0.3);
+    color: #155724;
+}
+
+.drop-zone.incorrect {
+    border-color: #dc3545;
+    background-color: rgba(220, 53, 69, 0.3);
+    color: #721c24;
+}
+
+.label-item {
+    transition: all 0.3s ease;
+}
+
+.label-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.label-item.dragging {
+    opacity: 0.5;
+    transform: rotate(5deg);
+}
+
+.label-item.used {
+    opacity: 0.5;
+    pointer-events: none;
+    background-color: #e9ecef;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const labels = document.querySelectorAll('.label-item');
+    const dropZones = document.querySelectorAll('.drop-zone');
+    const verifyBtn = document.getElementById('verify-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const userAnswersInput = document.getElementById('user-answers');
+    const feedbackDiv = document.getElementById('feedback');
+
+    let userAnswers = {};
+
+    // Drag and Drop pour les étiquettes
+    labels.forEach(label => {
+        label.addEventListener('dragstart', function(e) {
+            e.dataTransfer.setData('text/plain', this.dataset.label);
+            this.classList.add('dragging');
+        });
+
+        label.addEventListener('dragend', function() {
+            this.classList.remove('dragging');
+        });
+    });
+
+    // Drop zones
+    dropZones.forEach(zone => {
+        zone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('drag-over');
+        });
+
+        zone.addEventListener('dragleave', function() {
+            this.classList.remove('drag-over');
+        });
+
+        zone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+            
+            const labelText = e.dataTransfer.getData('text/plain');
+            const zoneId = this.dataset.zoneId;
+            
+            // Placer l'étiquette dans la zone
+            this.innerHTML = `<span class="zone-text">${labelText}</span>`;
+            this.classList.remove('empty');
+            this.classList.add('filled');
+            
+            // Marquer l'étiquette comme utilisée
+            const labelElement = document.querySelector(`[data-label="${labelText}"]`);
+            if (labelElement) {
+                labelElement.classList.add('used');
+            }
+            
+            // Enregistrer la réponse
+            userAnswers[zoneId] = labelText;
+            
+            console.log('Réponses utilisateur:', userAnswers);
+        });
+
+        // Permettre de cliquer pour retirer une étiquette
+        zone.addEventListener('click', function() {
+            if (this.classList.contains('filled')) {
+                const labelText = this.querySelector('.zone-text').textContent;
+                const zoneId = this.dataset.zoneId;
+                
+                // Retirer l'étiquette de la zone
+                this.innerHTML = '<span class="zone-placeholder">?</span>';
+                this.classList.remove('filled');
+                this.classList.add('empty');
+                
+                // Rendre l'étiquette disponible
+                const labelElement = document.querySelector(`[data-label="${labelText}"]`);
+                if (labelElement) {
+                    labelElement.classList.remove('used');
+                }
+                
+                // Supprimer la réponse
+                delete userAnswers[zoneId];
+                
+                console.log('Réponses utilisateur:', userAnswers);
+            }
+        });
+    });
+
+    // Bouton Vérifier
+    verifyBtn.addEventListener('click', function() {
+        // Préparer les données pour la soumission
+        userAnswersInput.value = JSON.stringify(userAnswers);
+        
+        // Vérifier les réponses côté client pour le feedback immédiat
+        let correctCount = 0;
+        let totalZones = dropZones.length;
+        
+        dropZones.forEach(zone => {
+            const zoneId = zone.dataset.zoneId;
+            const correctLabel = zone.dataset.correctLabel;
+            const userAnswer = userAnswers[zoneId];
+            
+            zone.classList.remove('correct', 'incorrect');
+            
+            if (userAnswer === correctLabel) {
+                zone.classList.add('correct');
+                correctCount++;
+            } else if (userAnswer) {
+                zone.classList.add('incorrect');
+            }
+        });
+        
+        // Afficher le feedback
+        const score = Math.round((correctCount / totalZones) * 100);
+        let feedbackHtml = `
+            <div class="alert ${score >= 80 ? 'alert-success' : score >= 60 ? 'alert-warning' : 'alert-danger'}">
+                <h5><i class="fas fa-chart-bar"></i> Résultat : ${correctCount}/${totalZones} (${score}%)</h5>
+                <p class="mb-0">
+                    ${score >= 80 ? 'Excellent travail ! 🎉' : 
+                      score >= 60 ? 'Bien joué ! Vous pouvez encore vous améliorer. 👍' : 
+                      'Continuez vos efforts ! 💪'}
+                </p>
+            </div>
+        `;
+        
+        feedbackDiv.innerHTML = feedbackHtml;
+        feedbackDiv.style.display = 'block';
+        
+        // Soumettre le formulaire pour enregistrer la tentative
+        document.getElementById('exercise-form').submit();
+    });
+
+    // Bouton Recommencer
+    resetBtn.addEventListener('click', function() {
+        // Réinitialiser toutes les zones
+        dropZones.forEach(zone => {
+            zone.innerHTML = '<span class="zone-placeholder">?</span>';
+            zone.classList.remove('filled', 'correct', 'incorrect');
+            zone.classList.add('empty');
+        });
+        
+        // Réinitialiser toutes les étiquettes
+        labels.forEach(label => {
+            label.classList.remove('used');
+        });
+        
+        // Réinitialiser les réponses
+        userAnswers = {};
+        
+        // Masquer le feedback
+        feedbackDiv.style.display = 'none';
+        
+        console.log('Exercice réinitialisé');
+    });
+});
+</script>
+{% endblock %}

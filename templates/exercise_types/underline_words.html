@@ -151,13 +151,13 @@
             {% if not content or not content.words %}
             <div class="alert alert-info">
                 Aucune phrase n'a été ajoutée à cet exercice. 
-                <a href="{{ url_for('exercise.edit_exercise', exercise_id=exercise.id) }}" class="btn btn-primary btn-sm">Modifier l'exercice</a>
+                <a href="{{ url_for('edit_exercise', exercise_id=exercise.id) }}" class="btn btn-primary btn-sm">Modifier l'exercice</a>
             </div>
             {% endif %}
         </div>
         {% if current_user.is_teacher %}
         <div class="header-actions">
-            <a href="{{ url_for('exercise.edit_exercise', exercise_id=exercise.id) }}" class="action-button edit">
+            <a href="{{ url_for('edit_exercise', exercise_id=exercise.id) }}" class="action-button edit">
                 <i class="fas fa-edit"></i> Modifier
             </a>
             <form method="POST" action="{{ url_for('exercise.delete_exercise', exercise_id=exercise.id) }}" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet exercice ?');">

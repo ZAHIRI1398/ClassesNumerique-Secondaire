@@ -473,25 +473,13 @@ def create_exercise():
                         content['image'] = f'static/uploads/{unique_filename}'
                         current_app.logger.debug(f'Image Souligner les mots sauvegardée: {unique_filename}')
 
-            elif exercise_type == 'legend':
-                # Récupérer le mode d'exercice légende
-                legend_mode = request.form.get('legend_mode', 'classic').strip()
-                current_app.logger.debug(f'Mode légende sélectionné: {legend_mode}')
+            elif exercise_type == 'image_labeling':
+                current_app.logger.debug('Traitement d\'un exercice d\'étiquetage d\'image')
                 
-                # Récupérer les instructions
-                instructions = request.form.get('legend_instructions', '').strip()
-                if not instructions:
-                    if legend_mode == 'grid':
-                        instructions = 'Déplacez les éléments vers les bonnes cases du quadrillage.'
-                    elif legend_mode == 'spatial':
-                        instructions = 'Placez les éléments dans les bonnes zones.'
-                    else:
-                        instructions = 'Placez les légendes aux bons endroits sur l\'image.'
-                
-                # Récupérer l'image principale (obligatoire pour les légendes)
+                # Récupérer l'image principale (obligatoire)
                 main_image_path = None
-                if 'legend_main_image' in request.files:
-                    image_file = request.files['legend_main_image']
+                if 'main_image' in request.files:
+                    image_file = request.files['main_image']
                     if image_file and image_file.filename != '' and allowed_file(image_file.filename):
                         filename = secure_filename(image_file.filename)
                         unique_filename = generate_unique_filename(filename)
@@ -505,165 +493,89 @@ def create_exercise():
                         image_file.save(image_path)
                         
                         main_image_path = f'static/uploads/{unique_filename}'
-                        
-                        # Sauvegarder aussi dans exercise_image_path
-                        if not exercise_image_path:
-                            exercise_image_path = unique_filename
-                        
-                        current_app.logger.debug(f'Image principale légende sauvegardée: {unique_filename}')
+                        current_app.logger.debug(f'Image principale étiquetage sauvegardée: {unique_filename}')
                 
                 if not main_image_path:
-                    flash('Une image principale est obligatoire pour un exercice de légende.', 'error')
+                    flash('Une image principale est obligatoire pour un exercice d\'étiquetage d\'image.', 'error')
                     return redirect(request.url)
                 
-                # Traitement selon le mode d'exercice
-                if legend_mode == 'grid':
-                    # Mode Quadrillage
-                    grid_rows = request.form.get('grid_rows', type=int) or 4
-                    grid_cols = request.form.get('grid_cols', type=int) or 4
-                    
-                    # Récupérer les éléments de quadrillage
-                    grid_elements = []
-                    element_index = 1
-                    while f'grid_element_{element_index}_type' in request.form:
-                        element_type = request.form.get(f'grid_element_{element_index}_type')
-                        target_row = request.form.get(f'grid_element_{element_index}_target_row', type=int)
-                        target_col = request.form.get(f'grid_element_{element_index}_target_col', type=int)
+                # Récupérer les étiquettes (compatible avec les deux formats)
+                labels = request.form.getlist('labels[]') or request.form.getlist('image_labels[]')
+                labels = [label.strip() for label in labels if label.strip()]
+                current_app.logger.debug(f'Étiquettes reçues: {labels}')
+                
+                if not labels:
+                    flash('Veuillez ajouter au moins une étiquette.', 'error')
+                    return redirect(request.url)
+                
+                # Récupérer les zones de placement (compatible avec les deux formats)
+                zones = []
+                
+                # Format 1: zones[index][field] (ancien format)
+                zone_index = 0
+                while f'zones[{zone_index}][x]' in request.form:
+                    try:
+                        x = int(request.form.get(f'zones[{zone_index}][x]', 0))
+                        y = int(request.form.get(f'zones[{zone_index}][y]', 0))
+                        label = request.form.get(f'zones[{zone_index}][label]', '').strip()
                         
-                        if element_type and target_row and target_col:
-                            element_data = {
-                                'id': element_index,
-                                'type': element_type,
-                                'target_row': target_row,
-                                'target_col': target_col
-                            }
-                            
-                            if element_type == 'text':
-                                text = request.form.get(f'grid_element_{element_index}_text', '').strip()
-                                if text:
-                                    element_data['text'] = text
-                                    grid_elements.append(element_data)
-                            elif element_type == 'image':
-                                # Gérer l'upload d'image pour l'élément
-                                if f'grid_element_{element_index}_image' in request.files:
-                                    image_file = request.files[f'grid_element_{element_index}_image']
-                                    if image_file and image_file.filename != '' and allowed_file(image_file.filename):
-                                        filename = secure_filename(image_file.filename)
-                                        unique_filename = generate_unique_filename(filename)
-                                        
-                                        image_path = os.path.join(upload_folder, unique_filename)
-                                        image_file.save(image_path)
-                                        
-                                        element_data['image'] = f'static/uploads/{unique_filename}'
-                                        grid_elements.append(element_data)
-                        
-                        element_index += 1
-                    
-                    if not grid_elements:
-                        flash('Veuillez ajouter au moins un élément à déplacer dans le quadrillage.', 'error')
-                        return redirect(request.url)
-                    
-                    content['mode'] = 'grid'
-                    content['grid_rows'] = grid_rows
-                    content['grid_cols'] = grid_cols
-                    content['elements'] = grid_elements
-                    
-                elif legend_mode == 'spatial':
-                    # Mode Spatial
-                    # Récupérer les zones spatiales (similaire au mode classique)
-                    spatial_zones = []
-                    zone_index = 0
-                    while f'zone_{zone_index}_x' in request.form:
-                        x = request.form.get(f'zone_{zone_index}_x', type=int)
-                        y = request.form.get(f'zone_{zone_index}_y', type=int)
-                        zone_name = request.form.get(f'zone_{zone_index}_legend', '').strip()
-                        
-                        if x is not None and y is not None and zone_name:
-                            spatial_zones.append({
-                                'x': x,
-                                'y': y,
-                                'name': zone_name,
-                                'id': zone_index
-                            })
-                        
-                        zone_index += 1
-                    
-                    # Récupérer les éléments spatiaux
-                    spatial_elements = []
-                    element_index = 1
-                    while f'spatial_element_{element_index}_type' in request.form:
-                        element_type = request.form.get(f'spatial_element_{element_index}_type')
-                        target_zone = request.form.get(f'spatial_element_{element_index}_target_zone')
-                        
-                        if element_type and target_zone:
-                            element_data = {
-                                'id': element_index,
-                                'type': element_type,
-                                'target_zone': target_zone
-                            }
-                            
-                            if element_type == 'text':
-                                text = request.form.get(f'spatial_element_{element_index}_text', '').strip()
-                                if text:
-                                    element_data['text'] = text
-                                    spatial_elements.append(element_data)
-                            elif element_type == 'image':
-                                # Gérer l'upload d'image pour l'élément
-                                if f'spatial_element_{element_index}_image' in request.files:
-                                    image_file = request.files[f'spatial_element_{element_index}_image']
-                                    if image_file and image_file.filename != '' and allowed_file(image_file.filename):
-                                        filename = secure_filename(image_file.filename)
-                                        unique_filename = generate_unique_filename(filename)
-                                        
-                                        image_path = os.path.join(upload_folder, unique_filename)
-                                        image_file.save(image_path)
-                                        
-                                        element_data['image'] = f'static/uploads/{unique_filename}'
-                                        spatial_elements.append(element_data)
-                        
-                        element_index += 1
-                    
-                    if not spatial_zones:
-                        flash('Veuillez définir au moins une zone de dépôt.', 'error')
-                        return redirect(request.url)
-                    
-                    if not spatial_elements:
-                        flash('Veuillez ajouter au moins un élément à placer.', 'error')
-                        return redirect(request.url)
-                    
-                    content['mode'] = 'spatial'
-                    content['zones'] = spatial_zones
-                    content['elements'] = spatial_elements
-                    
-                else:
-                    # Mode Classique (existant)
-                    zones = []
-                    zone_index = 0
-                    while f'zone_{zone_index}_x' in request.form:
-                        x = request.form.get(f'zone_{zone_index}_x', type=int)
-                        y = request.form.get(f'zone_{zone_index}_y', type=int)
-                        legend_text = request.form.get(f'zone_{zone_index}_legend', '').strip()
-                        
-                        if x is not None and y is not None and legend_text:
+                        if x >= 0 and y >= 0 and label:
                             zones.append({
                                 'x': x,
                                 'y': y,
-                                'legend': legend_text,
-                                'id': zone_index
+                                'label': label
                             })
-                        
-                        zone_index += 1
+                    except (ValueError, TypeError):
+                        current_app.logger.warning(f'Zone {zone_index} invalide, ignorée')
                     
-                    if not zones:
-                        flash('Veuillez ajouter au moins une zone avec sa légende.', 'error')
-                        return redirect(request.url)
-                    
-                    content['mode'] = 'classic'
-                    content['zones'] = zones
+                    zone_index += 1
                 
-                content['instructions'] = instructions
+                # Format 2: zone_x[], zone_y[], zone_label[] (nouveau format interface interactive)
+                if not zones:
+                    zone_x_list = request.form.getlist('zone_x[]')
+                    zone_y_list = request.form.getlist('zone_y[]')
+                    zone_label_list = request.form.getlist('zone_label[]')
+                    
+                    current_app.logger.debug(f'Zones X: {zone_x_list}')
+                    current_app.logger.debug(f'Zones Y: {zone_y_list}')
+                    current_app.logger.debug(f'Zones Labels: {zone_label_list}')
+                    
+                    for i in range(min(len(zone_x_list), len(zone_y_list), len(zone_label_list))):
+                        try:
+                            x = int(zone_x_list[i])
+                            y = int(zone_y_list[i])
+                            label = zone_label_list[i].strip()
+                            
+                            if x >= 0 and y >= 0 and label:
+                                zones.append({
+                                    'x': x,
+                                    'y': y,
+                                    'label': label
+                                })
+                        except (ValueError, TypeError, IndexError):
+                            current_app.logger.warning(f'Zone {i} invalide, ignorée')
+                
+                current_app.logger.debug(f'Zones finales: {zones}')
+                
+                if not zones:
+                    flash('Veuillez définir au moins une zone de placement sur l\'image.', 'error')
+                    return redirect(request.url)
+                
+                if len(zones) != len(labels):
+                    flash('Le nombre de zones doit correspondre au nombre d\'étiquettes.', 'error')
+                    return redirect(request.url)
+                
+                # Vérifier que toutes les étiquettes ont une zone correspondante
+                zone_labels = [zone['label'] for zone in zones]
+                for label in labels:
+                    if label not in zone_labels:
+                        flash(f'L\'étiquette "{label}" n\'a pas de zone correspondante.', 'error')
+                        return redirect(request.url)
+                
                 content['main_image'] = main_image_path
-                current_app.logger.debug(f'Exercice légende {legend_mode} créé')
+                content['labels'] = labels
+                content['zones'] = zones
+                current_app.logger.debug(f'Exercice étiquetage d\'image créé avec {len(labels)} étiquettes et {len(zones)} zones')
 
             # Gestion de l'image de l'exercice (pour tous les types d'exercices)
             # exercise_image_path déjà initialisé plus haut pour underline_words
@@ -737,18 +649,8 @@ def create_exercise():
                 current_app.logger.error("Form data recue: [Unicode encoding error]")
             current_app.logger.error(f"Files recus: {list(request.files.keys())}")
             current_app.logger.error("=== FIN ERREUR ===")
-            db.session.rollback()
-            flash(f'Une erreur est survenue lors de la creation de l\'exercice: {str(e)}', 'error')
-            return redirect(request.url)
 
 
-@bp.route('/edit_exercise/<int:exercise_id>', methods=['GET', 'POST'])
-@login_required
-def edit_exercise(exercise_id):
-    try:
-        exercise = Exercise.query.get_or_404(exercise_id)
-        
-        # Vérifier que l'utilisateur est le propriétaire de l'exercice
         if not current_user.is_teacher or current_user.id != exercise.teacher_id:
             flash('Vous n\'avez pas la permission de modifier cet exercice.', 'error')
             return redirect(url_for('exercise.exercise_library'))
@@ -790,7 +692,7 @@ def edit_exercise(exercise_id):
                 print(f"[QCM_EDIT_DEBUG] Processing QCM edit...")
                 print(f'[QCM_EDIT_DEBUG] Tous les champs du formulaire: {list(request.form.keys())}')
                 
-                # ✅ CORRECTION : Le template utilise questions[] (format tableau HTML)
+                # CORRECTION : Le template utilise questions[] (format tableau HTML)
                 questions_list = request.form.getlist('questions[]')
                 print(f'[QCM_EDIT_DEBUG] Questions trouvées: {questions_list}')
                 
@@ -824,7 +726,7 @@ def edit_exercise(exercise_id):
                                 correct_answer = 0
                             
                             questions.append({
-                                'text': question_text,  # ✅ CORRECTION : Utiliser 'text' comme dans app.py
+                                'text': question_text,  # CORRECTION : Utiliser 'text' comme dans app.py
                                 'choices': options,
                                 'correct_answer': correct_answer
                             })
@@ -1080,75 +982,7 @@ def edit_exercise(exercise_id):
                 
                 print(f"[DICTATION_EDIT_DEBUG] Final content: {content}")
             
-            elif exercise.exercise_type == 'legend':
-                # Traitement pour les exercices de légende (édition)
-                current_app.logger.debug('Processing legend edit...')
-                
-                # Récupérer les instructions
-                instructions = request.form.get('legend_instructions', '').strip()
-                if not instructions:
-                    instructions = 'Placez les légendes aux bons endroits sur l\'image.'
-                
-                # Gestion de l'image principale
-                main_image_path = None
-                if 'legend_main_image' in request.files:
-                    image_file = request.files['legend_main_image']
-                    if image_file and image_file.filename != '' and allowed_file(image_file.filename):
-                        filename = secure_filename(image_file.filename)
-                        unique_filename = generate_unique_filename(filename)
-                        
-                        # Créer le dossier uploads s'il n'existe pas
-                        upload_folder = os.path.join(current_app.root_path, 'static', 'uploads')
-                        os.makedirs(upload_folder, exist_ok=True)
-                        
-                        # Sauvegarder l'image
-                        image_path = os.path.join(upload_folder, unique_filename)
-                        image_file.save(image_path)
-                        
-                        main_image_path = f'static/uploads/{unique_filename}'
-                        
-                        # Mettre à jour le champ image_path de l'exercice
-                        exercise.image_path = unique_filename
-                        
-                        current_app.logger.debug(f'Image principale légende mise à jour: {unique_filename}')
-                
-                # Si pas de nouvelle image, garder l'ancienne
-                if not main_image_path:
-                    existing_content = exercise.get_content()
-                    main_image_path = existing_content.get('main_image')
-                    if not main_image_path and not exercise.image_path:
-                        flash('Une image principale est obligatoire pour un exercice de légende.', 'error')
-                        return render_template('exercise_types/legend_edit.html', exercise=exercise, content=exercise.get_content())
-                
-                # Récupérer les zones et légendes
-                zones = []
-                zone_index = 0
-                while f'zone_{zone_index}_x' in request.form:
-                    x = request.form.get(f'zone_{zone_index}_x', type=int)
-                    y = request.form.get(f'zone_{zone_index}_y', type=int)
-                    legend_text = request.form.get(f'zone_{zone_index}_legend', '').strip()
-                    
-                    if x is not None and y is not None and legend_text:
-                        zones.append({
-                            'x': x,
-                            'y': y,
-                            'legend': legend_text,
-                            'id': zone_index
-                        })
-                    
-                    zone_index += 1
-                
-                if not zones:
-                    flash('Veuillez ajouter au moins une zone avec sa légende.', 'error')
-                    return render_template('exercise_types/legend_edit.html', exercise=exercise, content=exercise.get_content())
-                
-                content = {
-                    'instructions': instructions,
-                    'main_image': main_image_path,
-                    'zones': zones
-                }
-                
-                current_app.logger.debug(f'Exercice légende modifié avec {len(zones)} zones')
+            # Type d'exercice legend supprimé du projet
             
             # Sauvegarder les modifications
             exercise.content = json.dumps(content)
@@ -1178,21 +1012,6 @@ def edit_exercise(exercise_id):
             print(f"[EDIT_DEBUG] Template error: {str(template_error)}")
             flash(f'Une erreur est survenue : le template de modification pour ce type d\'exercice est manquant.', 'error')
             return redirect(url_for('exercise.exercise_library'))
-        
-    except Exception as e:
-        db.session.rollback()
-        print(f'Erreur lors de la modification de l\'exercice {exercise_id}: {str(e)}')
-        flash('Une erreur est survenue lors de la modification de l\'exercice.', 'error')
-        
-        # Essayer de récupérer le contenu même en cas d'erreur
-        try:
-            content = exercise.get_content()
-        except:
-            content = {'questions': []}  # Contenu par défaut si impossible de récupérer
-        
-        attempts_count = 0  # Valeur par défaut
-        return render_template(f'exercise_types/{exercise.exercise_type}_edit.html', 
-                             exercise=exercise, content=content, attempts_count=attempts_count)
 
 @bp.route('/test_exercise_library')
 @login_required
