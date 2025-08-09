@@ -11,6 +11,51 @@
         </a>
     </div>
 
+    <!-- Filtres -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('exercise_library') }}" class="row g-3">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <input type="text" 
+                               class="form-control" 
+                               name="search" 
+                               placeholder="Rechercher un exercice..."
+                               value="{{ search_query if search_query else '' }}">
+                        <button class="btn btn-outline-secondary" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" name="type">
+                        <option value="">Tous les types</option>
+                        {% for type_id, type_name in exercise_types %}
+                            <option value="{{ type_id }}" {% if type_id == selected_type %}selected{% endif %}>
+                                {{ type_name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" name="subject">
+                        <option value="">Toutes les matières</option>
+                        <option value="Français" {% if selected_subject == 'Français' %}selected{% endif %}>Français</option>
+                        <option value="Mathématiques" {% if selected_subject == 'Mathématiques' %}selected{% endif %}>Mathématiques</option>
+                        <option value="Histoire" {% if selected_subject == 'Histoire' %}selected{% endif %}>Histoire</option>
+                        <option value="Géographie" {% if selected_subject == 'Géographie' %}selected{% endif %}>Géographie</option>
+                        <option value="Sciences" {% if selected_subject == 'Sciences' %}selected{% endif %}>Sciences</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter"></i> Filtrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     {% if exercises %}
     <div class="row">
         {% for exercise in exercises %}

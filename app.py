@@ -616,7 +616,7 @@ def exercise_library():
     for ex in exercises:
         app.logger.info(f"Exercice : {ex.title} (type: {ex.exercise_type})")
 
-    return render_template('exercise_library.html',
+    return render_template('teacher/exercise_library.html',
                          exercises=exercises,
                          exercise_types=Exercise.EXERCISE_TYPES,
                          search_query=search_query,

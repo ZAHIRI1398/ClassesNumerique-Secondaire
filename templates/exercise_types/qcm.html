@@ -19,10 +19,11 @@
     <div class="mb-4 text-center">
         <div class="card">
             <div class="card-body">
-                <img src="{{ url_for('static', filename=content.image.replace('static/', '')) }}" 
+                <img src="{{ url_for('uploaded_file', filename=content.image.split('/')[-1]) }}" 
                      alt="Image d'illustration" 
                      class="img-fluid rounded" 
-                     style="max-width: 100%; max-height: 400px; object-fit: contain;">
+                     style="max-width: 100%; max-height: 400px; object-fit: contain;"
+                     onerror="this.style.display='none'; console.log('Image non trouvée:', this.src);">
             </div>
         </div>
     </div>
@@ -120,7 +121,7 @@
         <!-- Affichage de l'image si elle existe -->
         {% if exercise.image_path %}
         <div class="exercise-image" style="text-align: center; margin: 1.5rem 0;">
-            <img src="{{ url_for('static', filename='uploads/' + exercise.image_path) }}" 
+            <img src="{{ url_for('uploaded_file', filename=exercise.image_path.split('/')[-1]) }}" 
                  alt="Image de l'exercice" 
                  style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
         </div>

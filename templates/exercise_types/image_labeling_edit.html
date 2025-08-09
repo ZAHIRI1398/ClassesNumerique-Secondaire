@@ -31,7 +31,7 @@
                             <label for="exercise_image" class="form-label">Image de l'exercice (optionnelle)</label>
                             {% if exercise.image_path %}
                             <div class="mb-2">
-                                <img src="{{ url_for('static', filename='uploads/' + exercise.image_path.split('/')[-1]) }}" 
+                                <img src="{{ url_for('uploaded_file', filename=exercise.image_path.split('/')[-1]) }}" 
                                      alt="Image actuelle" class="img-thumbnail" style="max-height: 150px;">
                                 <p class="text-muted small">Image actuelle</p>
                             </div>
@@ -53,7 +53,7 @@
                             </h5>
                             {% if content and content.main_image %}
                             <div class="mb-3">
-                                <img src="{{ url_for('static', filename='uploads/' + content.main_image.split('/')[-1]) }}" 
+                                <img src="{{ url_for('uploaded_file', filename=content.main_image.split('/')[-1]) }}" 
                                      alt="Image principale actuelle" class="img-thumbnail" style="max-height: 200px;">
                                 <p class="text-muted small">Image principale actuelle</p>
                             </div>

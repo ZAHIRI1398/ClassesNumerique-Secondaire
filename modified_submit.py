@@ -1049,7 +1049,9 @@ def exercise_library():
         ('pairs', 'Paires'),
         ('fill_in_blanks', 'Texte à trous'),
         ('underline_words', 'Souligner les mots'),
-        ('dictation', 'Dictée')
+        ('drag_and_drop', 'Glisser-déposer'),
+        ('dictation', 'Dictée'),
+        ('image_labeling', 'Étiquetage d\'image')
     ]
     
     return render_template('exercise_library.html',

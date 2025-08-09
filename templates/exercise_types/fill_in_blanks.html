@@ -25,7 +25,7 @@
             <!-- Affichage de l'image si elle existe -->
             {% if exercise.image_path %}
             <div class="exercise-image" style="text-align: center; margin: 1.5rem 0;">
-                <img src="{{ url_for('static', filename='uploads/' + exercise.image_path) }}" 
+                <img src="{{ url_for('uploaded_file', filename=exercise.image_path.split('/')[-1]) }}" 
                      alt="Image de l'exercice" 
                      style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
             </div>
@@ -33,14 +33,20 @@
             <form method="POST" action="{{ url_for('exercise.submit_answer', exercise_id=exercise.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 
+                {% if current_user.role == 'teacher' %}
                 <div class="mb-4">
                     <h4>Mots disponibles :</h4>
-                    <div class="word-bank p-3 border rounded bg-light">
+                    <div class="word-bank p-3 border rounded bg-light" id="word-bank">
                         {% for word in content.words %}
-                            <button type="button" class="btn btn-primary btn-sm me-2 mb-2 draggable-word">{{ word }}</button>
+                            <button type="button" 
+                                    class="btn btn-primary btn-sm me-2 mb-2 draggable-word" 
+                                    draggable="true" 
+                                    data-word="{{ word }}">{{ word }}</button>
                         {% endfor %}
                     </div>
+                    <p class="text-muted small"><i class="fas fa-info-circle"></i> Les mots disponibles ne sont visibles que pour les enseignants.</p>
                 </div>
+                {% endif %}
 
                 {% for sentence in content.sentences %}
                     <div class="mb-4 sentence-container">
@@ -106,7 +112,13 @@
                     // Vider la banque de mots et réinsérer dans l'ordre mélangé
                     wordBank.innerHTML = '';
                     shuffledWords.forEach(word => {
-                        wordBank.appendChild(word);
+                        const button = document.createElement('button');
+                        button.type = 'button';
+                        button.className = 'btn btn-primary btn-sm me-2 mb-2 draggable-word';
+                        button.textContent = word.textContent;
+                        button.draggable = true;
+                        button.setAttribute('data-word', word.textContent);
+                        wordBank.appendChild(button);
                     });
                     
                     console.log('Mots mélangés avec succès!');
