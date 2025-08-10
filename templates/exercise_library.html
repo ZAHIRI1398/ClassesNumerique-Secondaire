@@ -133,7 +133,7 @@
                                             <a href="/quick-add-exercise/{{ exercise.id }}" class="btn btn-outline-success">
                                                 <i class="fas fa-plus"></i> Ajouter
                                             </a>
-                                            {% if current_user.id == exercise.created_by_id %}
+                                            {% if current_user.id == exercise.teacher_id %}
                                                 <a href="/exercise/{{ exercise.id }}/edit" class="btn btn-outline-warning">
                                                     <i class="fas fa-edit"></i> Modifier
                                                 </a>
