@@ -199,9 +199,11 @@ def uploaded_file(filename):
 @app.route('/')
 @login_required
 def index():
-    if current_user.is_teacher:
+    if current_user.role == 'admin':
+        return redirect(url_for('admin_dashboard'))
+    elif current_user.is_teacher:
         return redirect(url_for('teacher_dashboard'))
-    else:
+    else:  # student
         return redirect(url_for('view_student_classes'))
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -217,9 +219,31 @@ def login():
         user = User.query.filter_by(email=email).first()
         
         if user and user.check_password(password):
+            # Vérifier le statut d'abonnement avant la connexion
+            if user.subscription_status == 'suspended':
+                flash('Votre compte a été suspendu. Contactez l\'administrateur pour plus d\'informations.', 'error')
+                return render_template('login.html')
+            elif user.subscription_status == 'rejected':
+                flash('Votre demande d\'abonnement a été rejetée. Contactez l\'administrateur.', 'error')
+                return render_template('login.html')
+            elif user.subscription_status == 'pending':
+                flash('Votre compte est en attente de validation. Veuillez patienter.', 'warning')
+                return render_template('login.html')
+            elif user.subscription_status == 'paid' and user.role != 'admin':
+                flash('Votre paiement a été reçu. En attente de validation par l\'administrateur.', 'info')
+                return render_template('login.html')
+            
+            # Connexion autorisée pour les comptes approuvés ou les administrateurs
             login_user(user, remember=remember_me)
             flash('Connexion réussie !', 'success')
-            return redirect(url_for('index'))
+            
+            # Redirection intelligente selon le rôle
+            if user.role == 'admin':
+                return redirect(url_for('admin_dashboard'))
+            elif user.role == 'teacher':
+                return redirect(url_for('teacher_dashboard'))
+            else:  # student
+                return redirect(url_for('view_student_classes'))
         else:
             flash('Email ou mot de passe incorrect.', 'error')
     
@@ -4123,220 +4147,246 @@ def edit_exercise_blueprint(exercise_id):
                 
                 print(f'[LEGEND_EDIT_DEBUG] Zones trouvées: {sorted(zone_indices)}')
                 
-                # Construire la liste des zones
-                zones = []
-                elements = []
+                # Sauvegarder les modifications
+                db.session.commit()
+                flash('Exercice modifié avec succès !', 'success')
+                return redirect(url_for('view_exercise', exercise_id=exercise_id))
                 
-                for zone_index in sorted(zone_indices):
-                    x_key = f'zone_{zone_index}_x'
-                    y_key = f'zone_{zone_index}_y'
-                    legend_key = f'zone_{zone_index}_legend'
-                    
-                    print(f'[LEGEND_EDIT_DEBUG] Recherche zone {zone_index}: {x_key}, {y_key}, {legend_key}')
-                    print(f'[LEGEND_EDIT_DEBUG] Présent dans form: x={x_key in request.form}, y={y_key in request.form}, legend={legend_key in request.form}')
-                    
-                    if all(key in request.form for key in [x_key, y_key, legend_key]):
-                        try:
-                            x_raw = request.form[x_key]
-                            y_raw = request.form[y_key]
-                            legend_raw = request.form[legend_key]
-                            
-                            print(f'[LEGEND_EDIT_DEBUG] Valeurs brutes zone {zone_index}: x="{x_raw}", y="{y_raw}", legend="{legend_raw}"')
-                            
-                            x = int(float(x_raw))
-                            y = int(float(y_raw))
-                            legend = legend_raw.strip()
-                            
-                            print(f'[LEGEND_EDIT_DEBUG] Valeurs converties zone {zone_index}: x={x}, y={y}, legend="{legend}", legend_empty={not legend}')
-                            
-                            if legend:  # Ne sauvegarder que les zones avec légende
-                                zone_data = {
-                                    'id': zone_index,
-                                    'x': x,
-                                    'y': y,
-                                    'legend': legend,
-                                    'name': legend
-                                }
-                                zones.append(zone_data)
-                                
-                                # Ajouter aussi à la liste des éléments draggables
-                                elements.append({
-                                    'id': zone_index,
-                                    'text': legend,
-                                    'type': 'text'
-                                })
-                                
-                                print(f'[LEGEND_EDIT_DEBUG] Zone {zone_index} ACCEPTÉE: x={x}, y={y}, legend="{legend}"')
-                            else:
-                                print(f'[LEGEND_EDIT_DEBUG] Zone {zone_index} REJETÉE: légende vide')
-                        except (ValueError, TypeError) as e:
-                            print(f'[LEGEND_EDIT_DEBUG] Erreur parsing zone {zone_index}: {e}')
-                    else:
-                        print(f'[LEGEND_EDIT_DEBUG] Zone {zone_index} IGNORÉE: champs manquants')
-                
-                print(f'[LEGEND_EDIT_DEBUG] RÉSULTAT FINAL: {len(zones)} zones acceptées')
-                
-                # Validation finale
-                if not zones:
-                    print(f'[LEGEND_EDIT_DEBUG] ERREUR: Aucune zone valide trouvée!')
-                    print(f'[LEGEND_EDIT_DEBUG] Zones détectées mais rejetées: {len(zone_indices)} zones')
-                    flash('Veuillez ajouter au moins une zone avec sa légende.', 'error')
-                    return render_template('exercise_types/legend_edit.html', exercise=exercise)
-                
-                # Mettre à jour le contenu
-                current_content['zones'] = zones
-                current_content['elements'] = elements
-                current_content['mode'] = current_content.get('mode', 'classic')
-                
-                # Mettre à jour les instructions si présentes
-                if 'legend_instructions' in request.form:
-                    current_content['instructions'] = request.form['legend_instructions']
-                
-                # Conserver l'image principale si elle existe
-                if exercise.image_path and 'main_image' not in current_content:
-                    current_content['main_image'] = exercise.image_path
-                
-                exercise.content = json.dumps(current_content)
-                print(f'[LEGEND_EDIT_DEBUG] Contenu sauvegardé avec {len(zones)} zones')
-            
-            # Sauvegarder en base
-            db.session.commit()
-            flash('Exercice modifié avec succès !', 'success')
-            print(f'[LEGEND_EDIT_DEBUG] Exercice {exercise_id} sauvegardé avec succès')
-            
-            return render_template('exercise_types/legend_edit.html', exercise=exercise)
-            
         except Exception as e:
+            print(f'[EDIT_ERROR] Erreur lors de la modification : {e}')
+            flash('Erreur lors de la modification de l\'exercice.', 'error')
             db.session.rollback()
-            print(f'[LEGEND_EDIT_DEBUG] Erreur lors de la sauvegarde: {e}')
-            flash(f'Erreur lors de la modification: {str(e)}', 'error')
-            return render_template('exercise_types/legend_edit.html', exercise=exercise)
+    
+    return render_template('exercise_types/legend_edit.html', exercise=exercise)
 
-@app.route('/exercise/<int:exercise_id>/edit', methods=['GET', 'POST'])
-# @login_required  # TEMPORAIREMENT DÉSACTIVÉ POUR TEST
-def edit_exercise_robust(exercise_id):
-    """Route robuste d'édition d'exercice avec logique avancée de parsing des zones légende"""
-    exercise = Exercise.query.get_or_404(exercise_id)
+
+# ========================================
+# DASHBOARD ADMINISTRATEUR - GESTION DES INSCRIPTIONS PAYANTES
+# ========================================
+
+def admin_required(f):
+    """Décorateur pour vérifier que l'utilisateur est administrateur"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or current_user.role != 'admin':
+            flash('Accès non autorisé. Seuls les administrateurs peuvent accéder à cette page.', 'error')
+            return redirect(url_for('index'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def subscription_required(f):
+    """Décorateur pour vérifier que l'utilisateur a un abonnement actif"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            flash('Vous devez être connecté pour accéder à cette page.', 'error')
+            return redirect(url_for('login'))
+        
+        # Les admins ont toujours accès
+        if current_user.role == 'admin':
+            return f(*args, **kwargs)
+        
+        # Les étudiants peuvent accéder (leur accès dépend de leur enseignant)
+        if current_user.role == 'student':
+            return f(*args, **kwargs)
+        
+        # Pour les enseignants, vérifier l'abonnement
+        if current_user.role == 'teacher':
+            if not current_user.can_access_platform:
+                return redirect(url_for('subscription_status'))
+        
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route('/admin/dashboard')
+@login_required
+@admin_required
+def admin_dashboard():
+    """Dashboard principal de l'administrateur pour gérer les inscriptions"""
+    # Statistiques générales
+    total_users = User.query.count()
+    pending_users = User.query.filter_by(subscription_status='pending').count()
+    paid_users = User.query.filter_by(subscription_status='paid').count()
+    approved_users = User.query.filter_by(subscription_status='approved').count()
+    rejected_users = User.query.filter_by(subscription_status='rejected').count()
     
-    if request.method == 'GET':
-        # Affichage du formulaire d'édition
-        return render_template('legend_edit.html', exercise=exercise)
+    # Utilisateurs en attente de validation (payés)
+    users_awaiting_approval = User.query.filter_by(subscription_status='paid').order_by(User.payment_date.desc()).all()
     
-    if request.method == 'POST':
-        app.logger.info(f"[LEGEND_EDIT_DEBUG] Processing legend edit for exercise {exercise_id}")
+    # Dernières inscriptions
+    recent_registrations = User.query.filter(User.subscription_status.in_(['pending', 'paid'])).order_by(User.created_at.desc()).limit(10).all()
+    
+    stats = {
+        'total_users': total_users,
+        'pending_users': pending_users,
+        'paid_users': paid_users,
+        'approved_users': approved_users,
+        'rejected_users': rejected_users
+    }
+    
+    return render_template('admin/dashboard.html', 
+                         stats=stats, 
+                         users_awaiting_approval=users_awaiting_approval,
+                         recent_registrations=recent_registrations)
+
+@app.route('/admin/subscriptions')
+@login_required
+@admin_required
+def admin_subscriptions():
+    """Page de gestion des abonnements avec filtrage"""
+    status_filter = request.args.get('status', 'all')
+    type_filter = request.args.get('type', 'all')
+    
+    # Construire la requête avec filtres
+    query = User.query.filter(User.role.in_(['teacher']))  # Exclure les admins et étudiants
+    
+    if status_filter != 'all':
+        query = query.filter_by(subscription_status=status_filter)
+    
+    if type_filter != 'all':
+        query = query.filter_by(subscription_type=type_filter)
+    
+    users = query.order_by(User.created_at.desc()).all()
+    
+    return render_template('admin/subscriptions.html', 
+                         users=users, 
+                         status_filter=status_filter,
+                         type_filter=type_filter)
+
+@app.route('/admin/user/<int:user_id>')
+@login_required
+@admin_required
+def admin_user_details(user_id):
+    """Page de détails d'un utilisateur pour l'administrateur"""
+    user = User.query.get_or_404(user_id)
+    
+    # Récupérer l'administrateur qui a approuvé (si applicable)
+    approver = None
+    if user.approved_by:
+        approver = User.query.get(user.approved_by)
+    
+    return render_template('admin/user_details.html', user=user, approver=approver)
+
+@app.route('/admin/approve/<int:user_id>', methods=['POST'])
+@login_required
+@admin_required
+def approve_subscription(user_id):
+    """Approuver un abonnement"""
+    user = User.query.get_or_404(user_id)
+    
+    if user.subscription_status != 'paid':
+        flash('Seuls les abonnements payés peuvent être approuvés.', 'error')
+        return redirect(url_for('admin_dashboard'))
+    
+    # Approuver l'abonnement
+    user.approve_subscription(current_user.id)
+    db.session.commit()
+    
+    flash(f'Abonnement de {user.name} approuvé avec succès !', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/reject/<int:user_id>', methods=['POST'])
+@login_required
+@admin_required
+def reject_subscription(user_id):
+    """Rejeter un abonnement"""
+    user = User.query.get_or_404(user_id)
+    reason = request.form.get('reason', '').strip()
+    
+    if user.subscription_status not in ['paid', 'pending']:
+        flash('Seuls les abonnements en attente ou payés peuvent être rejetés.', 'error')
+        return redirect(url_for('admin_dashboard'))
+    
+    # Rejeter l'abonnement
+    user.reject_subscription(current_user.id, reason)
+    db.session.commit()
+    
+    flash(f'Abonnement de {user.name} rejeté.', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/suspend/<int:user_id>', methods=['POST'])
+@login_required
+@admin_required
+def suspend_subscription(user_id):
+    """Suspendre un abonnement"""
+    user = User.query.get_or_404(user_id)
+    reason = request.form.get('reason', '').strip()
+    
+    if user.subscription_status != 'approved':
+        flash('Seuls les abonnements approuvés peuvent être suspendus.', 'error')
+        return redirect(url_for('admin_dashboard'))
+    
+    # Suspendre l'abonnement
+    user.suspend_subscription(current_user.id, reason)
+    db.session.commit()
+    
+    flash(f'Abonnement de {user.name} suspendu.', 'warning')
+    return redirect(url_for('admin_dashboard'))
+
+
+
+@app.route('/subscription/status')
+@login_required
+def subscription_status():
+    """Page de statut d'abonnement pour l'utilisateur"""
+    return render_template('subscription/status.html', user=current_user)
+
+@app.route('/subscription/payment')
+@login_required
+def subscription_payment():
+    """Page de paiement d'abonnement"""
+    if current_user.subscription_status not in ['pending', 'rejected']:
+        flash('Votre abonnement ne nécessite pas de paiement actuellement.', 'info')
+        return redirect(url_for('subscription_status'))
+    
+    # Déterminer le montant selon le type d'utilisateur
+    if current_user.role == 'teacher':
+        amount = 40.0
+        subscription_type = 'teacher'
+    else:
+        # Pour les écoles (à implémenter plus tard)
+        amount = 80.0
+        subscription_type = 'school'
+    
+    return render_template('subscription/payment.html', 
+                         user=current_user, 
+                         amount=amount, 
+                         subscription_type=subscription_type)
+
+@app.route('/subscription/payment/process', methods=['POST'])
+@login_required
+def process_payment():
+    """Traiter le paiement d'abonnement (simulation)"""
+    try:
+        amount = float(request.form.get('amount', 0))
+        subscription_type = request.form.get('subscription_type', 'teacher')
+        card_number = request.form.get('card_number', '')
         
-        # Récupération des données du formulaire
-        title = request.form.get('title', '').strip()
-        instructions = request.form.get('instructions', '').strip()
+        # Simulation du traitement de paiement
+        # Dans la vraie version, ici on appellerait l'API Stripe/PayPal
         
-        if not title or not instructions:
-            flash('Le titre et les instructions sont obligatoires.', 'error')
-            return render_template('legend_edit.html', exercise=exercise)
+        # Générer une référence de paiement simulée
+        import uuid
+        payment_reference = f"PAY_{uuid.uuid4().hex[:8].upper()}"
         
-        # Mise à jour des champs de base
-        exercise.title = title
-        exercise.instructions = instructions
+        # Mettre à jour l'utilisateur
+        current_user.subscription_status = 'paid'
+        current_user.subscription_type = subscription_type
+        current_user.subscription_amount = amount
+        current_user.payment_date = datetime.utcnow()
+        current_user.payment_reference = payment_reference
         
-        try:
-            # Parsing du contenu existant
-            content = json.loads(exercise.content) if exercise.content else {}
-            app.logger.info(f"[LEGEND_EDIT_DEBUG] Contenu existant: {content}")
-            
-            # Récupération de tous les champs zone_* du formulaire
-            zone_fields = {}
-            for key, value in request.form.items():
-                if key.startswith('zone_'):
-                    zone_fields[key] = value
-                    app.logger.info(f"[LEGEND_EDIT_DEBUG] Champ trouvé: {key} = {value}")
-            
-            # Parsing des zones avec logique robuste - SCAN COMPLET
-            zone_indices = set()
-            zones_data = {}
-            
-            # Scanner TOUS les champs zone_* pour détecter tous les indices
-            for key in zone_fields:
-                if key.startswith('zone_') and ('_x' in key or '_y' in key or '_legend' in key):
-                    parts = key.split('_')
-                    if len(parts) >= 3:
-                        zone_index = parts[1]
-                        field_type = '_'.join(parts[2:])  # x, y, ou legend
-                        
-                        if zone_index not in zones_data:
-                            zones_data[zone_index] = {}
-                        
-                        zones_data[zone_index][field_type] = zone_fields[key]
-                        try:
-                            zone_indices.add(int(zone_index))
-                        except ValueError:
-                            app.logger.warning(f"[LEGEND_EDIT_DEBUG] Index de zone invalide: {zone_index}")
-            
-            app.logger.info(f"[LEGEND_EDIT_DEBUG] Zones trouvées: {sorted(zone_indices)}")
-            app.logger.info(f"[LEGEND_EDIT_DEBUG] Données zones: {zones_data}")
-            
-            # Construction des zones pour le JSON
-            zones = []
-            elements = []
-            
-            for zone_index in sorted(zone_indices):
-                zone_data = zones_data[str(zone_index)]
-                
-                # Validation des données de la zone
-                if 'x' in zone_data and 'y' in zone_data and 'legend' in zone_data:
-                    try:
-                        x = int(zone_data['x'])
-                        y = int(zone_data['y'])
-                        legend = zone_data['legend'].strip()
-                        
-                        if legend:  # Seulement si la légende n'est pas vide
-                            zone = {
-                                'x': x,
-                                'y': y,
-                                'legend': legend
-                            }
-                            zones.append(zone)
-                            
-                            # Ajout de l'élément correspondant
-                            element = {
-                                'id': f'element_{len(elements) + 1}',
-                                'text': legend
-                            }
-                            elements.append(element)
-                            
-                            app.logger.info(f"[LEGEND_EDIT_DEBUG] Zone {zone_index}: x={x}, y={y}, legend='{legend}'")
-                    except (ValueError, TypeError) as e:
-                        app.logger.error(f"[LEGEND_EDIT_DEBUG] Erreur parsing zone {zone_index}: {e}")
-                        continue
-                else:
-                    app.logger.warning(f"[LEGEND_EDIT_DEBUG] Zone {zone_index} incomplète: {zone_data}")
-            
-            if not zones:
-                flash('Veuillez ajouter au moins une zone avec sa légende.', 'error')
-                return render_template('legend_edit.html', exercise=exercise)
-            
-            # Mise à jour du contenu JSON
-            content.update({
-                'mode': content.get('mode', 'classic'),
-                'instructions': instructions,
-                'main_image': content.get('main_image', ''),
-                'zones': zones,
-                'elements': elements
-            })
-            
-            exercise.content = json.dumps(content, ensure_ascii=False)
-            
-            # Sauvegarde en base
-            db.session.commit()
-            
-            app.logger.info(f"[LEGEND_EDIT_DEBUG] Contenu sauvegardé avec succès: {len(zones)} zones")
-            flash('Exercice modifié avec succès !', 'success')
-            
-            return redirect(url_for('exercise_library'))
-            
-        except Exception as e:
-            db.session.rollback()
-            app.logger.error(f"[LEGEND_EDIT_DEBUG] Erreur lors de la sauvegarde: {e}")
-            flash(f'Erreur lors de la modification: {str(e)}', 'error')
-            return render_template('legend_edit.html', exercise=exercise)
+        db.session.commit()
+        
+        flash(f'Paiement effectué avec succès ! Référence : {payment_reference}', 'success')
+        flash('Votre dossier est maintenant en cours de validation par notre équipe administrative.', 'info')
+        
+        return redirect(url_for('subscription_status'))
+        
+    except Exception as e:
+        print(f"[ERROR] Erreur lors du traitement du paiement : {e}")
+        flash('Une erreur est survenue lors du traitement du paiement. Veuillez réessayer.', 'error')
+        return redirect(url_for('subscription_payment'))
 
 if __name__ == '__main__':
     with app.app_context():

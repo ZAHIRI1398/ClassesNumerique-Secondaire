@@ -28,6 +28,18 @@ class User(UserMixin, db.Model):
     role = db.Column(db.String(20), nullable=False, default='student')  # 'admin', 'teacher', 'student'
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
+    # Système d'inscription payante et validation admin
+    subscription_status = db.Column(db.String(20), default='pending')  # 'pending', 'paid', 'approved', 'rejected', 'suspended'
+    subscription_type = db.Column(db.String(20))  # 'teacher', 'school'
+    subscription_amount = db.Column(db.Float)  # 40.0 pour teacher, 80.0 pour school
+    payment_date = db.Column(db.DateTime)
+    payment_reference = db.Column(db.String(100))  # Référence de paiement (Stripe, PayPal, etc.)
+    approval_date = db.Column(db.DateTime)
+    approved_by = db.Column(db.Integer, db.ForeignKey('user.id'))  # ID de l'admin qui a validé
+    subscription_expires = db.Column(db.DateTime)  # Date d'expiration de l'abonnement
+    rejection_reason = db.Column(db.Text)  # Raison du refus si applicable
+    notes = db.Column(db.Text)  # Notes administratives
+    
     # Relations
     classes_enrolled = db.relationship('Class', secondary=student_class_association, back_populates='students')
     classes_teaching = db.relationship('Class', backref='teacher', lazy=True, foreign_keys='Class.teacher_id')
@@ -76,6 +88,74 @@ class User(UserMixin, db.Model):
             'average_score': sum(scores) / len(scores),
             'last_attempt': attempts[-1]
         }
+    
+    # Méthodes pour la gestion des abonnements et validations
+    @property
+    def is_subscription_active(self):
+        """Vérifier si l'abonnement est actif (approuvé et non expiré)"""
+        if self.subscription_status != 'approved':
+            return False
+        if self.subscription_expires and self.subscription_expires < datetime.utcnow():
+            return False
+        return True
+    
+    @property
+    def can_access_platform(self):
+        """Vérifier si l'utilisateur peut accéder à la plateforme"""
+        # Les admins ont toujours accès
+        if self.role == 'admin':
+            return True
+        # Les étudiants peuvent accéder si leur enseignant a un abonnement actif
+        if self.role == 'student':
+            return True  # Logique à affiner selon les besoins
+        # Les enseignants doivent avoir un abonnement actif
+        return self.is_subscription_active
+    
+    def set_subscription_type(self, sub_type):
+        """Définir le type d'abonnement et le montant correspondant"""
+        self.subscription_type = sub_type
+        if sub_type == 'teacher':
+            self.subscription_amount = 40.0
+        elif sub_type == 'school':
+            self.subscription_amount = 80.0
+    
+    def mark_as_paid(self, payment_ref):
+        """Marquer l'abonnement comme payé"""
+        self.subscription_status = 'paid'
+        self.payment_date = datetime.utcnow()
+        self.payment_reference = payment_ref
+    
+    def approve_subscription(self, admin_id, duration_months=12):
+        """Approuver l'abonnement (appelé par un admin)"""
+        from datetime import timedelta
+        self.subscription_status = 'approved'
+        self.approval_date = datetime.utcnow()
+        self.approved_by = admin_id
+        # Définir la date d'expiration (12 mois par défaut)
+        self.subscription_expires = datetime.utcnow() + timedelta(days=duration_months * 30)
+    
+    def reject_subscription(self, admin_id, reason):
+        """Rejeter l'abonnement (appelé par un admin)"""
+        self.subscription_status = 'rejected'
+        self.approval_date = datetime.utcnow()
+        self.approved_by = admin_id
+        self.rejection_reason = reason
+    
+    def suspend_subscription(self, admin_id, reason):
+        """Suspendre l'abonnement (appelé par un admin)"""
+        self.subscription_status = 'suspended'
+        self.notes = f"Suspendu le {datetime.utcnow().strftime('%Y-%m-%d')}: {reason}"
+    
+    def get_subscription_status_display(self):
+        """Obtenir le statut d'abonnement en français"""
+        status_map = {
+            'pending': 'En attente de paiement',
+            'paid': 'Payé, en attente de validation',
+            'approved': 'Approuvé et actif',
+            'rejected': 'Refusé',
+            'suspended': 'Suspendu'
+        }
+        return status_map.get(self.subscription_status, 'Statut inconnu')
 
 class Class(db.Model):
     __tablename__ = 'class'

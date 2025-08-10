@@ -1,0 +1,415 @@
+{% extends "base.html" %}
+
+{% block title %}Détails Utilisateur - {{ user.name }}{% endblock %}
+
+{% block head %}
+<style>
+    .admin-user-details {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px 0;
+    }
+    
+    .user-profile-card {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    }
+    
+    .user-avatar-large {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 20px;
+    }
+    
+    .info-section {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 30px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    }
+    
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .info-row:last-child {
+        border-bottom: none;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #495057;
+        display: flex;
+        align-items: center;
+    }
+    
+    .info-value {
+        color: #6c757d;
+    }
+    
+    .status-badge {
+        padding: 8px 16px;
+        border-radius: 25px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-transform: uppercase;
+    }
+    
+    .status-pending { background: #fff3cd; color: #856404; }
+    .status-paid { background: #d1ecf1; color: #0c5460; }
+    .status-approved { background: #d4edda; color: #155724; }
+    .status-rejected { background: #f8d7da; color: #721c24; }
+    .status-suspended { background: #f8d7da; color: #721c24; }
+    
+    .type-badge {
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    .type-teacher { background: #e3f2fd; color: #1565c0; }
+    .type-school { background: #f3e5f5; color: #7b1fa2; }
+    
+    .admin-actions {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 30px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    }
+    
+    .btn-admin-action {
+        border-radius: 25px;
+        padding: 10px 25px;
+        font-weight: 500;
+        margin: 5px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-admin-action:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+    
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 15px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #dee2e6;
+    }
+    
+    .timeline-item {
+        position: relative;
+        margin-bottom: 20px;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -22px;
+        top: 5px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #6c757d;
+    }
+    
+    .timeline-item.success::before { background: #28a745; }
+    .timeline-item.warning::before { background: #ffc107; }
+    .timeline-item.danger::before { background: #dc3545; }
+    .timeline-item.info::before { background: #17a2b8; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-user-details">
+    <div class="container">
+        <!-- Navigation -->
+        <div class="mb-4">
+            <a href="{{ url_for('admin_subscriptions') }}" class="btn btn-outline-light">
+                <i class="fas fa-arrow-left me-2"></i>Retour à la liste
+            </a>
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-light ms-2">
+                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+            </a>
+        </div>
+
+        <div class="row">
+            <!-- Profil utilisateur -->
+            <div class="col-md-4">
+                <div class="user-profile-card text-center">
+                    <div class="user-avatar-large mx-auto">
+                        {{ user.name[0].upper() if user.name else 'U' }}
+                    </div>
+                    <h3>{{ user.name }}</h3>
+                    <p class="text-muted mb-3">{{ user.email }}</p>
+                    
+                    <div class="mb-3">
+                        <span class="status-badge status-{{ user.subscription_status }}">
+                            {{ user.get_subscription_status_display() }}
+                        </span>
+                    </div>
+                    
+                    {% if user.subscription_type %}
+                    <div class="mb-3">
+                        <span class="type-badge type-{{ user.subscription_type }}">
+                            {{ user.subscription_type|title }}
+                        </span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if user.subscription_amount %}
+                    <div class="mb-3">
+                        <h4 class="text-primary">{{ user.subscription_amount }}€</h4>
+                        <small class="text-muted">Montant de l'abonnement</small>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Actions administrateur -->
+                <div class="admin-actions">
+                    <h5><i class="fas fa-tools me-2"></i>Actions</h5>
+                    
+                    {% if user.subscription_status == 'paid' %}
+                    <form method="POST" action="{{ url_for('approve_subscription', user_id=user.id) }}" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="btn btn-success btn-admin-action" 
+                                onclick="return confirm('Approuver cet abonnement ?')">
+                            <i class="fas fa-check me-2"></i>Approuver
+                        </button>
+                    </form>
+                    <button type="button" class="btn btn-danger btn-admin-action" 
+                            data-bs-toggle="modal" data-bs-target="#rejectModal">
+                        <i class="fas fa-times me-2"></i>Rejeter
+                    </button>
+                    {% elif user.subscription_status == 'approved' %}
+                    <button type="button" class="btn btn-warning btn-admin-action" 
+                            data-bs-toggle="modal" data-bs-target="#suspendModal">
+                        <i class="fas fa-pause me-2"></i>Suspendre
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Détails et historique -->
+            <div class="col-md-8">
+                <!-- Informations détaillées -->
+                <div class="info-section">
+                    <h4><i class="fas fa-info-circle me-2"></i>Informations Détaillées</h4>
+                    
+                    <div class="info-row">
+                        <div class="info-label">
+                            <i class="fas fa-user me-2"></i>Nom d'utilisateur
+                        </div>
+                        <div class="info-value">{{ user.username }}</div>
+                    </div>
+                    
+                    <div class="info-row">
+                        <div class="info-label">
+                            <i class="fas fa-envelope me-2"></i>Email
+                        </div>
+                        <div class="info-value">{{ user.email }}</div>
+                    </div>
+                    
+                    <div class="info-row">
+                        <div class="info-label">
+                            <i class="fas fa-user-tag me-2"></i>Rôle
+                        </div>
+                        <div class="info-value">{{ user.role|title }}</div>
+                    </div>
+                    
+                    <div class="info-row">
+                        <div class="info-label">
+                            <i class="fas fa-calendar-plus me-2"></i>Date d'inscription
+                        </div>
+                        <div class="info-value">{{ user.created_at.strftime('%d/%m/%Y à %H:%M') }}</div>
+                    </div>
+                    
+                    {% if user.payment_date %}
+                    <div class="info-row">
+                        <div class="info-label">
+                            <i class="fas fa-credit-card me-2"></i>Date de paiement
+                        </div>
+                        <div class="info-value">{{ user.payment_date.strftime('%d/%m/%Y à %H:%M') }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if user.payment_reference %}
+                    <div class="info-row">
+                        <div class="info-label">
+                            <i class="fas fa-receipt me-2"></i>Référence de paiement
+                        </div>
+                        <div class="info-value">{{ user.payment_reference }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if user.approval_date %}
+                    <div class="info-row">
+                        <div class="info-label">
+                            <i class="fas fa-check-circle me-2"></i>Date d'approbation
+                        </div>
+                        <div class="info-value">{{ user.approval_date.strftime('%d/%m/%Y à %H:%M') }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if approver %}
+                    <div class="info-row">
+                        <div class="info-label">
+                            <i class="fas fa-user-shield me-2"></i>Approuvé par
+                        </div>
+                        <div class="info-value">{{ approver.name }} ({{ approver.email }})</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if user.subscription_expires %}
+                    <div class="info-row">
+                        <div class="info-label">
+                            <i class="fas fa-calendar-times me-2"></i>Expiration
+                        </div>
+                        <div class="info-value">{{ user.subscription_expires.strftime('%d/%m/%Y') }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if user.rejection_reason %}
+                    <div class="info-row">
+                        <div class="info-label">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Raison du rejet
+                        </div>
+                        <div class="info-value">{{ user.rejection_reason }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if user.notes %}
+                    <div class="info-row">
+                        <div class="info-label">
+                            <i class="fas fa-sticky-note me-2"></i>Notes administratives
+                        </div>
+                        <div class="info-value">{{ user.notes }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Chronologie -->
+                <div class="info-section">
+                    <h4><i class="fas fa-history me-2"></i>Chronologie</h4>
+                    
+                    <div class="timeline">
+                        <div class="timeline-item info">
+                            <h6>Inscription</h6>
+                            <p class="text-muted mb-1">{{ user.created_at.strftime('%d/%m/%Y à %H:%M') }}</p>
+                            <small>L'utilisateur s'est inscrit sur la plateforme</small>
+                        </div>
+                        
+                        {% if user.payment_date %}
+                        <div class="timeline-item success">
+                            <h6>Paiement effectué</h6>
+                            <p class="text-muted mb-1">{{ user.payment_date.strftime('%d/%m/%Y à %H:%M') }}</p>
+                            <small>Montant : {{ user.subscription_amount }}€
+                            {% if user.payment_reference %} - Réf: {{ user.payment_reference }}{% endif %}</small>
+                        </div>
+                        {% endif %}
+                        
+                        {% if user.approval_date %}
+                        {% if user.subscription_status == 'approved' %}
+                        <div class="timeline-item success">
+                            <h6>Abonnement approuvé</h6>
+                            <p class="text-muted mb-1">{{ user.approval_date.strftime('%d/%m/%Y à %H:%M') }}</p>
+                            <small>{% if approver %}Par {{ approver.name }}{% endif %}</small>
+                        </div>
+                        {% elif user.subscription_status == 'rejected' %}
+                        <div class="timeline-item danger">
+                            <h6>Abonnement rejeté</h6>
+                            <p class="text-muted mb-1">{{ user.approval_date.strftime('%d/%m/%Y à %H:%M') }}</p>
+                            <small>{% if approver %}Par {{ approver.name }}{% endif %}
+                            {% if user.rejection_reason %}<br>Raison : {{ user.rejection_reason }}{% endif %}</small>
+                        </div>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de rejet -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Rejeter l'abonnement</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('reject_subscription', user_id=user.id) }}">
+                {{ csrf_token() }}
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-body">
+                    <p>Rejeter l'abonnement de <strong>{{ user.name }}</strong> ?</p>
+                    <div class="mb-3">
+                        <label for="reason" class="form-label">Raison du rejet :</label>
+                        <textarea class="form-control" id="reason" name="reason" rows="3" 
+                                  placeholder="Expliquez pourquoi cet abonnement est rejeté..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-danger">Rejeter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de suspension -->
+<div class="modal fade" id="suspendModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Suspendre l'abonnement</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('suspend_subscription', user_id=user.id) }}">
+                {{ csrf_token() }}
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-body">
+                    <p>Suspendre l'abonnement de <strong>{{ user.name }}</strong> ?</p>
+                    <div class="mb-3">
+                        <label for="suspendReason" class="form-label">Raison de la suspension :</label>
+                        <textarea class="form-control" id="suspendReason" name="reason" rows="3" 
+                                  placeholder="Expliquez pourquoi cet abonnement est suspendu..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-warning">Suspendre</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
