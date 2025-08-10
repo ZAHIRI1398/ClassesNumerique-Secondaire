@@ -77,6 +77,31 @@
             </button>
         </div>
 
+        <!-- Section QCM Multichoix -->
+        <div id="qcm_multichoix_section" class="exercise-type-section" style="display: none;">
+            <h3>QCM Multichoix</h3>
+            <p class="text-muted">Créez des questions où plusieurs réponses peuvent être correctes. Les élèves devront cocher toutes les bonnes réponses.</p>
+            
+            <!-- Image optionnelle pour QCM Multichoix -->
+            <div class="mb-4 p-3" style="border: 2px dashed #28a745; border-radius: 8px; background-color: #f8f9fa;">
+                <h5 class="text-success"><i class="bi bi-image"></i> Image d'illustration (optionnel)</h5>
+                <p class="text-muted mb-3">Ajoutez une image pour illustrer vos questions (schéma, photo, graphique...)</p>
+                <div class="mb-3">
+                    <input type="file" class="form-control" name="qcm_multichoix_image" accept="image/*" id="qcm_multichoix_image_input">
+                    <small class="text-muted">Formats acceptés : JPG, PNG, GIF (max 5MB)</small>
+                </div>
+                <div id="qcm_multichoix_image_preview" style="display: none;">
+                    <img id="qcm_multichoix_image_preview_img" src="" alt="Aperçu" class="img-thumbnail" style="max-width: 300px; max-height: 200px;">
+                    <button type="button" class="btn btn-sm btn-danger ms-2" onclick="removeQcmMultichoixImage()">Supprimer</button>
+                </div>
+            </div>
+            
+            <div id="multichoix_questions_container"></div>
+            <button type="button" class="btn btn-success mb-3" onclick="addMultichoixQuestion()">
+                <i class="bi bi-plus-circle"></i> Ajouter une question multichoix
+            </button>
+        </div>
+
         <!-- Section Mots mêlés -->
         <div id="word_search_section" class="exercise-type-section" style="display: none;">
             <h3>Mots mêlés</h3>
@@ -1509,8 +1534,9 @@ function removeLegendZone(zoneId) {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing simplified form...');
     
-    // Configuration des aperçus d'images
+    // Initialiser les aperçus d'images
     setupImagePreview('qcm_image_input', 'qcm_image_preview', 'qcm_image_preview_img');
+    setupImagePreview('qcm_multichoix_image_input', 'qcm_multichoix_image_preview', 'qcm_multichoix_image_preview_img');
     setupImagePreview('fill_in_blanks_image_input', 'fill_in_blanks_image_preview', 'fill_in_blanks_image_preview_img');
     setupImagePreview('underline_words_image_input', 'underline_words_image_preview', 'underline_words_image_preview_img');
     
@@ -2622,6 +2648,151 @@ function directSubmit() {
         console.error('Erreur lors de la soumission:', error);
         alert('ERREUR: ' + error.message);
     }
+}
+
+// ===== FONCTIONS QCM MULTICHOIX =====
+
+let multichoixQuestionCounter = 0;
+
+// Fonction pour ajouter une question QCM multichoix
+function addMultichoixQuestion() {
+    const container = document.getElementById('multichoix_questions_container');
+    const questionIndex = multichoixQuestionCounter;
+    
+    const questionHtml = `
+        <div class="card mb-4 multichoix-question-card" data-question-index="${questionIndex}">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Question ${questionIndex + 1}</h5>
+                <button type="button" class="btn btn-sm btn-outline-light" onclick="removeMultichoixQuestion(this)">
+                    <i class="bi bi-trash"></i> Supprimer
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Question</label>
+                    <input type="text" class="form-control" name="questions[]" required>
+                </div>
+                
+                <div class="options-container">
+                    <label class="form-label">Options (cochez les bonnes réponses)</label>
+                    <div class="input-group mb-2 option-group">
+                        <div class="input-group-text">
+                            <input type="checkbox" name="correct_options_${questionIndex}[]" value="0" aria-label="Option correcte">
+                        </div>
+                        <input type="text" class="form-control" name="options_${questionIndex}[]" placeholder="Texte de l'option" required>
+                        <button type="button" class="btn btn-outline-danger" onclick="removeMultichoixOption(this)">
+                            <i class="bi bi-dash"></i>
+                        </button>
+                    </div>
+                    <div class="input-group mb-2 option-group">
+                        <div class="input-group-text">
+                            <input type="checkbox" name="correct_options_${questionIndex}[]" value="1" aria-label="Option correcte">
+                        </div>
+                        <input type="text" class="form-control" name="options_${questionIndex}[]" placeholder="Texte de l'option" required>
+                        <button type="button" class="btn btn-outline-danger" onclick="removeMultichoixOption(this)">
+                            <i class="bi bi-dash"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <button type="button" class="btn btn-sm btn-outline-success" onclick="addMultichoixOption(this)">
+                    <i class="bi bi-plus"></i> Ajouter une option
+                </button>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', questionHtml);
+    multichoixQuestionCounter++;
+    updateMultichoixQuestionNumbers();
+}
+
+// Fonction pour supprimer une question QCM multichoix
+function removeMultichoixQuestion(button) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette question ?')) {
+        button.closest('.multichoix-question-card').remove();
+        updateMultichoixQuestionNumbers();
+    }
+}
+
+// Fonction pour ajouter une option à une question multichoix
+function addMultichoixOption(button) {
+    const questionCard = button.closest('.multichoix-question-card');
+    const questionIndex = questionCard.dataset.questionIndex;
+    const optionsContainer = questionCard.querySelector('.options-container');
+    const optionGroups = optionsContainer.querySelectorAll('.option-group');
+    const optionIndex = optionGroups.length;
+    
+    const optionHtml = `
+        <div class="input-group mb-2 option-group">
+            <div class="input-group-text">
+                <input type="checkbox" name="correct_options_${questionIndex}[]" value="${optionIndex}" aria-label="Option correcte">
+            </div>
+            <input type="text" class="form-control" name="options_${questionIndex}[]" placeholder="Texte de l'option" required>
+            <button type="button" class="btn btn-outline-danger" onclick="removeMultichoixOption(this)">
+                <i class="bi bi-dash"></i>
+            </button>
+        </div>
+    `;
+    
+    button.parentNode.insertBefore(document.createRange().createContextualFragment(optionHtml), button);
+}
+
+// Fonction pour supprimer une option multichoix
+function removeMultichoixOption(button) {
+    const optionsContainer = button.closest('.options-container');
+    const optionGroups = optionsContainer.querySelectorAll('.option-group');
+    
+    if (optionGroups.length > 2) {
+        button.closest('.option-group').remove();
+        updateMultichoixOptionIndices(optionsContainer);
+    } else {
+        alert('Une question doit avoir au moins 2 options.');
+    }
+}
+
+// Fonction pour mettre à jour les numéros des questions multichoix
+function updateMultichoixQuestionNumbers() {
+    const questions = document.querySelectorAll('.multichoix-question-card');
+    questions.forEach((question, index) => {
+        question.dataset.questionIndex = index;
+        question.querySelector('.card-header h5').textContent = `Question ${index + 1}`;
+        
+        // Mettre à jour les noms des champs pour cette question
+        const optionGroups = question.querySelectorAll('.option-group');
+        optionGroups.forEach((group, optionIndex) => {
+            const checkbox = group.querySelector('input[type="checkbox"]');
+            checkbox.name = `correct_options_${index}[]`;
+            checkbox.value = optionIndex;
+            
+            const textInput = group.querySelector('input[type="text"]');
+            textInput.name = `options_${index}[]`;
+        });
+    });
+}
+
+// Fonction pour mettre à jour les indices des options après suppression
+function updateMultichoixOptionIndices(optionsContainer) {
+    const questionCard = optionsContainer.closest('.multichoix-question-card');
+    const questionIndex = questionCard.dataset.questionIndex;
+    const optionGroups = optionsContainer.querySelectorAll('.option-group');
+    
+    optionGroups.forEach((group, index) => {
+        const checkbox = group.querySelector('input[type="checkbox"]');
+        checkbox.name = `correct_options_${questionIndex}[]`;
+        checkbox.value = index;
+        
+        const textInput = group.querySelector('input[type="text"]');
+        textInput.name = `options_${questionIndex}[]`;
+    });
+}
+
+// Fonction pour supprimer l'image QCM multichoix
+function removeQcmMultichoixImage() {
+    const preview = document.getElementById('qcm_multichoix_image_preview');
+    const input = document.getElementById('qcm_multichoix_image_input');
+    preview.style.display = 'none';
+    input.value = '';
 }
 
 // ===== FONCTIONS FLASHCARDS =====

@@ -161,6 +161,7 @@ class Exercise(db.Model):
     
     EXERCISE_TYPES = [
         ('qcm', 'QCM'),
+        ('qcm_multichoix', 'QCM Multichoix'),
         ('word_search', 'Mots mêlés'),
         ('pairs', 'Association de paires'),
         ('fill_in_blanks', 'Texte à trous'),

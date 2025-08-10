@@ -2753,6 +2753,78 @@ def handle_exercise_answer(exercise_id):
             # Pour image_labeling, on utilise le score en pourcentage
             answers = user_answers_data
         
+        elif exercise.exercise_type == 'qcm_multichoix':
+            # Gestion des exercices QCM Multichoix
+            content = json.loads(exercise.content)
+            app.logger.info(f"[QCM_MULTICHOIX_DEBUG] Processing qcm_multichoix exercise {exercise_id}")
+            app.logger.info(f"[QCM_MULTICHOIX_DEBUG] Form data: {dict(request.form)}")
+            
+            # Récupérer les questions de l'exercice
+            questions = content.get('questions', [])
+            if not questions:
+                app.logger.error(f"[QCM_MULTICHOIX_DEBUG] No questions found in exercise content")
+                flash('Erreur: aucune question trouvée dans l\'exercice.', 'error')
+                return redirect(url_for('view_exercise', exercise_id=exercise_id))
+            
+            app.logger.info(f"[QCM_MULTICHOIX_DEBUG] Found {len(questions)} questions to check")
+            
+            # Calculer le score
+            total_questions = len(questions)
+            correct_questions = 0
+            feedback_details = []
+            user_answers_data = {}
+            
+            for question_index, question in enumerate(questions):
+                # Récupérer les réponses de l'utilisateur pour cette question
+                user_selected = request.form.getlist(f'question_{question_index}[]')
+                app.logger.info(f"[QCM_MULTICHOIX_DEBUG] Raw user_selected for question {question_index}: {user_selected}")
+                user_selected_indices = [int(idx) for idx in user_selected if idx.isdigit()]
+                
+                # Récupérer les bonnes réponses pour cette question
+                correct_options = question.get('correct_options', [])
+                
+                app.logger.info(f"[QCM_MULTICHOIX_DEBUG] Question {question_index}: user={user_selected_indices}, correct={correct_options}")
+                app.logger.info(f"[QCM_MULTICHOIX_DEBUG] Question {question_index}: user_set={set(user_selected_indices)}, correct_set={set(correct_options)}")
+                
+                # Vérifier si les réponses correspondent exactement
+                is_correct = set(user_selected_indices) == set(correct_options)
+                app.logger.info(f"[QCM_MULTICHOIX_DEBUG] Question {question_index}: is_correct={is_correct}")
+                if is_correct:
+                    correct_questions += 1
+                
+                # Créer le feedback pour cette question
+                user_options = [question['options'][i] for i in user_selected_indices if i < len(question['options'])]
+                correct_options_text = [question['options'][i] for i in correct_options if i < len(question['options'])]
+                
+                feedback_details.append({
+                    'question_index': question_index,
+                    'question_text': question.get('question', ''),
+                    'user_selected': user_options,
+                    'correct_options': correct_options_text,
+                    'is_correct': is_correct,
+                    'status': 'Correct' if is_correct else f'Attendu: {", ".join(correct_options_text)}, Réponse: {", ".join(user_options) if user_options else "Aucune réponse"}'
+                })
+                
+                # Sauvegarder les réponses utilisateur
+                user_answers_data[f'question_{question_index}'] = user_selected_indices
+            
+            # Calculer le score final
+            max_score = total_questions
+            score_count = correct_questions
+            score = round((score_count / max_score) * 100) if max_score > 0 else 0
+            
+            app.logger.info(f"[QCM_MULTICHOIX_DEBUG] Final score: {score_count}/{max_score} = {score}%")
+            
+            feedback_summary = {
+                'score': score,
+                'correct_questions': correct_questions,
+                'total_questions': total_questions,
+                'details': feedback_details
+            }
+            
+            # Pour qcm_multichoix, on utilise le score en pourcentage
+            answers = user_answers_data
+        
         elif exercise.exercise_type == 'flashcards':
             # Gestion des exercices Flashcards
             content = json.loads(exercise.content)
@@ -2821,8 +2893,8 @@ def handle_exercise_answer(exercise_id):
             answers = user_answers
         
         # Créer une nouvelle tentative
-        # Pour drag_and_drop, pairs, underline_words, dictation, image_labeling, flashcards, feedback est feedback_summary (sinon feedback dict habituel)
-        if exercise.exercise_type in ['drag_and_drop', 'pairs', 'underline_words', 'dictation', 'image_labeling', 'flashcards']:
+        # Pour drag_and_drop, pairs, underline_words, dictation, image_labeling, flashcards, qcm_multichoix, feedback est feedback_summary (sinon feedback dict habituel)
+        if exercise.exercise_type in ['drag_and_drop', 'pairs', 'underline_words', 'dictation', 'image_labeling', 'flashcards', 'qcm_multichoix']:
             feedback_to_save = feedback_summary
         else:
             feedback_to_save = feedback
@@ -2871,6 +2943,8 @@ def edit_exercise(exercise_id):
         # Utiliser le template spécifique selon le type d'exercice
         if exercise.exercise_type == 'qcm':
             return render_template('exercise_types/qcm_edit.html', exercise=exercise, content=content)
+        elif exercise.exercise_type == 'qcm_multichoix':
+            return render_template('exercise_types/qcm_multichoix_edit.html', exercise=exercise, content=content)
         elif exercise.exercise_type == 'fill_in_blanks':
             return render_template('exercise_types/fill_in_blanks_edit.html', exercise=exercise, content=content)
         elif exercise.exercise_type == 'underline_words':
@@ -2973,6 +3047,86 @@ def edit_exercise(exercise_id):
                 content = {'questions': questions}
                 exercise.content = json.dumps(content)
                 current_app.logger.info(f'[QCM_EDIT_DEBUG] Contenu sauvegardé: {len(questions)} questions')
+                
+            elif exercise.exercise_type == 'qcm_multichoix':
+                current_app.logger.info(f'[QCM_MULTICHOIX_EDIT_DEBUG] Traitement du contenu QCM Multichoix')
+                current_app.logger.info(f'[QCM_MULTICHOIX_EDIT_DEBUG] Tous les champs du formulaire: {list(request.form.keys())}')
+                
+                # Récupérer les questions du formulaire
+                questions_data = []
+                questions_list = request.form.getlist('questions[]')
+                
+                for question_index, question_text in enumerate(questions_list):
+                    if not question_text or not question_text.strip():
+                        continue
+                    
+                    # Récupérer les options pour cette question
+                    options_key = f'options_{question_index}[]'
+                    options = request.form.getlist(options_key)
+                    
+                    # Récupérer les réponses correctes pour cette question
+                    correct_key = f'correct_options_{question_index}[]'
+                    correct_indices = request.form.getlist(correct_key)
+                    
+                    # Convertir les indices en entiers et éliminer les doublons
+                    try:
+                        correct_indices = [int(idx) for idx in correct_indices]
+                        correct_indices = list(dict.fromkeys(correct_indices))  # Éliminer les doublons
+                    except (ValueError, TypeError):
+                        correct_indices = []
+                    
+                    current_app.logger.info(f'[QCM_MULTICHOIX_EDIT_DEBUG] Question {question_index}: {question_text}')
+                    current_app.logger.info(f'[QCM_MULTICHOIX_EDIT_DEBUG] Options {question_index}: {options}')
+                    current_app.logger.info(f'[QCM_MULTICHOIX_EDIT_DEBUG] Correct indices {question_index}: {correct_indices}')
+                    
+                    # Filtrer les options vides
+                    filtered_options = [opt.strip() for opt in options if opt and opt.strip()]
+                    
+                    if len(filtered_options) >= 2 and correct_indices:
+                        questions_data.append({
+                            'question': question_text.strip(),
+                            'options': filtered_options,
+                            'correct_options': correct_indices
+                        })
+                
+                if not questions_data:
+                    flash('Veuillez ajouter au moins une question avec des options et des réponses correctes.', 'error')
+                    return render_template('exercise_types/qcm_multichoix_edit.html', exercise=exercise, content=json.loads(exercise.content))
+                
+                # Préserver l'image existante si pas de nouvelle image
+                current_content = json.loads(exercise.content) if exercise.content else {}
+                content = {'questions': questions_data}
+                
+                # Gestion de l'image optionnelle pour QCM Multichoix
+                if 'qcm_multichoix_image' in request.files:
+                    image_file = request.files['qcm_multichoix_image']
+                    if image_file and image_file.filename != '' and allowed_file(image_file.filename):
+                        filename = secure_filename(image_file.filename)
+                        unique_filename = generate_unique_filename(filename)
+                        
+                        # Créer le dossier uploads s'il n'existe pas
+                        upload_folder = os.path.join(current_app.root_path, 'static', 'uploads')
+                        os.makedirs(upload_folder, exist_ok=True)
+                        
+                        # Sauvegarder l'image
+                        image_path = os.path.join(upload_folder, unique_filename)
+                        image_file.save(image_path)
+                        
+                        # Ajouter le chemin de l'image au contenu
+                        content['image'] = f'static/uploads/{unique_filename}'
+                        current_app.logger.info(f'[QCM_MULTICHOIX_EDIT_DEBUG] Nouvelle image sauvegardée: {content["image"]}')
+                    else:
+                        # Conserver l'image existante
+                        if 'image' in current_content:
+                            content['image'] = current_content['image']
+                else:
+                    # Conserver l'image existante
+                    if 'image' in current_content:
+                        content['image'] = current_content['image']
+                
+                # Mettre à jour le contenu
+                exercise.content = json.dumps(content, ensure_ascii=False)
+                current_app.logger.info(f'[QCM_MULTICHOIX_EDIT_DEBUG] Contenu sauvegardé: {len(questions_data)} questions')
                 
             elif exercise.exercise_type == 'fill_in_blanks':
                 print(f'[FILL_BLANKS_EDIT_DEBUG] Traitement du contenu Texte à trous')

@@ -138,6 +138,73 @@ def create_exercise():
                         content['image'] = f'static/uploads/{unique_filename}'
                         current_app.logger.debug(f'Image QCM sauvegardée: {content["image"]}')
 
+            elif exercise_type == 'qcm_multichoix':
+                current_app.logger.debug('Traitement d\'un exercice QCM Multichoix')
+                current_app.logger.debug(f'Données du formulaire: {dict(request.form)}')
+                
+                # Récupérer les questions et leurs options
+                questions_data = []
+                questions_list = request.form.getlist('questions[]')
+                
+                for question_index, question_text in enumerate(questions_list):
+                    if not question_text or not question_text.strip():
+                        continue
+                    
+                    # Récupérer les options pour cette question
+                    options_key = f'options_{question_index}[]'
+                    options = request.form.getlist(options_key)
+                    
+                    # Récupérer les réponses correctes pour cette question
+                    correct_key = f'correct_options_{question_index}[]'
+                    correct_indices = request.form.getlist(correct_key)
+                    
+                    # Convertir les indices en entiers et éliminer les doublons
+                    try:
+                        correct_indices = [int(idx) for idx in correct_indices]
+                        # Éliminer les doublons en préservant l'ordre
+                        correct_indices = list(dict.fromkeys(correct_indices))
+                    except (ValueError, TypeError):
+                        correct_indices = []
+                    
+                    current_app.logger.debug(f'Question {question_index}: {question_text}')
+                    current_app.logger.debug(f'Options {question_index}: {options}')
+                    current_app.logger.debug(f'Correct indices {question_index}: {correct_indices}')
+                    
+                    # Filtrer les options vides
+                    filtered_options = [opt.strip() for opt in options if opt and opt.strip()]
+                    
+                    if len(filtered_options) >= 2 and correct_indices:
+                        questions_data.append({
+                            'question': question_text.strip(),
+                            'options': filtered_options,
+                            'correct_options': correct_indices
+                        })
+                
+                if not questions_data:
+                    flash('Veuillez ajouter au moins une question avec des options et des réponses correctes.', 'error')
+                    return redirect(request.url)
+                
+                content['questions'] = questions_data
+                
+                # Gestion de l'image optionnelle pour QCM Multichoix
+                if 'qcm_multichoix_image' in request.files:
+                    image_file = request.files['qcm_multichoix_image']
+                    if image_file and image_file.filename != '' and allowed_file(image_file.filename):
+                        filename = secure_filename(image_file.filename)
+                        unique_filename = generate_unique_filename(filename)
+                        
+                        # Créer le dossier uploads s'il n'existe pas
+                        upload_folder = os.path.join(current_app.root_path, 'static', 'uploads')
+                        os.makedirs(upload_folder, exist_ok=True)
+                        
+                        # Sauvegarder l'image
+                        image_path = os.path.join(upload_folder, unique_filename)
+                        image_file.save(image_path)
+                        
+                        # Ajouter le chemin de l'image au contenu
+                        content['image'] = f'static/uploads/{unique_filename}'
+                        current_app.logger.debug(f'Image QCM Multichoix sauvegardée: {content["image"]}')
+
             elif exercise_type == 'word_search':
                 print(f'[WORD_SEARCH_CREATE_DEBUG] Form data: {dict(request.form)}')
                 
@@ -1101,6 +1168,7 @@ def exercise_library():
     # Définir les types d'exercices disponibles
     exercise_types = [
         ('qcm', 'QCM'),
+        ('qcm_multichoix', 'QCM Multichoix'),
         ('word_search', 'Mots mêlés'),
         ('pairs', 'Paires'),
         ('fill_in_blanks', 'Texte à trous'),
