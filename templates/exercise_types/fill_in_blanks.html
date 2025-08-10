@@ -201,21 +201,24 @@
                 </div>
                 {% endif %}
 
+                {% set blank_counter = [0] %}
                 {% for sentence in content.sentences %}
                     <div class="mb-4 sentence-container">
-                        <div class="sentence-text mb-2">
+                        <div class="sentence-text">
                             {% set parts = sentence.split('___') %}
                             {% for part in parts %}
                                 {{ part }}
                                 {% if not loop.last %}
-                                    <span class="blank-space bg-light border rounded px-3 py-1 mx-1">_____</span>
+                                    <input type="text" 
+                                           class="blank-input d-inline-block mx-1" 
+                                           name="answer_{{ blank_counter[0] }}" 
+                                           required 
+                                           placeholder="____"
+                                           style="width: auto; min-width: 80px; max-width: 150px;">
+                                    {% if blank_counter.append(blank_counter.pop() + 1) %}{% endif %}
                                 {% endif %}
                             {% endfor %}
                         </div>
-                        <input type="text" class="form-control" 
-                               name="answer_{{ loop.index0 }}" 
-                               required 
-                               placeholder="Écrivez votre réponse ici">
                     </div>
                 {% endfor %}
                 
