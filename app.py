@@ -1385,36 +1385,19 @@ def edit_class(class_id):
         if not name:
             flash('Le nom de la classe est requis.', 'error')
             return redirect(url_for('edit_class', class_id=class_id))
-    class_obj = Class.query.get_or_404(class_id)
 
-    # Vérifier que l'utilisateur est bien le propriétaire de la classe
-    if class_obj.teacher_id != current_user.id:
-        flash('Vous n\'avez pas la permission de modifier cette classe.', 'error')
-        return redirect(url_for('teacher_dashboard'))
+        try:
+            class_obj.name = name
+            class_obj.description = description
+            db.session.commit()
+            flash('Classe modifiée avec succès !', 'success')
+            return redirect(url_for('view_class', class_id=class_id))
+        except Exception as e:
+            db.session.rollback()
+            flash('Une erreur est survenue lors de la modification de la classe.', 'error')
+            return redirect(url_for('edit_class', class_id=class_id))
 
-    email = request.form.get('email')
-    if not email:
-        flash('L\'email de l\'étudiant est requis.', 'error')
-        return redirect(url_for('view_class', class_id=class_id))
-
-    student = User.query.filter_by(email=email).first()
-    if not student:
-        flash('Aucun étudiant trouvé avec cet email.', 'error')
-        return redirect(url_for('view_class', class_id=class_id))
-
-    if student in class_obj.students:
-        flash('Cet étudiant est déjà inscrit dans cette classe.', 'warning')
-        return redirect(url_for('view_class', class_id=class_id))
-
-    try:
-        class_obj.students.append(student)
-        db.session.commit()
-        flash('Étudiant ajouté avec succès !', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash('Une erreur est survenue lors de l\'ajout de l\'étudiant.', 'error')
-
-    return redirect(url_for('view_class', class_id=class_id))
+    return render_template('edit_class.html', class_obj=class_obj)
 
 @app.route('/course/<int:course_id>/edit', methods=['GET', 'POST'])
 @login_required
