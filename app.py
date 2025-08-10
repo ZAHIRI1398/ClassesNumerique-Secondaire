@@ -372,8 +372,8 @@ def add_exercise_to_class(exercise_id):
         return redirect(url_for('student_dashboard'))
 
     exercise = Exercise.query.get_or_404(exercise_id)
-    if exercise.teacher_id != current_user.id:
-        abort(403)
+    # Note: Permettre aux enseignants d'ajouter des exercices d'autres enseignants à leurs classes
+    # depuis la bibliothèque partagée (pas de restriction sur teacher_id pour l'ajout)
 
     # Récupérer les classes de l'enseignant
     classes = Class.query.filter_by(teacher_id=current_user.id).all()
