@@ -83,7 +83,7 @@
                                 <label class="form-label">Mots à souligner (séparés par des virgules) :</label>
                                 <input type="text" class="form-control" 
                                        name="words_to_underline[]" 
-                                       value="{{ ','.join(sentence.words_to_underline) if sentence.words_to_underline else '' }}" 
+                                       value="{{ ','.join(sentence['words_to_underline']) if sentence['words_to_underline'] else '' }}" 
                                        required>
                             </div>
                         </div>

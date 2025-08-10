@@ -168,6 +168,7 @@ class Exercise(db.Model):
         ('drag_and_drop', 'Glisser-déposer'),
         ('dictation', 'Dictée'),
         ('image_labeling', 'Étiquetage d\'image'),
+        ('flashcards', 'Cartes mémoire'),
     ]
     
     id = db.Column(db.Integer, primary_key=True)

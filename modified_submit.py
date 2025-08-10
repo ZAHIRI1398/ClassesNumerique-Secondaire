@@ -443,7 +443,7 @@ def create_exercise():
                         return redirect(request.url)
                     
                     words_data.append({
-                        'text': sentence,
+                        'sentence': sentence,
                         'words_to_underline': words_to_underline
                     })
                 
@@ -576,6 +576,62 @@ def create_exercise():
                 content['labels'] = labels
                 content['zones'] = zones
                 current_app.logger.debug(f'Exercice étiquetage d\'image créé avec {len(labels)} étiquettes et {len(zones)} zones')
+
+            elif exercise_type == 'flashcards':
+                current_app.logger.debug('Traitement d\'un exercice de cartes mémoire (flashcards)')
+                
+                # Récupérer les questions et réponses
+                questions = request.form.getlist('card_questions[]')
+                answers = request.form.getlist('card_answers[]')
+                card_images = request.files.getlist('card_images[]')
+                
+                # Filtrer les éléments vides
+                questions = [q.strip() for q in questions if q.strip()]
+                answers = [a.strip() for a in answers if a.strip()]
+                
+                if not questions:
+                    flash('Veuillez ajouter au moins une carte avec une question.', 'error')
+                    return redirect(request.url)
+                
+                if not answers:
+                    flash('Veuillez ajouter au moins une réponse.', 'error')
+                    return redirect(request.url)
+                
+                if len(questions) != len(answers):
+                    flash('Chaque carte doit avoir une question et une réponse.', 'error')
+                    return redirect(request.url)
+                
+                # Construire les données des cartes
+                cards_data = []
+                for i, (question, answer) in enumerate(zip(questions, answers)):
+                    card_data = {
+                        'question': question,
+                        'answer': answer,
+                        'image': None
+                    }
+                    
+                    # Gestion de l'image pour cette carte
+                    if i < len(card_images) and card_images[i] and card_images[i].filename != '':
+                        image_file = card_images[i]
+                        if allowed_file(image_file.filename):
+                            filename = secure_filename(image_file.filename)
+                            unique_filename = generate_unique_filename(filename)
+                            
+                            # Créer le dossier uploads s'il n'existe pas
+                            upload_folder = os.path.join(current_app.root_path, 'static', 'uploads')
+                            os.makedirs(upload_folder, exist_ok=True)
+                            
+                            # Sauvegarder l'image
+                            image_path = os.path.join(upload_folder, unique_filename)
+                            image_file.save(image_path)
+                            
+                            card_data['image'] = f'uploads/{unique_filename}'
+                            current_app.logger.debug(f'Image carte {i+1} sauvegardée: {unique_filename}')
+                    
+                    cards_data.append(card_data)
+                
+                content['cards'] = cards_data
+                current_app.logger.debug(f'Exercice flashcards créé avec {len(cards_data)} cartes')
 
             # Gestion de l'image de l'exercice (pour tous les types d'exercices)
             # exercise_image_path déjà initialisé plus haut pour underline_words
@@ -1051,7 +1107,8 @@ def exercise_library():
         ('underline_words', 'Souligner les mots'),
         ('drag_and_drop', 'Glisser-déposer'),
         ('dictation', 'Dictée'),
-        ('image_labeling', 'Étiquetage d\'image')
+        ('image_labeling', 'Étiquetage d\'image'),
+        ('flashcards', 'Cartes mémoire')
     ]
     
     return render_template('exercise_library.html',

@@ -722,6 +722,55 @@
             <div id="hidden_fields_create"></div>
         </div>
 
+        <!-- Section Flashcards (Cartes mémoire) -->
+        <div id="flashcards_section" class="exercise-type-section" style="display: none;">
+            <h3>Cartes mémoire (Flashcards)</h3>
+            <p class="text-muted">Créez des cartes avec questions et réponses. Chaque carte peut avoir une image optionnelle.</p>
+            
+            <div id="flashcards_container">
+                <!-- Carte par défaut -->
+                <div class="card mb-3 flashcard-item" data-card-index="0">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Carte 1</h5>
+                        <button type="button" class="btn btn-danger btn-sm" onclick="removeFlashcard(this)">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Question</label>
+                                <textarea class="form-control" name="card_questions[]" rows="3" 
+                                          placeholder="Entrez la question..." required></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Réponse correcte</label>
+                                <input type="text" class="form-control" name="card_answers[]" 
+                                       placeholder="Réponse attendue..." required>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Image (optionnelle)</label>
+                                <input type="file" class="form-control" name="card_images[]" 
+                                       accept="image/*" onchange="previewFlashcardImage(this)">
+                            </div>
+                            <div class="col-md-6">
+                                <div class="image-preview-container"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mb-3">
+                <button type="button" class="btn btn-primary" onclick="addFlashcard()">
+                    <i class="fas fa-plus me-2"></i>
+                    Ajouter une carte
+                </button>
+            </div>
+        </div>
+
         <div class="text-center mt-4">
             <button type="submit" class="btn btn-success btn-lg">Créer l'exercice</button>
             <button type="button" class="btn btn-primary btn-lg ms-3" onclick="testFormSubmission()">Test Submit</button>
@@ -2573,6 +2622,115 @@ function directSubmit() {
         console.error('Erreur lors de la soumission:', error);
         alert('ERREUR: ' + error.message);
     }
+}
+
+// ===== FONCTIONS FLASHCARDS =====
+
+// Fonction pour ajouter une nouvelle carte flashcard
+function addFlashcard() {
+    const container = document.getElementById('flashcards_container');
+    const cardCount = container.querySelectorAll('.flashcard-item').length;
+    const newIndex = cardCount;
+    
+    const newCardDiv = document.createElement('div');
+    newCardDiv.className = 'card mb-3 flashcard-item';
+    newCardDiv.setAttribute('data-card-index', newIndex);
+    
+    newCardDiv.innerHTML = `
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Carte ${newIndex + 1}</h5>
+            <button type="button" class="btn btn-danger btn-sm" onclick="removeFlashcard(this)">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label">Question</label>
+                    <textarea class="form-control" name="card_questions[]" rows="3" 
+                              placeholder="Entrez la question..." required></textarea>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Réponse correcte</label>
+                    <input type="text" class="form-control" name="card_answers[]" 
+                           placeholder="Réponse attendue..." required>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <label class="form-label">Image (optionnelle)</label>
+                    <input type="file" class="form-control" name="card_images[]" 
+                           accept="image/*" onchange="previewFlashcardImage(this)">
+                </div>
+                <div class="col-md-6">
+                    <div class="image-preview-container"></div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(newCardDiv);
+    updateFlashcardLabels();
+}
+
+// Fonction pour supprimer une carte flashcard
+function removeFlashcard(button) {
+    const flashcardItem = button.closest('.flashcard-item');
+    const container = document.getElementById('flashcards_container');
+    
+    // Ne pas supprimer s'il n'y a qu'une seule carte
+    if (container.querySelectorAll('.flashcard-item').length <= 1) {
+        alert('Vous devez avoir au moins une carte.');
+        return;
+    }
+    
+    flashcardItem.remove();
+    updateFlashcardLabels();
+}
+
+// Fonction pour mettre à jour les labels des cartes flashcard
+function updateFlashcardLabels() {
+    const container = document.getElementById('flashcards_container');
+    const items = container.querySelectorAll('.flashcard-item');
+    
+    items.forEach((item, index) => {
+        const title = item.querySelector('h5');
+        title.textContent = `Carte ${index + 1}`;
+        item.setAttribute('data-card-index', index);
+    });
+}
+
+// Fonction pour prévisualiser l'image d'une carte flashcard
+function previewFlashcardImage(input) {
+    const previewContainer = input.closest('.card-body').querySelector('.image-preview-container');
+    
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            previewContainer.innerHTML = `
+                <div class="position-relative">
+                    <img src="${e.target.result}" class="img-fluid rounded" style="max-height: 150px;">
+                    <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1" 
+                            onclick="removeFlashcardImage(this)">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+        };
+        
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+// Fonction pour supprimer l'image d'une carte flashcard
+function removeFlashcardImage(button) {
+    const cardBody = button.closest('.card-body');
+    const fileInput = cardBody.querySelector('input[type="file"]');
+    const previewContainer = cardBody.querySelector('.image-preview-container');
+    
+    fileInput.value = '';
+    previewContainer.innerHTML = '';
 }
 
 </script>

@@ -2753,9 +2753,76 @@ def handle_exercise_answer(exercise_id):
             # Pour image_labeling, on utilise le score en pourcentage
             answers = user_answers_data
         
+        elif exercise.exercise_type == 'flashcards':
+            # Gestion des exercices Flashcards
+            content = json.loads(exercise.content)
+            app.logger.info(f"[FLASHCARDS_DEBUG] Processing flashcards exercise {exercise_id}")
+            app.logger.info(f"[FLASHCARDS_DEBUG] Form data: {dict(request.form)}")
+            
+            # Récupérer les cartes de l'exercice
+            cards = content.get('cards', [])
+            if not cards:
+                app.logger.error(f"[FLASHCARDS_DEBUG] No cards found in exercise content")
+                flash('Erreur: aucune carte trouvée dans l\'exercice.', 'error')
+                return redirect(url_for('view_exercise', exercise_id=exercise_id))
+            
+            app.logger.info(f"[FLASHCARDS_DEBUG] Found {len(cards)} cards to check")
+            
+            # Récupérer le score et les réponses depuis le formulaire
+            final_score = request.form.get('final_score', '0')
+            correct_answers_count = request.form.get('correct_answers', '0')
+            total_answers_count = request.form.get('total_answers', '0')
+            
+            try:
+                score = float(final_score)
+                score_count = int(correct_answers_count)
+                max_score = int(total_answers_count)
+            except (ValueError, TypeError):
+                app.logger.error(f"[FLASHCARDS_DEBUG] Invalid score data: final_score={final_score}, correct={correct_answers_count}, total={total_answers_count}")
+                score = 0
+                score_count = 0
+                max_score = len(cards)
+            
+            app.logger.info(f"[FLASHCARDS_DEBUG] Score received: {score_count}/{max_score} = {score}%")
+            
+            # Récupérer les réponses individuelles pour chaque carte
+            user_answers = {}
+            feedback_details = []
+            
+            for i in range(len(cards)):
+                card_answer = request.form.get(f'card_{i}_answer', '')
+                card_correct = request.form.get(f'card_{i}_correct', 'false') == 'true'
+                
+                user_answers[f'card_{i}'] = {
+                    'answer': card_answer,
+                    'correct': card_correct,
+                    'expected': cards[i].get('answer', '') if i < len(cards) else ''
+                }
+                
+                feedback_details.append({
+                    'card_index': i,
+                    'question': cards[i].get('question', '') if i < len(cards) else '',
+                    'expected_answer': cards[i].get('answer', '') if i < len(cards) else '',
+                    'user_answer': card_answer,
+                    'is_correct': card_correct
+                })
+            
+            feedback_summary = {
+                'score': score,
+                'score_count': score_count,
+                'max_score': max_score,
+                'total_cards': len(cards),
+                'details': feedback_details
+            }
+            
+            app.logger.info(f"[FLASHCARDS_DEBUG] Final feedback: {feedback_summary}")
+            
+            # Pour flashcards, on utilise le score calculé côté frontend
+            answers = user_answers
+        
         # Créer une nouvelle tentative
-        # Pour drag_and_drop, pairs, underline_words, dictation, image_labeling, feedback est feedback_summary (sinon feedback dict habituel)
-        if exercise.exercise_type in ['drag_and_drop', 'pairs', 'underline_words', 'dictation', 'image_labeling']:
+        # Pour drag_and_drop, pairs, underline_words, dictation, image_labeling, flashcards, feedback est feedback_summary (sinon feedback dict habituel)
+        if exercise.exercise_type in ['drag_and_drop', 'pairs', 'underline_words', 'dictation', 'image_labeling', 'flashcards']:
             feedback_to_save = feedback_summary
         else:
             feedback_to_save = feedback
@@ -2818,6 +2885,8 @@ def edit_exercise(exercise_id):
             return render_template('exercise_types/dictation_edit.html', exercise=exercise, content=content)
         elif exercise.exercise_type == 'image_labeling':
             return render_template('exercise_types/image_labeling_edit.html', exercise=exercise, content=content)
+        elif exercise.exercise_type == 'flashcards':
+            return render_template('exercise_types/flashcards_edit.html', exercise=exercise, content=content)
         else:
             # Template générique pour les autres types
             return render_template('edit_exercise.html', exercise=exercise, content=content)
@@ -3039,27 +3108,43 @@ def edit_exercise(exercise_id):
                 # Récupérer les instructions et phrases
                 instructions = request.form.get('instructions', '').strip()
                 sentences = request.form.getlist('sentences[]')
-                words_to_underline = request.form.getlist('words_to_underline[]')
+                words_to_underline_all = request.form.getlist('words_to_underline[]')
                 
                 # Filtrer les éléments vides
                 sentences = [s.strip() for s in sentences if s.strip()]
-                words_to_underline = [w.strip() for w in words_to_underline if w.strip()]
+                words_to_underline_all = [w.strip() for w in words_to_underline_all if w.strip()]
                 
                 if not sentences:
                     flash('Veuillez ajouter au moins une phrase.', 'error')
                     return render_template('edit_exercise.html', exercise=exercise)
                 
-                if not words_to_underline:
+                if not words_to_underline_all:
                     flash('Veuillez ajouter au moins un mot à souligner.', 'error')
                     return render_template('edit_exercise.html', exercise=exercise)
+                
+                # CORRECTION: Mapper chaque phrase avec ses mots spécifiques
+                words_data = []
+                for i, sentence in enumerate(sentences):
+                    # Récupérer les mots spécifiques pour cette phrase (index i)
+                    if i < len(words_to_underline_all):
+                        # Séparer les mots par virgules pour cette phrase spécifique
+                        specific_words = [w.strip() for w in words_to_underline_all[i].split(',') if w.strip()]
+                    else:
+                        specific_words = []
+                    
+                    words_data.append({
+                        'sentence': sentence,
+                        'words_to_underline': specific_words
+                    })
+                    print(f'[UNDERLINE_EDIT_DEBUG] Phrase {i+1}: "{sentence}" -> Mots: {specific_words}')
                 
                 # Mettre à jour le contenu
                 content = {
                     'instructions': instructions or 'Soulignez les mots demandés dans les phrases suivantes.',
-                    'words': [{'sentence': sentence, 'words_to_underline': words_to_underline} for sentence in sentences]
+                    'words': words_data
                 }
                 exercise.content = json.dumps(content)
-                print(f'[UNDERLINE_EDIT_DEBUG] Contenu sauvegardé: {len(sentences)} phrases, {len(words_to_underline)} mots à souligner')
+                print(f'[UNDERLINE_EDIT_DEBUG] Contenu sauvegardé: {len(sentences)} phrases avec mots spécifiques par phrase')
             
             elif exercise.exercise_type == 'image_labeling':
                 current_app.logger.info(f'[IMAGE_LABELING_EDIT_DEBUG] Traitement du contenu Image Labeling (format compatible)')
@@ -3135,6 +3220,65 @@ def edit_exercise(exercise_id):
                 }
                 exercise.content = json.dumps(content)
                 current_app.logger.info(f'[IMAGE_LABELING_EDIT_DEBUG] Contenu sauvegardé: {len(labels)} étiquettes, {len(zones)} zones (format compatible)')
+            
+            elif exercise.exercise_type == 'flashcards':
+                current_app.logger.info(f'[FLASHCARDS_EDIT_DEBUG] Traitement du contenu Flashcards')
+                
+                # Récupérer les questions et réponses
+                questions = request.form.getlist('card_questions[]')
+                answers = request.form.getlist('card_answers[]')
+                card_images = request.files.getlist('card_images[]')
+                existing_images = request.form.getlist('existing_card_images[]')
+                
+                # Filtrer les éléments vides
+                questions = [q.strip() for q in questions if q.strip()]
+                answers = [a.strip() for a in answers if a.strip()]
+                
+                if not questions:
+                    flash('Veuillez ajouter au moins une carte avec une question.', 'error')
+                    return render_template('exercise_types/flashcards_edit.html', exercise=exercise, content=json.loads(exercise.content) if exercise.content else {})
+                
+                if not answers:
+                    flash('Veuillez ajouter au moins une réponse.', 'error')
+                    return render_template('exercise_types/flashcards_edit.html', exercise=exercise, content=json.loads(exercise.content) if exercise.content else {})
+                
+                if len(questions) != len(answers):
+                    flash('Chaque carte doit avoir une question et une réponse.', 'error')
+                    return render_template('exercise_types/flashcards_edit.html', exercise=exercise, content=json.loads(exercise.content) if exercise.content else {})
+                
+                # Construire les données des cartes
+                cards_data = []
+                for i, (question, answer) in enumerate(zip(questions, answers)):
+                    card_data = {
+                        'question': question,
+                        'answer': answer,
+                        'image': None
+                    }
+                    
+                    # Gestion de l'image pour cette carte
+                    # D'abord, conserver l'image existante si elle existe
+                    if i < len(existing_images) and existing_images[i]:
+                        card_data['image'] = existing_images[i]
+                    
+                    # Ensuite, remplacer par une nouvelle image si uploadée
+                    if i < len(card_images) and card_images[i] and card_images[i].filename != '':
+                        image_file = card_images[i]
+                        if allowed_file(image_file.filename):
+                            filename = generate_unique_filename(image_file.filename)
+                            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                            image_file.save(filepath)
+                            card_data['image'] = f'uploads/{filename}'
+                            current_app.logger.info(f'[FLASHCARDS_EDIT_DEBUG] Nouvelle image carte {i+1}: {filename}')
+                    
+                    cards_data.append(card_data)
+                    current_app.logger.info(f'[FLASHCARDS_EDIT_DEBUG] Carte {i+1}: "{question[:30]}..." -> "{answer}"')
+                
+                # Mettre à jour le contenu
+                content = {
+                    'cards': cards_data
+                }
+                exercise.content = json.dumps(content)
+                current_app.logger.info(f'[FLASHCARDS_EDIT_DEBUG] Contenu sauvegardé: {len(cards_data)} cartes')
             
             elif exercise.exercise_type == 'pairs':
                 print(f'[PAIRS_EDIT_DEBUG] Traitement du contenu Association de paires')
