@@ -1151,19 +1151,24 @@ def exercise_library():
     selected_type = request.args.get('type', '')
     selected_subject = request.args.get('subject', '')
     
-    # Construire la requête de base
-    query = Exercise.query
+    # Vérifier si au moins un filtre est appliqué
+    has_filters = bool(search_query or selected_type or selected_subject)
     
-    # Appliquer les filtres
-    if search_query:
-        query = query.filter(Exercise.title.ilike(f'%{search_query}%'))
-    if selected_type:
-        query = query.filter(Exercise.exercise_type == selected_type)
-    if selected_subject:
-        query = query.filter(Exercise.subject == selected_subject)
-    
-    # Trier par date de création décroissante
-    exercises = query.order_by(desc(Exercise.created_at)).all()
+    exercises = []
+    if has_filters:
+        # Construire la requête de base seulement si des filtres sont appliqués
+        query = Exercise.query
+        
+        # Appliquer les filtres
+        if search_query:
+            query = query.filter(Exercise.title.ilike(f'%{search_query}%'))
+        if selected_type:
+            query = query.filter(Exercise.exercise_type == selected_type)
+        if selected_subject:
+            query = query.filter(Exercise.subject == selected_subject)
+        
+        # Trier par date de création décroissante
+        exercises = query.order_by(desc(Exercise.created_at)).all()
     
     # Définir les types d'exercices disponibles
     exercise_types = [
@@ -1184,7 +1189,8 @@ def exercise_library():
                            exercise_types=exercise_types,
                            search_query=search_query,
                            selected_type=selected_type,
-                           selected_subject=selected_subject)
+                           selected_subject=selected_subject,
+                           has_filters=has_filters)
 
 
 

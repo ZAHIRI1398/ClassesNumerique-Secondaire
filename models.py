@@ -437,6 +437,11 @@ class Exercise(db.Model):
             'completion_rate': completion_rate,
             'success_rate': success_rate
         }
+    
+    def get_type_display(self):
+        """Retourne le nom d'affichage du type d'exercice"""
+        type_dict = dict(self.EXERCISE_TYPES)
+        return type_dict.get(self.exercise_type, self.exercise_type)
 
 class ExerciseAttempt(db.Model):
     __tablename__ = 'exercise_attempt'
