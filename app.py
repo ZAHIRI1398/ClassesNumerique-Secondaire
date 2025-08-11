@@ -34,9 +34,16 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.logger.setLevel(logging.DEBUG)
-app.config['SECRET_KEY'] = 'your-secret-key-here'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Configuration selon l'environnement
+config_name = os.environ.get('FLASK_ENV', 'development')
+if config_name == 'production':
+    from config import ProductionConfig
+    app.config.from_object(ProductionConfig)
+else:
+    app.config['SECRET_KEY'] = 'your-secret-key-here'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Global request logging removed to restore normal operation
 
