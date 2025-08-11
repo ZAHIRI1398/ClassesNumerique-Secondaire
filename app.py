@@ -289,7 +289,8 @@ def login():
                         user.subscription_status = 'approved'
                         user.role = 'admin'
                         user.subscription_type = 'admin'
-                        user.approved_by = 'system'
+                        user.approved_by = None  # Pas d'ID admin spécifique pour l'auto-approbation
+                        user.approval_date = datetime.utcnow()
                         db.session.commit()
                         app.logger.info("✅ mr.zahiri@gmail.com auto-approuvé lors de la connexion")
                     except Exception as e:
