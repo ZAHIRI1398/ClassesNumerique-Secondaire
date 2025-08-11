@@ -285,12 +285,17 @@ def login():
             elif user.subscription_status == 'pending':
                 # Exception spéciale pour mr.zahiri@gmail.com - accès admin direct
                 if user.email == 'mr.zahiri@gmail.com':
-                    user.subscription_status = 'approved'
-                    user.role = 'admin'
-                    user.subscription_type = 'admin'
-                    user.approved_by = 'system'
-                    db.session.commit()
-                    app.logger.info("✅ mr.zahiri@gmail.com auto-approuvé lors de la connexion")
+                    try:
+                        user.subscription_status = 'approved'
+                        user.role = 'admin'
+                        user.subscription_type = 'admin'
+                        user.approved_by = 'system'
+                        db.session.commit()
+                        app.logger.info("✅ mr.zahiri@gmail.com auto-approuvé lors de la connexion")
+                    except Exception as e:
+                        app.logger.error(f"Erreur lors de l'auto-approbation: {e}")
+                        # Continuer quand même la connexion
+                        pass
                 else:
                     flash('Votre compte est en attente de validation. Veuillez patienter.', 'warning')
                     return render_template('login.html')
