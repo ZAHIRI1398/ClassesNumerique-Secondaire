@@ -3233,6 +3233,51 @@ def create_test_exercises():
     except Exception as e:
         return f"❌ Erreur lors de la création: {e}"
 
+@app.route('/debug-edit-exercise/<int:exercise_id>')
+def debug_edit_exercise(exercise_id):
+    """Route de debug pour éditer directement le JSON d'un exercice"""
+    try:
+        from models import Exercise
+        exercise = Exercise.query.get_or_404(exercise_id)
+        
+        html = f"""
+        <h2>Debug - Édition directe JSON</h2>
+        <h3>Exercice: {exercise.title}</h3>
+        <p><strong>Type:</strong> {exercise.exercise_type}</p>
+        <p><strong>Contenu actuel:</strong></p>
+        <form method="POST" action="/debug-update-exercise/{exercise_id}">
+            <textarea name="content" rows="10" cols="80" style="width:100%">{exercise.content or ''}</textarea><br><br>
+            <button type="submit" style="background:green;color:white;padding:10px;">Sauvegarder JSON</button>
+        </form>
+        <br>
+        <h4>Format attendu pour "Mots à placer":</h4>
+        <pre>{{"sentences": ["Cette phrase est-elle ___ ou ___ ?"], "words": ["déclarative", "interrogative", "impérative"]}}</pre>
+        <br>
+        <a href="/exercise/library">Retour à la bibliothèque</a>
+        """
+        return html
+        
+    except Exception as e:
+        return f"❌ Erreur: {e}"
+
+@app.route('/debug-update-exercise/<int:exercise_id>', methods=['POST'])
+def debug_update_exercise(exercise_id):
+    """Route pour sauvegarder le JSON modifié"""
+    try:
+        from models import Exercise
+        from flask import request
+        
+        exercise = Exercise.query.get_or_404(exercise_id)
+        new_content = request.form.get('content', '')
+        
+        exercise.content = new_content
+        db.session.commit()
+        
+        return f"✅ Exercice mis à jour ! <br><a href='/exercise/{exercise_id}'>Voir l'exercice</a> | <a href='/exercise/library'>Bibliothèque</a>"
+        
+    except Exception as e:
+        return f"❌ Erreur lors de la sauvegarde: {e}"
+
 @app.route('/exercise/<int:exercise_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_exercise(exercise_id):
