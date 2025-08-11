@@ -93,6 +93,39 @@ def allowed_file(filename):
 from extensions import init_extensions
 init_extensions(app)
 
+# Initialisation automatique de la base de données
+with app.app_context():
+    try:
+        # Créer toutes les tables si elles n'existent pas
+        db.create_all()
+        app.logger.info("✅ Tables de base de données créées avec succès")
+        
+        # Créer le compte administrateur par défaut si nécessaire
+        admin_email = os.environ.get('ADMIN_EMAIL', 'admin@classesnumeriques.com')
+        admin_user = User.query.filter_by(email=admin_email).first()
+        
+        if not admin_user:
+            from werkzeug.security import generate_password_hash
+            admin_user = User(
+                username='admin',
+                email=admin_email,
+                name='Administrateur',
+                password_hash=generate_password_hash('AdminSecure2024!'),
+                role='admin',
+                subscription_status='approved',
+                subscription_type='admin',
+                approved_by='system'
+            )
+            db.session.add(admin_user)
+            db.session.commit()
+            app.logger.info(f"✅ Compte administrateur créé: {admin_email}")
+        else:
+            app.logger.info(f"✅ Compte administrateur existant: {admin_email}")
+            
+    except Exception as e:
+        app.logger.error(f"❌ Erreur lors de l'initialisation de la base: {e}")
+        # Ne pas faire planter l'app, continuer quand même
+
 # Enregistrement des blueprints (déjà fait ligne 48)
 
 # Fonctions pour les filtres Jinja2
