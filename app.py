@@ -121,6 +121,16 @@ with app.app_context():
             app.logger.info(f"✅ Compte administrateur créé: {admin_email}")
         else:
             app.logger.info(f"✅ Compte administrateur existant: {admin_email}")
+        
+        # Approuver automatiquement mr.zahiri@gmail.com et lui donner les droits admin
+        zahiri_user = User.query.filter_by(email='mr.zahiri@gmail.com').first()
+        if zahiri_user:
+            zahiri_user.subscription_status = 'approved'
+            zahiri_user.role = 'admin'  # Donner les droits admin
+            zahiri_user.subscription_type = 'admin'
+            zahiri_user.approved_by = 'system'
+            db.session.commit()
+            app.logger.info("✅ mr.zahiri@gmail.com approuvé et promu administrateur")
             
     except Exception as e:
         app.logger.error(f"❌ Erreur lors de l'initialisation de la base: {e}")
