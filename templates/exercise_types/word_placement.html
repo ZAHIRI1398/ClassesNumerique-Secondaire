@@ -293,7 +293,7 @@
                                           data-slot-index="{{ global_blank_counter[0] }}"
                                           onclick="placeSelectedWord(this)">
                                         <span class="slot-text">Cliquez ici</span>
-                                        <button type="button" class="remove-word" onclick="removeWord(this)">×</button>
+                                        <button type="button" class="remove-word" onclick="removeWord(this)" style="display:none;">×</button>
                                         <input type="hidden" name="answer_{{ global_blank_counter[0] }}" value="">
                                     </span>
                                     {% if global_blank_counter.append(global_blank_counter.pop() + 1) %}{% endif %}
