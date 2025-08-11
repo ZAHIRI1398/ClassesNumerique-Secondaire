@@ -447,6 +447,7 @@ def setup_admin():
     return redirect(url_for('login'))
 
 @app.route('/dashboard')
+@app.route('/teacher_dashboard')
 @login_required
 def teacher_dashboard():
     if not current_user.is_teacher:
