@@ -287,12 +287,12 @@ def login():
                 if user.email == 'mr.zahiri@gmail.com':
                     try:
                         user.subscription_status = 'approved'
-                        user.role = 'admin'
+                        user.role = 'teacher'  # Changé en teacher pour avoir accès à la création d'exercices
                         user.subscription_type = 'admin'
                         user.approved_by = None  # Pas d'ID admin spécifique pour l'auto-approbation
                         user.approval_date = datetime.utcnow()
                         db.session.commit()
-                        app.logger.info("✅ mr.zahiri@gmail.com auto-approuvé lors de la connexion")
+                        app.logger.info("✅ mr.zahiri@gmail.com auto-approuvé en tant qu'enseignant-admin")
                     except Exception as e:
                         app.logger.error(f"Erreur lors de l'auto-approbation: {e}")
                         # Continuer quand même la connexion
