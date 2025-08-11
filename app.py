@@ -309,7 +309,10 @@ def login():
             flash('Connexion réussie !', 'success')
             
             # Redirection intelligente selon le rôle
-            if user.role == 'admin':
+            # Exception spéciale pour mr.zahiri@gmail.com - toujours vers teacher_dashboard
+            if user.email == 'mr.zahiri@gmail.com':
+                return redirect(url_for('teacher_dashboard'))
+            elif user.role == 'admin':
                 return redirect(url_for('admin_dashboard'))
             elif user.role == 'teacher':
                 return redirect(url_for('teacher_dashboard'))
