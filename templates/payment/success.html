@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Paiement réussi - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Paiement réussi !
+                    </h3>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-4">
+                        <i class="fas fa-check-circle text-success" style="font-size: 4rem;"></i>
+                    </div>
+                    
+                    <h4 class="text-success mb-3">Merci pour votre abonnement !</h4>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Prochaine étape :</strong> Votre paiement a été confirmé. 
+                        Votre abonnement est maintenant en attente de validation par un administrateur.
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title">Détails du paiement</h5>
+                                    <p class="card-text">
+                                        <strong>Montant :</strong> {{ "%.2f"|format(session.amount_total / 100) }}€<br>
+                                        <strong>Type :</strong> {{ 'Enseignant' if session.metadata.subscription_type == 'teacher' else 'École' }}<br>
+                                        <strong>Email :</strong> {{ session.metadata.user_email }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title">Que se passe-t-il maintenant ?</h5>
+                                    <ul class="list-unstyled text-start">
+                                        <li><i class="fas fa-clock text-warning me-2"></i>Validation en cours</li>
+                                        <li><i class="fas fa-envelope text-info me-2"></i>Notification par email</li>
+                                        <li><i class="fas fa-unlock text-success me-2"></i>Accès complet activé</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-primary me-3">
+                            <i class="fas fa-tachometer-alt me-2"></i>
+                            Accéder au tableau de bord
+                        </a>
+                        <a href="{{ url_for('payment.payment_status') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Voir le statut de mon abonnement
+                        </a>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <small class="text-muted">
+                            <i class="fas fa-question-circle me-1"></i>
+                            Des questions ? Contactez-nous à 
+                            <a href="mailto:support@classesnumeriques.com">support@classesnumeriques.com</a>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

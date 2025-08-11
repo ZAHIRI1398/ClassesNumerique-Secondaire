@@ -34,6 +34,8 @@ class User(UserMixin, db.Model):
     subscription_amount = db.Column(db.Float)  # 40.0 pour teacher, 80.0 pour school
     payment_date = db.Column(db.DateTime)
     payment_reference = db.Column(db.String(100))  # Référence de paiement (Stripe, PayPal, etc.)
+    payment_session_id = db.Column(db.String(200))  # Stripe session ID
+    payment_amount = db.Column(db.Float)  # Montant réellement payé
     approval_date = db.Column(db.DateTime)
     approved_by = db.Column(db.Integer, db.ForeignKey('user.id'))  # ID de l'admin qui a validé
     subscription_expires = db.Column(db.DateTime)  # Date d'expiration de l'abonnement

@@ -47,6 +47,10 @@ csrf.init_app(app)
 # Register blueprints
 app.register_blueprint(exercise_bp, url_prefix='/exercise')
 
+# Import and register payment blueprint
+from payment_routes import payment_bp
+app.register_blueprint(payment_bp)
+
 # Ajout du filtre shuffle pour Jinja2
 @app.template_filter('shuffle')
 def shuffle_filter(seq):
