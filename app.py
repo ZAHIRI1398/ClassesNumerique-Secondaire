@@ -283,8 +283,17 @@ def login():
                 flash('Votre demande d\'abonnement a été rejetée. Contactez l\'administrateur.', 'error')
                 return render_template('login.html')
             elif user.subscription_status == 'pending':
-                flash('Votre compte est en attente de validation. Veuillez patienter.', 'warning')
-                return render_template('login.html')
+                # Exception spéciale pour mr.zahiri@gmail.com - accès admin direct
+                if user.email == 'mr.zahiri@gmail.com':
+                    user.subscription_status = 'approved'
+                    user.role = 'admin'
+                    user.subscription_type = 'admin'
+                    user.approved_by = 'system'
+                    db.session.commit()
+                    app.logger.info("✅ mr.zahiri@gmail.com auto-approuvé lors de la connexion")
+                else:
+                    flash('Votre compte est en attente de validation. Veuillez patienter.', 'warning')
+                    return render_template('login.html')
             elif user.subscription_status == 'paid' and user.role != 'admin':
                 flash('Votre paiement a été reçu. En attente de validation par l\'administrateur.', 'info')
                 return render_template('login.html')
