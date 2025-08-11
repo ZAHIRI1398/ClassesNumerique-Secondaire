@@ -245,6 +245,7 @@ class Exercise(db.Model):
         ('word_search', 'Mots mêlés'),
         ('pairs', 'Association de paires'),
         ('fill_in_blanks', 'Texte à trous'),
+        ('word_placement', 'Mots à placer'),
         ('underline_words', 'Souligner les mots'),
         ('drag_and_drop', 'Glisser-déposer'),
         ('dictation', 'Dictée'),
@@ -322,7 +323,7 @@ class Exercise(db.Model):
                                 pair['left'] = {'content': str(pair['left']), 'type': 'text'}
                             if not isinstance(pair['right'], dict):
                                 pair['right'] = {'content': str(pair['right']), 'type': 'text'}
-                            
+                        
             # Pour les exercices de type QCM
             elif self.exercise_type == 'qcm':
                 if 'questions' not in content:
@@ -345,6 +346,20 @@ class Exercise(db.Model):
                     elif 'correct_answer' not in question:
                         question['correct_answer'] = '0'
                         
+            # Pour les exercices de type "Mots à placer"
+            elif self.exercise_type == 'word_placement':
+                # Vérifier que les clés nécessaires existent
+                if 'sentences' not in content:
+                    content['sentences'] = []
+                if 'words' not in content:
+                    content['words'] = []
+                if 'answers' not in content:
+                    content['answers'] = []
+                    
+                # Ajouter les instructions par défaut si elles n'existent pas
+                if 'instructions' not in content:
+                    content['instructions'] = 'Faites glisser les mots dans les bonnes phrases ou cliquez pour les placer.'
+                    
             return content
             
         except json.JSONDecodeError:

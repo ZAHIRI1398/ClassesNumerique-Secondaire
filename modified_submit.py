@@ -1170,19 +1170,8 @@ def exercise_library():
         # Trier par date de création décroissante
         exercises = query.order_by(desc(Exercise.created_at)).all()
     
-    # Définir les types d'exercices disponibles
-    exercise_types = [
-        ('qcm', 'QCM'),
-        ('qcm_multichoix', 'QCM Multichoix'),
-        ('word_search', 'Mots mêlés'),
-        ('pairs', 'Paires'),
-        ('fill_in_blanks', 'Texte à trous'),
-        ('underline_words', 'Souligner les mots'),
-        ('drag_and_drop', 'Glisser-déposer'),
-        ('dictation', 'Dictée'),
-        ('image_labeling', 'Étiquetage d\'image'),
-        ('flashcards', 'Cartes mémoire')
-    ]
+    # Utiliser la liste dynamique des types d'exercices du modèle
+    exercise_types = Exercise.EXERCISE_TYPES
     
     return render_template('exercise_library.html',
                            exercises=exercises,
@@ -1425,6 +1414,52 @@ def submit_answer(exercise_id):
                 })
             
             score = (correct_count / total_blanks) * 100 if total_blanks > 0 else 0
+            
+        elif exercise.exercise_type == 'word_placement':
+            print(f'[WORD_PLACEMENT_SUBMIT_DEBUG] Processing word_placement exercise {exercise_id}')
+            print(f'[WORD_PLACEMENT_SUBMIT_DEBUG] Form data: {dict(request.form)}')
+            print(f'[WORD_PLACEMENT_SUBMIT_DEBUG] Content: {content}')
+            
+            # Vérifier la structure du contenu
+            if not content or 'sentences' not in content or 'answers' not in content:
+                print('Contenu Word Placement invalide: clés "sentences" ou "answers" manquantes')
+                flash('Erreur: Le contenu de l\'exercice est invalide.', 'error')
+                return render_template('exercise_not_found.html'), 404
+
+            sentences = content['sentences']
+            correct_answers = content['answers']
+            total_blanks = len(correct_answers)
+            correct_count = 0
+            feedback = []
+            
+            print(f'[WORD_PLACEMENT_SUBMIT_DEBUG] Total blanks: {total_blanks}')
+            print(f'[WORD_PLACEMENT_SUBMIT_DEBUG] Expected answers: {correct_answers}')
+
+            # Vérifier chaque réponse
+            for i in range(total_blanks):
+                student_answer = request.form.get(f'answer_{i}')
+                expected_answer = correct_answers[i] if i < len(correct_answers) else ''
+                
+                print(f'[WORD_PLACEMENT_SUBMIT_DEBUG] Blank {i}:')
+                print(f'  - Réponse étudiant (answer_{i}): {student_answer}')
+                print(f'  - Réponse attendue: {expected_answer}')
+                
+                is_correct = False
+                if student_answer and expected_answer:
+                    is_correct = student_answer.strip().lower() == expected_answer.strip().lower()
+                    if is_correct:
+                        correct_count += 1
+                
+                feedback.append({
+                    'blank_index': i,
+                    'student_answer': student_answer or '',
+                    'correct_answer': expected_answer,
+                    'is_correct': is_correct
+                })
+
+            score = (correct_count / total_blanks) * 100 if total_blanks > 0 else 0
+            print(f'[WORD_PLACEMENT_SUBMIT_DEBUG] Score final: {score}% ({correct_count}/{total_blanks})')
+            
         else:
             flash(f'Le type d\'exercice {exercise.exercise_type} n\'est pas pris en charge.', 'error')
             return redirect(url_for('view_exercise', exercise_id=exercise_id))

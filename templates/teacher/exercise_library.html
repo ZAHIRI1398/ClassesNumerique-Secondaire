@@ -5,7 +5,7 @@
 {% block content %}
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Bibliothèque d'exercices</h1>
+        <h2 class="mb-4">Bibliothèque d'exercices 🔧 [TEMPLATE MODIFIÉ]</h2>
         <a href="{{ url_for('exercise.create_exercise') }}" class="btn btn-success">
             <i class="bi bi-plus-circle"></i> Créer un exercice
         </a>
@@ -30,11 +30,18 @@
                 <div class="col-md-3">
                     <select class="form-select" name="type">
                         <option value="">Tous les types</option>
-                        {% for type_id, type_name in exercise_types %}
-                            <option value="{{ type_id }}" {% if type_id == selected_type %}selected{% endif %}>
-                                {{ type_name }}
-                            </option>
-                        {% endfor %}
+                        {# Temporary hardcoded list to force Mots à placer to appear #}
+                        <option value="qcm" {% if 'qcm' == selected_type %}selected{% endif %}>QCM</option>
+                        <option value="qcm_multichoix" {% if 'qcm_multichoix' == selected_type %}selected{% endif %}>QCM Multichoix</option>
+                        <option value="word_search" {% if 'word_search' == selected_type %}selected{% endif %}>Mots mêlés</option>
+                        <option value="pairs" {% if 'pairs' == selected_type %}selected{% endif %}>Association de paires</option>
+                        <option value="fill_in_blanks" {% if 'fill_in_blanks' == selected_type %}selected{% endif %}>Texte à trous</option>
+                        <option value="word_placement" {% if 'word_placement' == selected_type %}selected{% endif %}>Mots à placer</option>
+                        <option value="underline_words" {% if 'underline_words' == selected_type %}selected{% endif %}>Souligner les mots</option>
+                        <option value="drag_and_drop" {% if 'drag_and_drop' == selected_type %}selected{% endif %}>Glisser-déposer</option>
+                        <option value="dictation" {% if 'dictation' == selected_type %}selected{% endif %}>Dictée</option>
+                        <option value="image_labeling" {% if 'image_labeling' == selected_type %}selected{% endif %}>Étiquetage d'image</option>
+                        <option value="flashcards" {% if 'flashcards' == selected_type %}selected{% endif %}>Cartes mémoire</option>
                     </select>
                 </div>
                 <div class="col-md-3">

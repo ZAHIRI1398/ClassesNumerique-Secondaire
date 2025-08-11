@@ -641,10 +641,21 @@ def exercise_library():
     for ex in exercises:
         app.logger.info(f"Exercice : {ex.title} (type: {ex.exercise_type})")
 
-    return render_template('teacher/exercise_library.html',
+    # Debug: afficher les types d'exercices passés au template
+    current_app.logger.debug(f"Types d'exercices passés au template: {Exercise.EXERCISE_TYPES}")
+    
+    # Debug supplémentaire: vérifier si "Mots à placer" est présent
+    word_placement_present = any(type_id == 'word_placement' for type_id, type_name in Exercise.EXERCISE_TYPES)
+    current_app.logger.debug(f"'Mots à placer' présent dans la liste: {word_placement_present}")
+    
+    # Debug: afficher chaque type individuellement
+    for i, (type_id, type_name) in enumerate(Exercise.EXERCISE_TYPES):
+        current_app.logger.debug(f"  {i+1}. {type_id} -> {type_name}")
+    
+    return render_template('teacher/exercise_library.html', 
                          exercises=exercises,
                          exercise_types=Exercise.EXERCISE_TYPES,
-                         search_query=search_query,
+                         selected_search=search_query,
                          selected_type=exercise_type,
                          selected_subject=subject,
                          selected_level=level)
@@ -653,9 +664,13 @@ def exercise_library():
 @app.route('/exercise/<int:exercise_id>/<int:course_id>')
 # @login_required  # TEMPORAIREMENT DÉSACTIVÉ POUR TEST
 def view_exercise(exercise_id, course_id=None):
+    import sys
+    print(f'[VIEW_EXERCISE_DEBUG] Starting view_exercise for ID {exercise_id}', flush=True)
+    sys.stdout.flush()
     try:
         app.logger.info(f'Accessing exercise {exercise_id}')
         exercise = Exercise.query.get_or_404(exercise_id)
+        print(f'[VIEW_EXERCISE_DEBUG] Exercise type: {exercise.exercise_type}')
         app.logger.info(f'Found exercise: {exercise.title}')
         course_id = request.args.get('course_id', type=int)
         course = Course.query.get(course_id) if course_id else None
@@ -915,6 +930,41 @@ def view_exercise(exercise_id, course_id=None):
                 # Créer une structure vide pour éviter les erreurs
                 content['words'] = []
                 content['grid'] = []
+                content['instructions'] = 'Aucune donnée trouvée pour cet exercice.'
+        
+        # Traitement spécifique pour les exercices "Mots à placer"
+        elif exercise.exercise_type == 'word_placement':
+            print(f'[WORD_PLACEMENT_DISPLAY] Processing word_placement exercise')
+            print(f'[WORD_PLACEMENT_DISPLAY] Content keys: {list(content.keys())}')
+            print(f'[WORD_PLACEMENT_DISPLAY] Raw content: {content}')
+            
+            # Vérifier que les données nécessaires sont présentes
+            if 'sentences' in content and 'words' in content:
+                sentences = content['sentences']
+                words = content['words']
+                print(f'[WORD_PLACEMENT_DISPLAY] Found {len(sentences)} sentences and {len(words)} words')
+                
+                # Ajouter les instructions si elles ne sont pas présentes
+                if 'instructions' not in content:
+                    content['instructions'] = 'Faites glisser les mots dans les bonnes phrases ou cliquez pour les placer.'
+                    app.logger.info('Added default instructions for word_placement')
+                
+                # Pour word_placement, les phrases sont des chaînes simples avec des "___"
+                # Pas besoin de traiter comme des dictionnaires avec blanks
+                for i, sentence in enumerate(sentences):
+                    if isinstance(sentence, str):
+                        blank_count = sentence.count('___')
+                        app.logger.info(f'Sentence {i}: "{sentence}" with {blank_count} blanks')
+                    else:
+                        app.logger.warning(f'Sentence {i} is not a string: {type(sentence)}')
+                
+                app.logger.info(f'Available words: {words}')
+            else:
+                app.logger.error('No sentences or words found in word_placement exercise')
+                app.logger.error(f'Available keys: {list(content.keys())}')
+                # Créer une structure vide pour éviter les erreurs
+                content['sentences'] = []
+                content['words'] = []
                 content['instructions'] = 'Aucune donnée trouvée pour cet exercice.'
     except Exception as e:
         app.logger.error(f'Error parsing content: {str(e)}')
@@ -1605,6 +1655,44 @@ def submit_exercise(exercise_id):
         max_score = len(correct_answers)
         score = (score / max_score) * 100 if max_score > 0 else 0
     
+    elif exercise.exercise_type == 'word_placement':
+        user_answers = []
+        correct_answers = content.get('answers', [])
+        
+        # Récupérer toutes les réponses de l'utilisateur dans l'ordre séquentiel
+        i = 0
+        while True:
+            answer = request.form.get(f'answer_{i}')
+            if answer is None:
+                break
+            user_answers.append(answer.strip())
+            i += 1
+        
+        app.logger.debug(f'[WORD_PLACEMENT_SCORING] Réponses utilisateur: {user_answers}')
+        app.logger.debug(f'[WORD_PLACEMENT_SCORING] Réponses correctes: {correct_answers}')
+        
+        if len(user_answers) != len(correct_answers):
+            flash('Nombre de réponses incorrect.', 'error')
+            return redirect(url_for('view_exercise', exercise_id=exercise_id))
+        
+        score = 0
+        feedback = []
+        for i, (user_ans, correct_ans) in enumerate(zip(user_answers, correct_answers)):
+            # Comparaison insensible à la casse et aux espaces
+            is_correct = user_ans.strip().lower() == correct_ans.strip().lower()
+            score += 1 if is_correct else 0
+            feedback.append({
+                'user_answer': user_ans,
+                'correct_answer': correct_ans,
+                'is_correct': is_correct,
+                'position': i + 1
+            })
+        
+        max_score = len(correct_answers)
+        score = (score / max_score) * 100 if max_score > 0 else 0
+        
+        app.logger.debug(f'[WORD_PLACEMENT_SCORING] Score final: {score}% ({score}/{max_score})')
+    
     elif exercise.exercise_type == 'word_search':
         found_words = request.form.getlist('found_words[]')
         total_words = len(content['words'])
@@ -1998,6 +2086,57 @@ def submit_answer(exercise_id, course_id=0):
                 })
 
         score = (correct_answers / total_questions) * 100 if total_questions > 0 else 0
+
+    elif exercise.exercise_type == 'word_placement':
+        print("\n=== DÉBUT SCORING WORD_PLACEMENT ===")
+        content = exercise.get_content()
+        print(f"[WORD_PLACEMENT_DEBUG] Content: {content}")
+        
+        if not isinstance(content, dict) or 'sentences' not in content or 'answers' not in content:
+            print("[WORD_PLACEMENT_DEBUG] Structure invalide!")
+            flash('Structure de l\'exercice invalide.', 'error')
+            return redirect(url_for('view_exercise', exercise_id=exercise_id))
+
+        sentences = content['sentences']
+        correct_answers = content['answers']
+        total_blanks = len(correct_answers)
+        correct_count = 0
+        
+        print(f"[WORD_PLACEMENT_DEBUG] Total blanks: {total_blanks}")
+        print(f"[WORD_PLACEMENT_DEBUG] Expected answers: {correct_answers}")
+
+        # Vérifier chaque réponse
+        for i in range(total_blanks):
+            student_answer = request.form.get(f'answer_{i}')
+            expected_answer = correct_answers[i] if i < len(correct_answers) else ''
+            
+            print(f"[WORD_PLACEMENT_DEBUG] Blank {i}:")
+            print(f"  - Réponse étudiant (answer_{i}): {student_answer}")
+            print(f"  - Réponse attendue: {expected_answer}")
+            
+            if student_answer and student_answer.strip().lower() == expected_answer.strip().lower():
+                correct_count += 1
+                feedback.append({
+                    'blank_index': i,
+                    'student_answer': student_answer,
+                    'correct_answer': expected_answer,
+                    'is_correct': True
+                })
+            else:
+                feedback.append({
+                    'blank_index': i,
+                    'student_answer': student_answer or '',
+                    'correct_answer': expected_answer,
+                    'is_correct': False
+                })
+
+        score = (correct_count / total_blanks) * 100 if total_blanks > 0 else 0
+        print(f"[WORD_PLACEMENT_DEBUG] Score final: {score}% ({correct_count}/{total_blanks})")
+
+    else:
+        print(f"[ERROR] Type d'exercice non pris en charge: {exercise.exercise_type}")
+        flash(f'Le type d\'exercice {exercise.exercise_type} n\'est pas pris en charge.', 'error')
+        return redirect(url_for('view_exercise', exercise_id=exercise_id))
             
     # Créer une nouvelle tentative
     try:
@@ -2954,6 +3093,8 @@ def edit_exercise(exercise_id):
             return render_template('exercise_types/qcm_multichoix_edit.html', exercise=exercise, content=content)
         elif exercise.exercise_type == 'fill_in_blanks':
             return render_template('exercise_types/fill_in_blanks_edit.html', exercise=exercise, content=content)
+        elif exercise.exercise_type == 'word_placement':
+            return render_template('exercise_types/word_placement_edit.html', exercise=exercise, content=content)
         elif exercise.exercise_type == 'underline_words':
             return render_template('exercise_types/underline_words_edit.html', exercise=exercise, content=content)
         elif exercise.exercise_type == 'drag_and_drop':
@@ -3177,6 +3318,75 @@ def edit_exercise(exercise_id):
                 }
                 exercise.content = json.dumps(content)
                 print(f'[FILL_BLANKS_EDIT_DEBUG] Contenu sauvegardé: {len(sentences)} phrases, {len(words)} mots')
+            
+            elif exercise.exercise_type == 'word_placement':
+                print(f'[WORD_PLACEMENT_EDIT_DEBUG] Traitement du contenu Mots à placer')
+                print(f'[WORD_PLACEMENT_EDIT_DEBUG] Tous les champs du formulaire: {list(request.form.keys())}')
+
+                # Récupérer les phrases et mots du formulaire
+                sentences = request.form.getlist('sentences[]')
+                words = request.form.getlist('words[]')
+                
+                print(f'[WORD_PLACEMENT_EDIT_DEBUG] Phrases trouvées: {sentences}')
+                print(f'[WORD_PLACEMENT_EDIT_DEBUG] Mots trouvés: {words}')
+                
+                # Filtrer les phrases et mots vides
+                sentences = [s.strip() for s in sentences if s.strip()]
+                words = [w.strip() for w in words if w.strip()]
+                
+                if not sentences:
+                    flash('Veuillez ajouter au moins une phrase.', 'error')
+                    return render_template('exercise_types/word_placement_edit.html', exercise=exercise, content=exercise.get_content())
+                
+                if not words:
+                    flash('Veuillez ajouter au moins un mot.', 'error')
+                    return render_template('exercise_types/word_placement_edit.html', exercise=exercise, content=exercise.get_content())
+                
+                # Vérifier que chaque phrase contient au moins un espace à remplir
+                for i, sentence in enumerate(sentences):
+                    if '___' not in sentence:
+                        flash(f'La phrase {i+1} ne contient pas d\'espaces à remplir (utilisez ___ pour marquer les emplacements).', 'error')
+                        return render_template('exercise_types/word_placement_edit.html', exercise=exercise, content=exercise.get_content())
+                
+                # Compter le nombre total d'espaces à remplir
+                total_blanks = sum(sentence.count('___') for sentence in sentences)
+                
+                # Vérifier qu'il y a au moins autant de mots que d'espaces à remplir
+                if len(words) < total_blanks:
+                    flash(f'Il n\'y a pas assez de mots ({len(words)}) pour remplir tous les espaces ({total_blanks}). Ajoutez au moins {total_blanks - len(words)} mot(s) supplémentaire(s).', 'error')
+                    return render_template('exercise_types/word_placement_edit.html', exercise=exercise, content=exercise.get_content())
+                
+                # Créer les réponses correctes en ordre séquentiel
+                answers = []
+                for sentence in sentences:
+                    parts = sentence.split('___')
+                    # Pour chaque espace dans cette phrase, on aura besoin d'une réponse
+                    for i in range(len(parts) - 1):
+                        # Pour l'instant, on utilise les premiers mots comme réponses correctes
+                        # L'enseignant devra ajuster selon l'ordre logique
+                        if len(answers) < len(words):
+                            answers.append(words[len(answers)])
+                
+                # Mettre à jour le contenu
+                content = {
+                    'sentences': sentences,
+                    'words': words,
+                    'answers': answers  # Réponses correctes dans l'ordre séquentiel
+                }
+                
+                # Gestion de l'upload d'image (optionnel)
+                if 'image' in request.files:
+                    file = request.files['image']
+                    if file and file.filename:
+                        filename = secure_filename(file.filename)
+                        timestamp = str(int(time.time()))
+                        filename = f"{timestamp}_{filename}"
+                        filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+                        file.save(filepath)
+                        exercise.image_path = f"uploads/{filename}"
+                
+                exercise.content = json.dumps(content, ensure_ascii=False)
+                print(f'[WORD_PLACEMENT_EDIT_DEBUG] Contenu sauvegardé: {len(sentences)} phrases, {len(words)} mots, {len(answers)} réponses')
             
             elif exercise.exercise_type == 'word_search':
                 print(f'[WORD_SEARCH_EDIT_DEBUG] Traitement du contenu Mots mêlés')

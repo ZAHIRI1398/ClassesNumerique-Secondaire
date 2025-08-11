@@ -160,6 +160,73 @@
             </button>
         </div>
 
+        <!-- Section Mots à placer -->
+        <div id="word_placement_section" class="exercise-type-section" style="display: none;">
+            <h3>Mots à placer</h3>
+            <p class="text-muted">Créez un exercice inclusif où les élèves cliquent sur des mots pour compléter les phrases. Parfait pour les élèves dyslexiques !</p>
+            
+            <!-- Image optionnelle pour Mots à placer -->
+            <div class="mb-4 p-3" style="border: 2px dashed #ffc107; border-radius: 8px; background-color: #fffbf0;">
+                <h5 style="color: #856404; margin-bottom: 15px;">
+                    <i class="bi bi-image"></i> Image d'illustration (optionnelle)
+                </h5>
+                <input type="file" name="word_placement_image" class="form-control" accept="image/*" 
+                       onchange="setupImagePreview('word_placement_image', 'word_placement_image_preview', 'word_placement_preview_img')">
+                <div id="word_placement_image_preview" style="display: none; margin-top: 15px;">
+                    <img id="word_placement_preview_img" src="" alt="Aperçu" style="max-width: 200px; max-height: 200px; border-radius: 8px;">
+                    <button type="button" class="btn btn-sm btn-danger ms-2" onclick="removeWordPlacementImage()">
+                        <i class="bi bi-trash"></i> Supprimer
+                    </button>
+                </div>
+            </div>
+
+            <!-- Phrases à compléter -->
+            <div class="mb-4 p-3" style="border: 2px solid #17a2b8; border-radius: 8px; background-color: #f0f9ff;">
+                <h5 style="color: #17a2b8; margin-bottom: 15px;">
+                    <i class="bi bi-chat-text"></i> Phrases à compléter
+                </h5>
+                <p class="text-info small mb-3">
+                    <i class="bi bi-info-circle"></i> Utilisez <strong>___</strong> (trois underscores) pour marquer les endroits où les élèves doivent placer un mot.
+                </p>
+                
+                <div id="word_placement_sentences_container">
+                    <div class="mb-3">
+                        <label class="form-label">Phrase 1 :</label>
+                        <input type="text" name="sentences[]" class="form-control" 
+                               placeholder="Exemple: Le chat ___ sur le tapis." 
+                               style="border: 2px solid #17a2b8;">
+                    </div>
+                </div>
+                
+                <button type="button" class="btn btn-outline-info mb-3" onclick="addWordPlacementSentence()">
+                    <i class="bi bi-plus-circle"></i> Ajouter une phrase
+                </button>
+            </div>
+
+            <!-- Mots disponibles -->
+            <div class="mb-4 p-3" style="border: 2px solid #ffc107; border-radius: 8px; background-color: #fffbf0;">
+                <h5 style="color: #856404; margin-bottom: 15px;">
+                    <i class="bi bi-collection"></i> Mots disponibles pour les élèves
+                </h5>
+                <p class="text-warning small mb-3">
+                    <i class="bi bi-heart"></i> <strong>Conseil inclusif :</strong> Ajoutez quelques mots supplémentaires (distracteurs) pour rendre l'exercice plus stimulant, mais pas trop pour éviter de surcharger les élèves dyslexiques.
+                </p>
+                
+                <div id="word_placement_words_container">
+                    <div class="mb-3">
+                        <label class="form-label">Mot 1 :</label>
+                        <input type="text" name="words[]" class="form-control" 
+                               placeholder="Exemple: dort" 
+                               style="border: 2px solid #ffc107;">
+                    </div>
+                </div>
+                
+                <button type="button" class="btn btn-outline-warning mb-3" onclick="addWordPlacementWord()">
+                    <i class="bi bi-plus-circle"></i> Ajouter un mot
+                </button>
+            </div>
+        </div>
+
         <!-- Section Mots mêlés -->
         <div id="word_search_section" class="exercise-type-section" style="display: none;">
             <h3>Mots mêlés</h3>
@@ -2902,6 +2969,102 @@ function removeFlashcardImage(button) {
     
     fileInput.value = '';
     previewContainer.innerHTML = '';
+}
+
+// ===== FONCTIONS MOTS À PLACER =====
+
+// Fonction pour ajouter une phrase (Mots à placer)
+function addWordPlacementSentence() {
+    const container = document.getElementById('word_placement_sentences_container');
+    const sentenceCount = container.querySelectorAll('.mb-3').length + 1;
+    
+    const newSentenceDiv = document.createElement('div');
+    newSentenceDiv.className = 'mb-3';
+    newSentenceDiv.innerHTML = `
+        <label class="form-label">Phrase ${sentenceCount} :</label>
+        <div class="input-group">
+            <input type="text" name="sentences[]" class="form-control" 
+                   placeholder="Exemple: Le chat ___ sur le tapis." 
+                   style="border: 2px solid #17a2b8;">
+            <button type="button" class="btn btn-outline-danger" onclick="removeWordPlacementSentence(this)">
+                <i class="bi bi-dash"></i>
+            </button>
+        </div>
+    `;
+    
+    container.appendChild(newSentenceDiv);
+    updateWordPlacementSentenceLabels();
+}
+
+// Fonction pour supprimer une phrase (Mots à placer)
+function removeWordPlacementSentence(button) {
+    const container = document.getElementById('word_placement_sentences_container');
+    if (container.querySelectorAll('.mb-3').length > 1) {
+        button.closest('.mb-3').remove();
+        updateWordPlacementSentenceLabels();
+    } else {
+        alert('Vous devez garder au moins une phrase.');
+    }
+}
+
+// Fonction pour mettre à jour les labels des phrases (Mots à placer)
+function updateWordPlacementSentenceLabels() {
+    const sentences = document.querySelectorAll('#word_placement_sentences_container .mb-3');
+    sentences.forEach((sentence, index) => {
+        const label = sentence.querySelector('label');
+        label.textContent = `Phrase ${index + 1} :`;
+    });
+}
+
+// Fonction pour ajouter un mot (Mots à placer)
+function addWordPlacementWord() {
+    const container = document.getElementById('word_placement_words_container');
+    const wordCount = container.querySelectorAll('.mb-3').length + 1;
+    
+    const newWordDiv = document.createElement('div');
+    newWordDiv.className = 'mb-3';
+    newWordDiv.innerHTML = `
+        <label class="form-label">Mot ${wordCount} :</label>
+        <div class="input-group">
+            <input type="text" name="words[]" class="form-control" 
+                   placeholder="Exemple: dort" 
+                   style="border: 2px solid #ffc107;">
+            <button type="button" class="btn btn-outline-danger" onclick="removeWordPlacementWord(this)">
+                <i class="bi bi-dash"></i>
+            </button>
+        </div>
+    `;
+    
+    container.appendChild(newWordDiv);
+    updateWordPlacementWordLabels();
+}
+
+// Fonction pour supprimer un mot (Mots à placer)
+function removeWordPlacementWord(button) {
+    const container = document.getElementById('word_placement_words_container');
+    if (container.querySelectorAll('.mb-3').length > 1) {
+        button.closest('.mb-3').remove();
+        updateWordPlacementWordLabels();
+    } else {
+        alert('Vous devez garder au moins un mot.');
+    }
+}
+
+// Fonction pour mettre à jour les labels des mots (Mots à placer)
+function updateWordPlacementWordLabels() {
+    const words = document.querySelectorAll('#word_placement_words_container .mb-3');
+    words.forEach((word, index) => {
+        const label = word.querySelector('label');
+        label.textContent = `Mot ${index + 1} :`;
+    });
+}
+
+// Fonction pour supprimer l'image (Mots à placer)
+function removeWordPlacementImage() {
+    const preview = document.getElementById('word_placement_image_preview');
+    const input = document.querySelector('input[name="word_placement_image"]');
+    preview.style.display = 'none';
+    input.value = '';
 }
 
 </script>
