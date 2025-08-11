@@ -3154,13 +3154,22 @@ def force_admin_setup():
         zahiri_user = User.query.filter_by(email='mr.zahiri@gmail.com').first()
         if zahiri_user:
             zahiri_user.subscription_status = 'approved'
-            zahiri_user.role = 'admin'
-            zahiri_user.subscription_type = 'admin'
-            zahiri_user.approved_by = 'system'
+            zahiri_user.role = 'teacher'
+            zahiri_user.subscription_type = 'teacher'
+            zahiri_user.approved_by = None
             db.session.commit()
-            return f"✅ mr.zahiri@gmail.com approuvé et promu admin ! <br><a href='/login'>Se connecter</a>"
-        else:
-            return "❌ Compte mr.zahiri@gmail.com non trouvé"
+            
+        # Approuver aussi jemathsia@example.com (Mr Aziz)
+        aziz_user = User.query.filter_by(email='jemathsia@example.com').first()
+        if aziz_user:
+            aziz_user.subscription_status = 'approved'
+            aziz_user.role = 'teacher'
+            aziz_user.subscription_type = 'teacher'
+            aziz_user.approved_by = None
+            aziz_user.approval_date = datetime.utcnow()
+            db.session.commit()
+            
+        return f"✅ Comptes approuvés ! <br>✅ mr.zahiri@gmail.com (enseignant)<br>✅ jemathsia@example.com (enseignant)<br><a href='/login'>Se connecter</a>"
     except Exception as e:
         return f"❌ Erreur: {e}"
 
