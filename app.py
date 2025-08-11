@@ -3220,7 +3220,7 @@ def create_test_exercises():
                     exercise_type=ex_data['exercise_type'],
                     subject=ex_data['subject'],
                     content=ex_data['content'],
-                    created_by=teacher.id,
+                    teacher_id=teacher.id,
                     created_at=datetime.utcnow()
                 )
                 db.session.add(exercise)
