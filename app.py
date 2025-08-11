@@ -131,6 +131,8 @@ with app.app_context():
             zahiri_user.approved_by = 'system'
             db.session.commit()
             app.logger.info("✅ mr.zahiri@gmail.com approuvé et promu administrateur")
+        else:
+            app.logger.info("ℹ️  Compte mr.zahiri@gmail.com non trouvé - sera approuvé à la création")
             
     except Exception as e:
         app.logger.error(f"❌ Erreur lors de l'initialisation de la base: {e}")
