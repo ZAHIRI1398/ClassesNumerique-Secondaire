@@ -3173,6 +3173,66 @@ def force_admin_setup():
     except Exception as e:
         return f"❌ Erreur: {e}"
 
+@app.route('/create-test-exercises')
+def create_test_exercises():
+    """Route pour créer des exercices de test"""
+    try:
+        from models import Exercise
+        from datetime import datetime
+        
+        # Récupérer l'utilisateur enseignant
+        teacher = User.query.filter_by(email='mr.zahiri@gmail.com').first()
+        if not teacher:
+            teacher = User.query.filter_by(email='jemathsia@example.com').first()
+        
+        if not teacher:
+            return "❌ Aucun enseignant trouvé"
+        
+        # Créer des exercices de test
+        exercises_data = [
+            {
+                'title': 'QCM Test - Les Capitales',
+                'exercise_type': 'qcm',
+                'subject': 'Géographie',
+                'content': '{"question": "Quelle est la capitale de la France ?", "options": ["Paris", "Lyon", "Marseille", "Toulouse"], "correct_answer": 0}'
+            },
+            {
+                'title': 'Texte à Trous - Grammaire',
+                'exercise_type': 'fill_blanks',
+                'subject': 'Français',
+                'content': '{"text": "Le chat [mange] sa nourriture dans le [jardin].", "blanks": ["mange", "jardin"]}'
+            },
+            {
+                'title': 'Mots à Placer - Mathématiques',
+                'exercise_type': 'word_placement',
+                'subject': 'Mathématiques',
+                'content': '{"sentence": "2 + 2 = [4]", "words": ["4", "5", "3"], "correct_positions": [0]}'
+            }
+        ]
+        
+        created_count = 0
+        for ex_data in exercises_data:
+            # Vérifier si l'exercice existe déjà
+            existing = Exercise.query.filter_by(title=ex_data['title']).first()
+            if not existing:
+                exercise = Exercise(
+                    title=ex_data['title'],
+                    exercise_type=ex_data['exercise_type'],
+                    subject=ex_data['subject'],
+                    content=ex_data['content'],
+                    created_by=teacher.id,
+                    created_at=datetime.utcnow()
+                )
+                db.session.add(exercise)
+                created_count += 1
+        
+        db.session.commit()
+        
+        return f"✅ {created_count} exercices de test créés ! <br><a href='/exercise/library'>Voir la bibliothèque</a>"
+        
+    except Exception as e:
+        return f"❌ Erreur lors de la création: {e}"
+
 @app.route('/exercise/<int:exercise_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_exercise(exercise_id):
