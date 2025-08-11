@@ -3127,6 +3127,24 @@ def handle_exercise_answer(exercise_id):
         app.logger.error(f"Erreur lors de la soumission: {e}")
         return jsonify({'success': False, 'error': 'Une erreur est survenue'}), 500
 
+@app.route('/force-admin-setup')
+def force_admin_setup():
+    """Route temporaire pour forcer l'approbation admin"""
+    try:
+        # Approuver mr.zahiri@gmail.com
+        zahiri_user = User.query.filter_by(email='mr.zahiri@gmail.com').first()
+        if zahiri_user:
+            zahiri_user.subscription_status = 'approved'
+            zahiri_user.role = 'admin'
+            zahiri_user.subscription_type = 'admin'
+            zahiri_user.approved_by = 'system'
+            db.session.commit()
+            return f"✅ mr.zahiri@gmail.com approuvé et promu admin ! <br><a href='/login'>Se connecter</a>"
+        else:
+            return "❌ Compte mr.zahiri@gmail.com non trouvé"
+    except Exception as e:
+        return f"❌ Erreur: {e}"
+
 @app.route('/exercise/<int:exercise_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_exercise(exercise_id):
