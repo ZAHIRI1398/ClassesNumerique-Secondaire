@@ -3194,19 +3194,19 @@ def create_test_exercises():
                 'title': 'QCM Test - Les Capitales',
                 'exercise_type': 'qcm',
                 'subject': 'Géographie',
-                'content': '{"question": "Quelle est la capitale de la France ?", "options": ["Paris", "Lyon", "Marseille", "Toulouse"], "correct_answer": 0}'
+                'content': '{"question": "Quelle est la capitale de la France ?", "options": ["Paris", "Lyon", "Marseille", "Toulouse"], "correct_answer": 0, "explanation": "Paris est la capitale de la France depuis 1792."}'
             },
             {
                 'title': 'Texte à Trous - Grammaire',
-                'exercise_type': 'fill_blanks',
+                'exercise_type': 'fill_in_blanks',
                 'subject': 'Français',
-                'content': '{"text": "Le chat [mange] sa nourriture dans le [jardin].", "blanks": ["mange", "jardin"]}'
+                'content': '{"text": "Le chat ____ sa nourriture dans le ____.", "blanks": [{"word": "mange", "position": 1}, {"word": "jardin", "position": 2}], "sentences": ["Le chat mange sa nourriture dans le jardin."]}'
             },
             {
-                'title': 'Mots à Placer - Mathématiques',
-                'exercise_type': 'word_placement',
-                'subject': 'Mathématiques',
-                'content': '{"sentence": "2 + 2 = [4]", "words": ["4", "5", "3"], "correct_positions": [0]}'
+                'title': 'Association de Paires - Histoire',
+                'exercise_type': 'pairs',
+                'subject': 'Histoire',
+                'content': '{"pairs": [{"left": "1789", "right": "Révolution française"}, {"left": "1804", "right": "Sacre de Napoléon"}, {"left": "1815", "right": "Waterloo"}]}'
             }
         ]
         
