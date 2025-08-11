@@ -3245,7 +3245,7 @@ def debug_edit_exercise(exercise_id):
         <h3>Exercice: {exercise.title}</h3>
         <p><strong>Type:</strong> {exercise.exercise_type}</p>
         <p><strong>Contenu actuel:</strong></p>
-        <form method="POST" action="/debug-update-exercise/{exercise_id}">
+        <form method="GET" action="/debug-update-exercise/{exercise_id}">
             <textarea name="content" rows="10" cols="80" style="width:100%">{exercise.content or ''}</textarea><br><br>
             <button type="submit" style="background:green;color:white;padding:10px;">Sauvegarder JSON</button>
         </form>
@@ -3260,7 +3260,7 @@ def debug_edit_exercise(exercise_id):
     except Exception as e:
         return f"❌ Erreur: {e}"
 
-@app.route('/debug-update-exercise/<int:exercise_id>', methods=['POST'])
+@app.route('/debug-update-exercise/<int:exercise_id>', methods=['GET', 'POST'])
 def debug_update_exercise(exercise_id):
     """Route pour sauvegarder le JSON modifié"""
     try:
@@ -3268,12 +3268,16 @@ def debug_update_exercise(exercise_id):
         from flask import request
         
         exercise = Exercise.query.get_or_404(exercise_id)
-        new_content = request.form.get('content', '')
         
-        exercise.content = new_content
-        db.session.commit()
+        # Récupérer le contenu depuis GET ou POST
+        new_content = request.args.get('content') or request.form.get('content', '')
         
-        return f"✅ Exercice mis à jour ! <br><a href='/exercise/{exercise_id}'>Voir l'exercice</a> | <a href='/exercise/library'>Bibliothèque</a>"
+        if new_content:
+            exercise.content = new_content
+            db.session.commit()
+            return f"✅ Exercice mis à jour ! <br><a href='/exercise/{exercise_id}'>Voir l'exercice</a> | <a href='/exercise/library'>Bibliothèque</a>"
+        else:
+            return f"❌ Aucun contenu fourni. <a href='/debug-edit-exercise/{exercise_id}'>Retour</a>"
         
     except Exception as e:
         return f"❌ Erreur lors de la sauvegarde: {e}"
