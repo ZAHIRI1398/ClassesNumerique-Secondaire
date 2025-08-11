@@ -137,10 +137,12 @@
                                                 <a href="/exercise/{{ exercise.id }}/edit" class="btn btn-outline-warning">
                                                     <i class="fas fa-edit"></i> Modifier
                                                 </a>
-                                                <button onclick="confirmDelete('{{ exercise.title }}')" 
-                                                        class="btn btn-outline-danger">
-                                                    <i class="fas fa-trash"></i> Supprimer
-                                                </button>
+                                                <form method="POST" action="{{ url_for('exercise.delete_exercise', exercise_id=exercise.id) }}" style="display: inline;" onsubmit="return confirmDelete('{{ exercise.title }}')">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                                    <button type="submit" class="btn btn-outline-danger">
+                                                        <i class="fas fa-trash"></i> Supprimer
+                                                    </button>
+                                                </form>
                                             {% endif %}
                                         {% endif %}
                                     </div>
@@ -189,7 +191,7 @@
 </div>
 
 <script>
-// Fonction de confirmation simple pour la suppression d'exercice
+// Fonction de confirmation pour la suppression d'exercice
 function confirmDelete(exerciseTitle) {
     return confirm(`Êtes-vous sûr de vouloir supprimer l'exercice "${exerciseTitle}" ?\n\nCette action est irréversible.`);
 }
