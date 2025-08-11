@@ -19,7 +19,7 @@
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{{ url_for('index') }}">
+            <a class="navbar-brand" href="{% if current_user.is_authenticated and current_user.is_teacher %}{{ url_for('teacher_dashboard') }}{% elif current_user.is_authenticated and current_user.role == 'admin' %}{{ url_for('admin_dashboard') }}{% else %}{{ url_for('index') }}{% endif %}">
                 <i class="fas fa-school"></i> Classe Numérique Saint Bernadette
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
