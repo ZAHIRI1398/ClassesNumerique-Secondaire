@@ -4691,6 +4691,37 @@ def approve_subscription(user_id):
     flash(f'Abonnement de {user.name} approuvé avec succès !', 'success')
     return redirect(url_for('admin_dashboard'))
 
+@app.route('/admin/approve-trial/<int:user_id>', methods=['POST'])
+@login_required
+@admin_required
+def approve_trial(user_id):
+    """Approuver un utilisateur pour un essai gratuit avec durée flexible"""
+    user = User.query.get_or_404(user_id)
+    
+    # Récupérer les paramètres du formulaire
+    trial_days = int(request.form.get('trial_days', 30))
+    trial_type = request.form.get('trial_type', 'trial')
+    notes = request.form.get('notes', '').strip()
+    
+    # Calculer la date d'expiration
+    from datetime import datetime, timedelta
+    approval_date = datetime.now()
+    expiration_date = approval_date + timedelta(days=trial_days)
+    
+    # Mettre à jour l'utilisateur
+    user.subscription_status = 'approved'
+    user.subscription_type = trial_type
+    user.subscription_amount = 0.0
+    user.approval_date = approval_date
+    user.approved_by = current_user.id
+    user.subscription_expires = expiration_date
+    user.notes = f"Essai gratuit de {trial_days} jours approuvé par {current_user.name}. {notes}".strip()
+    
+    db.session.commit()
+    
+    flash(f'{user.name} approuvé pour un essai gratuit de {trial_days} jours !', 'success')
+    return redirect(url_for('admin_user_details', user_id=user_id))
+
 @app.route('/admin/reject/<int:user_id>', methods=['POST'])
 @login_required
 @admin_required
