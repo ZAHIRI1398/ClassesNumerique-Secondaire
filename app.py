@@ -4722,6 +4722,53 @@ def approve_trial(user_id):
     flash(f'{user.name} approuvé pour un essai gratuit de {trial_days} jours !', 'success')
     return redirect(url_for('admin_user_details', user_id=user_id))
 
+@app.route('/init-production')
+def init_production():
+    """Route pour initialiser la base de données en production"""
+    try:
+        from datetime import datetime
+        from werkzeug.security import generate_password_hash
+        
+        # Créer toutes les tables
+        db.create_all()
+        
+        # Vérifier si un admin existe déjà
+        existing_admin = User.query.filter_by(role='admin').first()
+        if existing_admin:
+            return f"<h2>✅ Admin déjà existant</h2><p>Email: {existing_admin.email}</p><p><a href='/login'>Se connecter</a></p>"
+        
+        # Créer le compte admin
+        admin_user = User(
+            name="Administrateur",
+            username="admin", 
+            email="admin@admin.com",
+            password_hash=generate_password_hash("admin"),
+            role="admin",
+            subscription_status="approved",
+            subscription_type="admin",
+            subscription_amount=0.0,
+            created_at=datetime.now(),
+            approval_date=datetime.now(),
+            approved_by=1
+        )
+        
+        db.session.add(admin_user)
+        db.session.commit()
+        
+        return """
+        <h2>🎉 Production initialisée avec succès!</h2>
+        <p><strong>Compte admin créé:</strong></p>
+        <ul>
+            <li>Email: admin@admin.com</li>
+            <li>Mot de passe: admin</li>
+        </ul>
+        <p><a href="/login" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Se connecter</a></p>
+        <p><a href="/admin/dashboard">Dashboard Admin</a></p>
+        """
+        
+    except Exception as e:
+        return f"<h2>❌ Erreur d'initialisation</h2><p>{str(e)}</p><p><a href='/'>Retour</a></p>"
+
 @app.route('/admin/reject/<int:user_id>', methods=['POST'])
 @login_required
 @admin_required
