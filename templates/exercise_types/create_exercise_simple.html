@@ -935,136 +935,56 @@ function addQuestion() {
     container.appendChild(questionDiv);
 }
 
-// Fonction pour ajouter un mot (Mots mêlés) - VERSION FINALE QUI FONCTIONNE
+// Fonction pour ajouter un mot (Mots mêlés) - VERSION SIMPLE ET DIRECTE
 function addWord() {
-    console.log('[DEBUG] addWord() appelée - VERSION FINALE');
+    console.log('[DEBUG] addWord() appelée - VERSION SIMPLE');
     
-    // Trouver ou créer un conteneur qui fonctionne (basé sur le test brutal réussi)
-    let workingContainer = document.getElementById('final_word_container');
-    
-    if (!workingContainer) {
-        console.log('[DEBUG] Création du conteneur final qui fonctionne');
-        
-        // Créer un conteneur avec l'approche qui fonctionne (position relative)
-        workingContainer = document.createElement('div');
-        workingContainer.id = 'final_word_container';
-        workingContainer.style.cssText = `
-            position: relative;
-            display: block !important;
-            min-height: 50px !important;
-            height: auto !important;
-            padding: 15px;
-            margin: 15px 0;
-            border: 2px solid #28a745;
-            border-radius: 8px;
-            background-color: #f8f9fa;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            z-index: 10;
-        `;
-        
-        // Ajouter un titre
-        const title = document.createElement('h5');
-        title.textContent = 'Mots à cacher dans la grille :';
-        title.style.cssText = 'margin: 0 0 10px 0; color: #28a745; font-weight: bold;';
-        workingContainer.appendChild(title);
-        
-        // L'insérer après le bouton "Ajouter un mot"
-        const addButton = document.querySelector('button[onclick="addWord()"]');
-        if (addButton) {
-            addButton.parentNode.insertBefore(workingContainer, addButton.nextSibling);
-        }
+    // Trouver le conteneur existant
+    const container = document.getElementById('words_container');
+    if (!container) {
+        console.error('[DEBUG] Conteneur words_container introuvable');
+        return;
     }
     
-    // Compter les mots existants (exclure le titre)
-    const existingWords = workingContainer.querySelectorAll('div[data-word-item]').length;
-    console.log('[DEBUG] Nombre de mots existants:', existingWords);
+    console.log('[DEBUG] Conteneur trouvé:', container);
     
-    // Créer le nouvel élément avec l'approche qui fonctionne
-    const wordDiv = document.createElement('div');
-    wordDiv.setAttribute('data-word-item', 'true');
-    wordDiv.style.cssText = `
-        display: flex !important;
-        align-items: center;
-        margin-bottom: 10px;
-        min-height: 45px !important;
-        height: auto !important;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        padding: 8px;
-        background-color: white;
-        position: relative;
+    // Créer un nouveau champ de mot
+    const newDiv = document.createElement('div');
+    newDiv.className = 'input-group mb-2';
+    newDiv.innerHTML = `
+        <input type="text" name="word_search_words[]" class="form-control" placeholder="Entrez un mot">
+        <button type="button" class="btn btn-outline-danger" onclick="removeWord(this)">
+            <i class="bi bi-trash"></i>
+        </button>
     `;
     
-    // Créer l'input avec l'approche qui fonctionne
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.name = 'word_search_words[]';
-    input.placeholder = `Entrez le mot ${existingWords + 1}`;
-    input.style.cssText = `
-        height: 35px !important;
-        min-height: 35px !important;
-        width: 250px;
-        padding: 8px 12px;
-        border: 2px solid #007bff;
-        border-radius: 4px;
-        margin-right: 10px;
-        font-size: 14px;
-        display: block !important;
-    `;
+    // Ajouter le nouveau champ
+    container.appendChild(newDiv);
+    console.log('[DEBUG] Nouveau champ ajouté');
     
-    // Créer le bouton avec l'approche qui fonctionne
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.innerHTML = '❌ Supprimer';
-    button.onclick = function() { 
-        this.parentElement.remove();
-        console.log('Mot supprimé');
-    };
-    button.style.cssText = `
-        height: 35px !important;
-        min-height: 35px !important;
-        padding: 8px 15px;
-        border: 2px solid #dc3545;
-        background-color: #dc3545;
-        color: white;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 12px;
-        display: block !important;
-    `;
-    
-    // Assembler les éléments
-    wordDiv.appendChild(input);
-    wordDiv.appendChild(button);
-    
-    console.log('[DEBUG] Nouvel élément créé avec approche finale');
-    
-    // Ajouter au conteneur
-    workingContainer.appendChild(wordDiv);
-    
-    // Vérification finale
-    const newWordCount = workingContainer.querySelectorAll('div[data-word-item]').length;
-    console.log('[DEBUG] Nombre de mots après ajout:', newWordCount);
-    
-    if (newWordCount > existingWords) {
-        console.log('[SUCCESS] Mot ajouté avec succès!');
-        console.log('[DEBUG] Hauteur du conteneur:', workingContainer.offsetHeight);
-        console.log('[DEBUG] Hauteur du nouvel élément:', wordDiv.offsetHeight);
-        
-        // Focus sur le nouveau champ
-        input.focus();
-    } else {
-        console.error('[ERROR] Échec de l\'ajout du mot!');
+    // Focus sur le nouveau champ
+    const newInput = newDiv.querySelector('input');
+    if (newInput) {
+        newInput.focus();
+        console.log('[DEBUG] Focus mis sur le nouveau champ');
     }
 }
 
 // Fonction pour supprimer un mot (Mots mêlés)
 function removeWord(button) {
-    const container = document.getElementById('word_search_container');
-    if (container.children.length > 1) {
-        button.closest('.input-group').remove();
+    console.log('[DEBUG] removeWord() appelée');
+    const container = document.getElementById('words_container');
+    const wordDiv = button.closest('.input-group');
+    
+    // Ne pas supprimer s'il n'y a qu'un seul champ
+    if (container && container.children.length > 1) {
+        wordDiv.remove();
+        console.log('[DEBUG] Champ supprimé');
+    } else {
+        console.log('[DEBUG] Impossible de supprimer le dernier champ');
     }
 }
+
 
 // Fonction pour ajouter une phrase (Texte à trous)
 function addFillInBlanksSentence() {
