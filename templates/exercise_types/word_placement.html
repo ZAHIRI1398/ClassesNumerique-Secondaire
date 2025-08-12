@@ -219,17 +219,6 @@
     </div>
 
     <div class="exercise-content-card">
-        <!-- DEBUG INFO -->
-        <div class="alert alert-info" style="margin-bottom: 20px;">
-            <h5>DEBUG INFO:</h5>
-            <p><strong>Content exists:</strong> {{ content is defined and content }}</p>
-            <p><strong>Content type:</strong> {{ content.__class__.__name__ if content else 'None' }}</p>
-            <p><strong>Content keys:</strong> {{ content.keys() | list if content else 'No keys' }}</p>
-            <p><strong>Sentences exist:</strong> {{ content.sentences is defined and content.sentences if content else 'No content' }}</p>
-            <p><strong>Words exist:</strong> {{ content.words is defined and content.words if content else 'No content' }}</p>
-            <p><strong>Raw content:</strong> {{ content }}</p>
-        </div>
-        
         {% if not content or not content.sentences or not content.words %}
             <div class="alert alert-warning-custom">
                 <h4 class="alert-heading">Contenu non disponible</h4>

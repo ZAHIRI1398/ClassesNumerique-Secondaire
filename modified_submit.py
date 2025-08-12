@@ -700,6 +700,49 @@ def create_exercise():
                 content['cards'] = cards_data
                 current_app.logger.debug(f'Exercice flashcards créé avec {len(cards_data)} cartes')
 
+            elif exercise_type == 'word_placement':
+                print(f'[WORD_PLACEMENT_CREATE_DEBUG] Traitement exercice Mots à placer')
+                print(f'[WORD_PLACEMENT_CREATE_DEBUG] Données formulaire: {dict(request.form)}')
+                
+                # Récupérer les phrases depuis les champs sentences[]
+                sentences = request.form.getlist('sentences[]')
+                # Récupérer les mots depuis les champs words[]
+                words = request.form.getlist('words[]')
+                
+                print(f'[WORD_PLACEMENT_CREATE_DEBUG] Phrases reçues: {sentences}')
+                print(f'[WORD_PLACEMENT_CREATE_DEBUG] Mots reçus: {words}')
+                
+                # Nettoyer et filtrer les phrases vides
+                sentences = [s.strip() for s in sentences if s.strip()]
+                words = [w.strip() for w in words if w.strip()]
+                
+                print(f'[WORD_PLACEMENT_CREATE_DEBUG] Phrases nettoyées: {sentences}')
+                print(f'[WORD_PLACEMENT_CREATE_DEBUG] Mots nettoyés: {words}')
+                
+                # Validation
+                if not sentences:
+                    flash('Veuillez ajouter au moins une phrase avec des emplacements ___ pour les mots à placer.', 'error')
+                    return redirect(request.url)
+                
+                if not words:
+                    flash('Veuillez ajouter au moins un mot à placer.', 'error')
+                    return redirect(request.url)
+                
+                # Vérifier que chaque phrase contient au moins un emplacement ___
+                for i, sentence in enumerate(sentences):
+                    if '___' not in sentence:
+                        flash(f'La phrase {i+1} ne contient pas d\'emplacements (utilisez ___ pour marquer les emplacements).', 'error')
+                        return redirect(request.url)
+                
+                # Construire le contenu JSON au format attendu par le template
+                content = {
+                    'sentences': sentences,
+                    'words': words
+                }
+                
+                print(f'[WORD_PLACEMENT_CREATE_DEBUG] Contenu JSON généré: {content}')
+                current_app.logger.debug(f'Exercice Mots à placer créé avec {len(sentences)} phrases et {len(words)} mots')
+
             # Gestion de l'image de l'exercice (pour tous les types d'exercices)
             # exercise_image_path déjà initialisé plus haut pour underline_words
             if 'exercise_image' in request.files:

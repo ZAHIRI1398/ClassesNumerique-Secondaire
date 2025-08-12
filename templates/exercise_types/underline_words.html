@@ -262,12 +262,9 @@ function toggleWord(element, sentenceId, wordId) {
         const hiddenInput = document.getElementById(`selected_words_${sentenceId}`);
         if (hiddenInput) {
             hiddenInput.value = selectedWords[sentenceId].join(',');
-            console.log(`Updated sentence ${sentenceId}, selected words:`, selectedWords[sentenceId]);
-        } else {
-            console.warn(`Hidden input not found for sentence ${sentenceId}`);
         }
     } catch (error) {
-        console.error('Error in toggleWord:', error);
+        // Erreur lors de la sélection du mot
     }
 }
 
@@ -280,7 +277,7 @@ function toggleWord(element, sentenceId, wordId) {
     try {
         previousAnswers = {% if previous_answers %}{{ previous_answers|tojson|safe }}{% else %}null{% endif %};
     } catch (e) {
-        console.error('Error parsing previous answers:', e);
+        // Erreur lors du parsing des réponses précédentes
     }
 
     // Handle word click events
