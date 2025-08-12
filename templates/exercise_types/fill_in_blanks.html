@@ -158,7 +158,7 @@
     </div>
 
     <div class="exercise-content-card">
-        {% if not content or not content.sentences or not content.words %}
+        {% if not content or not content.sentences or (not content.words and not content.available_words) %}
             <div class="alert alert-warning-custom">
                 <h4 class="alert-heading">Contenu non disponible</h4>
                 <p>Le contenu de cet exercice n'est pas disponible ou est mal formé.</p>
@@ -190,7 +190,7 @@
                 <div class="mb-4">
                     <h4>Mots disponibles :</h4>
                     <div class="word-bank p-3 border rounded bg-light" id="word-bank">
-                        {% for word in content.words %}
+                        {% for word in (content.words or content.available_words) %}
                             <button type="button" 
                                     class="btn btn-primary btn-sm me-2 mb-2 draggable-word" 
                                     draggable="true" 
