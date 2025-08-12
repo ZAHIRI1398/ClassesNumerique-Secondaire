@@ -103,9 +103,12 @@ document.addEventListener('DOMContentLoaded', function() {
         return div;
     }
 
-    addButton.addEventListener('click', function() {
+    addButton.addEventListener('click', function(e) {
+        e.preventDefault();
+        console.log('Add button clicked'); // Debug
         const newInput = createWordInput();
         container.appendChild(newInput);
+        console.log('New input added'); // Debug
     });
 
     container.addEventListener('click', function(e) {

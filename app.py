@@ -2536,9 +2536,9 @@ def handle_exercise_answer(exercise_id):
             # Calculer le score
             score_count = 0
             for i, (user_idx, correct_idx) in enumerate(zip(user_order, correct_order)):
-                user_item = content['draggable_items'][user_idx] if 0 <= user_idx < len(content['draggable_items']) else None
-                correct_item = content['draggable_items'][correct_idx] if 0 <= correct_idx < len(content['draggable_items']) else None
-                is_correct = user_idx == correct_idx
+                user_item = content['draggable_items'][user_idx] if 0 <= user_idx < len(content['draggable_items']) else "Vide"
+                correct_item = content['draggable_items'][correct_idx] if 0 <= correct_idx < len(content['draggable_items']) else "Vide"
+                is_correct = (user_idx == correct_idx) and (user_idx != -1)
                 
                 feedback.append({
                     'zone': i+1,
@@ -2549,9 +2549,11 @@ def handle_exercise_answer(exercise_id):
                 
                 if is_correct:
                     score_count += 1
+                    
+                app.logger.info(f"[DRAG_DROP_DEBUG] Zone {i+1}: user={user_idx}, correct={correct_idx}, match={is_correct}")
             
             max_score = len(correct_order)
-            score = (score_count / max_score) * 100 if max_score > 0 else 0
+            score = round((score_count / max_score) * 100) if max_score > 0 else 0
             
             # DEBUG: Log final scoring results
             app.logger.info(f"[DRAG_DROP_DEBUG] Score count: {score_count}")
