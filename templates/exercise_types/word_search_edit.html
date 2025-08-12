@@ -87,61 +87,63 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, initializing word search editor'); // Debug
+// Solution simple et directe pour le bouton "Ajouter un mot"
+function addWordField() {
+    console.log('addWordField called'); // Debug
     const container = document.getElementById('words-container');
-    const addButton = document.getElementById('add-word');
-    
-    console.log('Container:', container); // Debug
-    console.log('Add button:', addButton); // Debug
-
-    function createWordInput() {
-        const div = document.createElement('div');
-        div.className = 'input-group mb-2 word-input';
-        div.innerHTML = `
-            <input type="text" class="form-control" name="words[]" required placeholder="Entrez un mot">
-            <button type="button" class="btn btn-outline-danger remove-word">
-                <i class="fas fa-times"></i>
-            </button>
-        `;
-        return div;
+    if (!container) {
+        console.error('Container not found');
+        return;
     }
+    
+    const newDiv = document.createElement('div');
+    newDiv.className = 'input-group mb-2 word-input';
+    newDiv.innerHTML = `
+        <input type="text" class="form-control" name="words[]" required placeholder="Entrez un mot">
+        <button type="button" class="btn btn-outline-danger" onclick="removeWordField(this)">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    container.appendChild(newDiv);
+    console.log('New word field added'); // Debug
+    
+    // Focus sur le nouveau champ
+    const newInput = newDiv.querySelector('input');
+    if (newInput) {
+        newInput.focus();
+    }
+}
 
-    if (addButton && container) {
-        addButton.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('Add button clicked successfully!'); // Debug
-            const newInput = createWordInput();
-            container.appendChild(newInput);
-            console.log('New input added successfully!'); // Debug
-            
-            // Focus sur le nouveau champ
-            const newInputField = newInput.querySelector('input');
-            if (newInputField) {
-                newInputField.focus();
-            }
-        });
-        
-        // Alternative: ajouter aussi un écouteur direct
+function removeWordField(button) {
+    const container = document.getElementById('words-container');
+    const wordInput = button.closest('.word-input');
+    
+    if (container && wordInput && container.children.length > 1) {
+        wordInput.remove();
+        console.log('Word field removed'); // Debug
+    }
+}
+
+// Initialisation au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Word search editor loaded'); // Debug
+    const addButton = document.getElementById('add-word');
+    const container = document.getElementById('words-container');
+    
+    console.log('Add button:', addButton); // Debug
+    console.log('Container:', container); // Debug
+    
+    if (addButton) {
         addButton.onclick = function(e) {
             e.preventDefault();
-            console.log('Alternative onclick triggered'); // Debug
-            const newInput = createWordInput();
-            container.appendChild(newInput);
+            console.log('Add button clicked!'); // Debug
+            addWordField();
         };
+        console.log('Add button event attached'); // Debug
     } else {
-        console.error('Elements not found - Container:', container, 'Button:', addButton);
+        console.error('Add button not found!');
     }
-
-    container.addEventListener('click', function(e) {
-        if (e.target.classList.contains('remove-word') || e.target.closest('.remove-word')) {
-            const wordInput = e.target.closest('.word-input');
-            if (container.children.length > 1) {
-                wordInput.remove();
-            }
-        }
-    });
 });
 </script>
 {% endblock %}
