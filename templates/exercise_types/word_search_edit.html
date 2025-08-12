@@ -88,14 +88,18 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing word search editor'); // Debug
     const container = document.getElementById('words-container');
     const addButton = document.getElementById('add-word');
+    
+    console.log('Container:', container); // Debug
+    console.log('Add button:', addButton); // Debug
 
     function createWordInput() {
         const div = document.createElement('div');
         div.className = 'input-group mb-2 word-input';
         div.innerHTML = `
-            <input type="text" class="form-control" name="words[]" required>
+            <input type="text" class="form-control" name="words[]" required placeholder="Entrez un mot">
             <button type="button" class="btn btn-outline-danger remove-word">
                 <i class="fas fa-times"></i>
             </button>
@@ -103,13 +107,32 @@ document.addEventListener('DOMContentLoaded', function() {
         return div;
     }
 
-    addButton.addEventListener('click', function(e) {
-        e.preventDefault();
-        console.log('Add button clicked'); // Debug
-        const newInput = createWordInput();
-        container.appendChild(newInput);
-        console.log('New input added'); // Debug
-    });
+    if (addButton && container) {
+        addButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Add button clicked successfully!'); // Debug
+            const newInput = createWordInput();
+            container.appendChild(newInput);
+            console.log('New input added successfully!'); // Debug
+            
+            // Focus sur le nouveau champ
+            const newInputField = newInput.querySelector('input');
+            if (newInputField) {
+                newInputField.focus();
+            }
+        });
+        
+        // Alternative: ajouter aussi un écouteur direct
+        addButton.onclick = function(e) {
+            e.preventDefault();
+            console.log('Alternative onclick triggered'); // Debug
+            const newInput = createWordInput();
+            container.appendChild(newInput);
+        };
+    } else {
+        console.error('Elements not found - Container:', container, 'Button:', addButton);
+    }
 
     container.addEventListener('click', function(e) {
         if (e.target.classList.contains('remove-word') || e.target.closest('.remove-word')) {

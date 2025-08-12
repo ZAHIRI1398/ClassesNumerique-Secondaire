@@ -33,12 +33,19 @@
         <input type="hidden" name="answer_{{ i }}" id="answer_{{ i }}" value="">
         {% endfor %}
         
+        <div class="alert alert-info mb-4">
+            <i class="fas fa-info-circle"></i> <strong>Instructions :</strong> 
+            Cliquez sur un élément à gauche, puis cliquez sur la zone de dépôt correspondante à droite. 
+            Chaque élément a un numéro (0, 1, 2, 3...) qui correspond à sa position.
+        </div>
+        
         <div class="row mb-4">
             <div class="col-md-6">
                 <h4>Éléments à placer</h4>
                 <div id="draggable-items" style="min-height: 200px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
                     {% for item in content.draggable_items %}
-                        <div class="draggable-item" data-index="{{ loop.index0 }}" style="background: white; margin: 5px; padding: 10px; border-radius: 5px; cursor: pointer; border: 2px solid #ddd;">
+                        <div class="draggable-item" data-index="{{ loop.index0 }}" style="background: white; margin: 5px; padding: 10px; border-radius: 5px; cursor: pointer; border: 2px solid #007bff; position: relative;">
+                            <span class="badge bg-primary" style="position: absolute; top: -8px; left: -8px; font-size: 12px;">{{ loop.index0 }}</span>
                             {{ item }}
                         </div>
                     {% endfor %}
@@ -48,8 +55,9 @@
             <div class="col-md-6">
                 <h4>Zones de dépôt</h4>
                 {% for i in range(content.draggable_items|length) %}
-                    <div class="drop-zone" data-position="{{ i }}" style="min-height: 50px; margin: 5px; padding: 10px; border: 2px dashed #ccc; border-radius: 5px; background: #fff;">
-                        <span class="placeholder">Zone {{ i + 1 }} - Cliquez sur un élément puis ici</span>
+                    <div class="drop-zone" data-position="{{ i }}" style="min-height: 60px; margin: 5px; padding: 15px; border: 2px dashed #28a745; border-radius: 5px; background: #f8fff9; position: relative;">
+                        <span class="badge bg-success" style="position: absolute; top: -8px; left: -8px; font-size: 12px;">{{ i }}</span>
+                        <span class="placeholder">Zone {{ i + 1 }} - Placez l'élément {{ i }} ici</span>
                         <div class="dropped-item" style="display: none;"></div>
                     </div>
                 {% endfor %}
@@ -134,9 +142,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    const totalItems = {{ content.draggable_items|length }};
+    
     function debugFormState() {
         console.log('=== État des champs cachés ===');
-        for (let i = 0; i < {{ content.draggable_items|length }}; i++) {
+        for (let i = 0; i < totalItems; i++) {
             const field = document.getElementById('answer_' + i);
             if (field) {
                 console.log('answer_' + i + ':', field.value);
@@ -149,7 +159,7 @@ document.addEventListener('DOMContentLoaded', function() {
         debugFormState();
         
         let allFilled = true;
-        for (let i = 0; i < {{ content.draggable_items|length }}; i++) {
+        for (let i = 0; i < totalItems; i++) {
             const field = document.getElementById('answer_' + i);
             if (!field || field.value === '') {
                 allFilled = false;
