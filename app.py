@@ -20,6 +20,7 @@ from extensions import db, init_extensions, login_manager
 from models import User, Class, Course, Exercise, ExerciseAttempt, CourseFile, student_class_association, course_exercise
 from forms import ExerciseForm
 from modified_submit import bp as exercise_bp
+from payment_routes import payment_bp
 
 # Configuration du logging
 logging.basicConfig(
@@ -253,14 +254,18 @@ def uploaded_file(filename):
 
 # Routes
 @app.route('/')
-@login_required
 def index():
-    if current_user.role == 'admin':
-        return redirect(url_for('admin_dashboard'))
-    elif current_user.is_teacher:
-        return redirect(url_for('teacher_dashboard'))
-    else:  # student
-        return redirect(url_for('view_student_classes'))
+    if current_user.is_authenticated:
+        if current_user.is_teacher:
+            return redirect(url_for('teacher_dashboard'))
+        elif current_user.role == 'student':
+            return redirect(url_for('view_student_classes'))
+    return render_template('index.html')
+
+@app.route('/subscription-choice')
+def subscription_choice():
+    """Page de choix d'abonnement pour les nouveaux utilisateurs"""
+    return render_template('subscription_choice.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():

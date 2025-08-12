@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Choisir votre abonnement{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="text-center mb-5">
+                <h1 class="display-4 text-primary mb-3">
+                    <i class="fas fa-graduation-cap me-3"></i>
+                    Bienvenue sur Classe Numérique Saint Bernadette
+                </h1>
+                <p class="lead text-muted">
+                    Choisissez l'abonnement qui correspond à vos besoins pour accéder à notre plateforme éducative complète
+                </p>
+            </div>
+
+            <div class="row g-4">
+                <!-- Abonnement Enseignant -->
+                <div class="col-md-6">
+                    <div class="card h-100 shadow-lg border-0 position-relative">
+                        <div class="card-header bg-gradient text-white text-center py-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <h3 class="mb-0">
+                                <i class="fas fa-user-graduate fa-2x mb-3 d-block"></i>
+                                Enseignant
+                            </h3>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="text-center mb-4">
+                                <h2 class="text-primary mb-0">40€</h2>
+                                <p class="text-muted">par an</p>
+                            </div>
+                            
+                            <h5 class="mb-3">✨ Inclus dans votre abonnement :</h5>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <strong>Accès complet</strong> à tous les exercices
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <strong>Création illimitée</strong> d'exercices personnalisés
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <strong>Gestion des classes</strong> et élèves
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <strong>Suivi des performances</strong> détaillé
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <strong>Export PDF/Excel</strong> des statistiques
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <strong>Support technique</strong> prioritaire
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="card-footer bg-transparent p-4">
+                            <a href="{{ url_for('payment.subscribe', subscription_type='teacher') }}" 
+                               class="btn btn-primary btn-lg w-100 py-3">
+                                <i class="fas fa-credit-card me-2"></i>
+                                Choisir Enseignant
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Abonnement École -->
+                <div class="col-md-6">
+                    <div class="card h-100 shadow-lg border-0 position-relative">
+                        <!-- Badge "Populaire" -->
+                        <div class="position-absolute top-0 start-50 translate-middle">
+                            <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
+                                <i class="fas fa-star me-1"></i>
+                                Recommandé
+                            </span>
+                        </div>
+                        
+                        <div class="card-header bg-gradient text-white text-center py-4" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                            <h3 class="mb-0">
+                                <i class="fas fa-school fa-2x mb-3 d-block"></i>
+                                École
+                            </h3>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="text-center mb-4">
+                                <h2 class="text-primary mb-0">80€</h2>
+                                <p class="text-muted">par an</p>
+                            </div>
+                            
+                            <h5 class="mb-3">🏆 Tout l'abonnement Enseignant + :</h5>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <strong>Accès multi-enseignants</strong> illimité
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <strong>Tableau de bord administrateur</strong>
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <strong>Gestion centralisée</strong> des utilisateurs
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <strong>Statistiques globales</strong> de l'établissement
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <strong>Support dédié</strong> et formation
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i>
+                                    <strong>Sauvegarde automatique</strong> des données
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="card-footer bg-transparent p-4">
+                            <a href="{{ url_for('payment.subscribe', subscription_type='school') }}" 
+                               class="btn btn-success btn-lg w-100 py-3">
+                                <i class="fas fa-credit-card me-2"></i>
+                                Choisir École
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section Sécurité et Garanties -->
+            <div class="row mt-5">
+                <div class="col-12">
+                    <div class="card bg-light border-0">
+                        <div class="card-body text-center py-4">
+                            <h4 class="mb-4">🔒 Paiement 100% Sécurisé</h4>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <i class="fas fa-shield-alt fa-3x text-success mb-3"></i>
+                                    <h5>Sécurisé par Stripe</h5>
+                                    <p class="text-muted">Paiement traité par Stripe, leader mondial de la sécurité</p>
+                                </div>
+                                <div class="col-md-4">
+                                    <i class="fas fa-lock fa-3x text-primary mb-3"></i>
+                                    <h5>Données Protégées</h5>
+                                    <p class="text-muted">Vos informations personnelles sont chiffrées et sécurisées</p>
+                                </div>
+                                <div class="col-md-4">
+                                    <i class="fas fa-undo fa-3x text-warning mb-3"></i>
+                                    <h5>Satisfaction Garantie</h5>
+                                    <p class="text-muted">Support technique et assistance personnalisée inclus</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Call to Action -->
+            <div class="text-center mt-5">
+                <p class="text-muted">
+                    <i class="fas fa-question-circle me-2"></i>
+                    Des questions ? Contactez-nous à 
+                    <a href="mailto:support@classesaintbernadette.fr" class="text-primary">support@classesaintbernadette.fr</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.bg-gradient {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1) !important;
+}
+
+.btn {
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+}
+</style>
+{% endblock %}
