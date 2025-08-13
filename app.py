@@ -4782,6 +4782,41 @@ def debug_railway():
 def test_simple():
     """Route ultra-simple pour tester si Flask fonctionne"""
     return "✅ Flask fonctionne parfaitement sur Railway !"
+
+@app.route('/admin/dashboard')
+def admin_dashboard():
+    """Dashboard administrateur - route manquante qui causait l'erreur 500"""
+    
+    if not current_user.is_authenticated or current_user.role != 'admin':
+        flash('Accès non autorisé', 'error')
+        return redirect(url_for('login'))
+    
+    try:
+        # Statistiques utilisateurs
+        total_users = User.query.count()
+        pending_users = User.query.filter_by(subscription_status='pending').count()
+        paid_users = User.query.filter_by(subscription_status='paid').count()
+        approved_users = User.query.filter_by(subscription_status='approved').count()
+        rejected_users = User.query.filter_by(subscription_status='rejected').count()
+        
+        # Dernières inscriptions
+        recent_registrations = User.query.filter(User.subscription_status.in_(['pending', 'paid'])).order_by(User.created_at.desc()).limit(10).all()
+        
+        stats = {
+            'total_users': total_users,
+            'pending_users': pending_users,
+            'paid_users': paid_users,
+            'approved_users': approved_users,
+            'rejected_users': rejected_users
+        }
+        
+        return render_template('admin/dashboard.html', 
+                             stats=stats, 
+                             recent_registrations=recent_registrations)
+    
+    except Exception as e:
+        app.logger.error(f"Erreur admin dashboard: {str(e)}")
+        return f"Dashboard admin temporaire - Statistiques: {total_users if 'total_users' in locals() else 'N/A'} utilisateurs"
     
     return render_template('admin/dashboard.html', 
                          stats=stats, 
