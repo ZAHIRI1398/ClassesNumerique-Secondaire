@@ -4753,10 +4753,35 @@ def debug_railway():
         debug_info.append(f"✅ FLASK_ENV: {os.environ.get('FLASK_ENV', 'non defini')}")
         debug_info.append(f"✅ DATABASE_URL: {'defini' if os.environ.get('DATABASE_URL') else 'non defini'}")
         
+        # Test 5: Flask-Login
+        try:
+            from flask_login import current_user
+            debug_info.append(f"✅ Flask-Login import OK")
+            debug_info.append(f"✅ current_user accessible: {hasattr(current_user, 'is_authenticated')}")
+            debug_info.append(f"✅ current_user.is_authenticated: {current_user.is_authenticated}")
+        except Exception as e:
+            debug_info.append(f"❌ Flask-Login ERREUR: {str(e)}")
+        
+        # Test 6: Test route index directement
+        try:
+            debug_info.append("=== TEST ROUTE INDEX ===")
+            if current_user.is_authenticated:
+                debug_info.append(f"✅ Utilisateur connecte: {current_user.email}")
+                debug_info.append(f"✅ Role: {current_user.role}")
+            else:
+                debug_info.append("✅ Utilisateur non connecte - devrait afficher login.html")
+        except Exception as e:
+            debug_info.append(f"❌ Test route index ERREUR: {str(e)}")
+        
         return "<br>".join(debug_info)
         
     except Exception as e:
         return f"❌ Erreur diagnostic: {str(e)}"
+
+@app.route('/test-simple')
+def test_simple():
+    """Route ultra-simple pour tester si Flask fonctionne"""
+    return "✅ Flask fonctionne parfaitement sur Railway !"
     
     return render_template('admin/dashboard.html', 
                          stats=stats, 
