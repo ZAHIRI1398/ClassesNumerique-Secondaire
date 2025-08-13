@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Inscription - {{ "Enseignant" if user_type == "teacher" else "Élève" }}{% endblock %}
+{% block title %}Inscription - {{ "École" if user_type == "school" else ("Enseignant" if user_type == "teacher" else "Élève") }}{% endblock %}
 
 {% block content %}
 <div class="container">
@@ -8,7 +8,7 @@
         <div class="col-md-6">
             <div class="card">
                 <div class="card-header">
-                    <h4 class="mb-0">Inscription - {{ "Enseignant" if user_type == "teacher" else "Élève" }}</h4>
+                    <h4 class="mb-0">Inscription - {{ "École" if user_type == "school" else ("Enseignant" if user_type == "teacher" else "Élève") }}</h4>
                 </div>
                 <div class="card-body">
                     <form method="POST" action="{{ url_for('register_' + user_type) }}">
@@ -28,6 +28,30 @@
                             <label for="password" class="form-label">Mot de passe</label>
                             <input type="password" class="form-control" id="password" name="password" required>
                         </div>
+                        
+                        {% if user_type == "teacher" %}
+                        <div class="mb-3">
+                            <label for="school_name" class="form-label">École d'appartenance</label>
+                            <input type="text" class="form-control" id="school_name" name="school_name" 
+                                   placeholder="Ex: École Saint Bernadette, Collège Notre-Dame..." 
+                                   required>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle text-primary"></i>
+                                Indiquez le nom exact de votre établissement scolaire
+                            </div>
+                        </div>
+                        {% elif user_type == "school" %}
+                        <div class="mb-3">
+                            <label for="school_name" class="form-label">Nom de l'établissement</label>
+                            <input type="text" class="form-control" id="school_name" name="school_name" 
+                                   placeholder="Ex: École Saint Bernadette, Collège Notre-Dame..." 
+                                   required>
+                            <div class="form-text">
+                                <i class="fas fa-school text-primary"></i>
+                                Nom officiel de votre établissement scolaire (abonnement 80€/an)
+                            </div>
+                        </div>
+                        {% endif %}
                         
                         <div class="d-grid">
                             <button type="submit" class="btn btn-primary">S'inscrire</button>

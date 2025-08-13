@@ -181,6 +181,7 @@
                         <tr>
                             <th>Utilisateur</th>
                             <th>Type</th>
+                            <th>École</th>
                             <th>Montant</th>
                             <th>Statut</th>
                             <th>Date Inscription</th>
@@ -206,6 +207,16 @@
                                 {% if user.subscription_type %}
                                 <span class="type-badge type-{{ user.subscription_type }}">
                                     {{ user.subscription_type|title }}
+                                </span>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.school_name %}
+                                <span class="badge bg-info text-dark">
+                                    <i class="fas fa-school me-1"></i>
+                                    {{ user.school_name }}
                                 </span>
                                 {% else %}
                                 <span class="text-muted">-</span>

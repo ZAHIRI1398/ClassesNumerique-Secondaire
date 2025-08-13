@@ -68,6 +68,14 @@
                 </ul>
                 <ul class="navbar-nav">
                     {% if current_user.is_authenticated %}
+                    <!-- Bouton S'abonner pour les utilisateurs connectés sans abonnement payé -->
+                    {% if not current_user.subscription_status or current_user.subscription_status not in ['paid', 'approved'] %}
+                    <li class="nav-item">
+                        <a class="nav-link btn btn-warning btn-sm text-dark me-2" href="{{ url_for('subscription_choice') }}">
+                            <i class="fas fa-credit-card"></i> S'abonner
+                        </a>
+                    </li>
+                    {% endif %}
                     <li class="nav-item">
                         <span class="nav-link">
                             <i class="fas fa-user"></i> {{ current_user.name }}
@@ -79,6 +87,11 @@
                         </a>
                     </li>
                     {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('subscription_choice') }}">
+                            <i class="fas fa-credit-card"></i> S'abonner
+                        </a>
+                    </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('login') }}">
                             <i class="fas fa-sign-in-alt"></i> Connexion

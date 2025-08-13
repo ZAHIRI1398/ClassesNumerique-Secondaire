@@ -11,18 +11,41 @@ class PaymentService:
         stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
         self.webhook_secret = os.environ.get('STRIPE_WEBHOOK_SECRET')
     
-    def create_checkout_session(self, user, subscription_type):
-        """Créer une session de paiement Stripe"""
+    @staticmethod
+    def create_checkout_session(subscription_type, user=None):
         try:
+            # Mode simulation si pas de clé Stripe configurée
+            stripe_key = os.getenv('STRIPE_SECRET_KEY')
+            if not stripe_key:
+                print("[SIMULATION MODE] Pas de clé Stripe - simulation du paiement")
+                return PaymentService._create_simulation_session(subscription_type, user)
+            
             # Déterminer le prix selon le type d'abonnement
             if subscription_type == 'teacher':
-                price_amount = current_app.config.get('TEACHER_SUBSCRIPTION_PRICE', 4000)  # 40€
-                description = "Abonnement Enseignant - Classe Numérique Secondaire"
+                price_amount = int(os.getenv('TEACHER_SUBSCRIPTION_PRICE', 4000))  # 40€ en centimes
+                description = 'Abonnement Enseignant - Accès complet'
             elif subscription_type == 'school':
-                price_amount = current_app.config.get('SCHOOL_SUBSCRIPTION_PRICE', 8000)  # 80€
-                description = "Abonnement École - Classe Numérique Secondaire"
+                price_amount = int(os.getenv('SCHOOL_SUBSCRIPTION_PRICE', 8000))  # 80€ en centimes
+                description = 'Abonnement École - Accès complet'
             else:
                 raise ValueError("Type d'abonnement invalide")
+            
+            # Préparer les métadonnées selon l'état de connexion de l'utilisateur
+            if user and user.is_authenticated:
+                # Utilisateur connecté
+                user_description = f'Accès complet à la plateforme pour {user.name or user.email}'
+                metadata = {
+                    'user_id': str(user.id),
+                    'subscription_type': subscription_type,
+                    'user_email': user.email
+                }
+            else:
+                # Utilisateur non connecté - session temporaire
+                user_description = 'Accès complet à la plateforme éducative'
+                metadata = {
+                    'subscription_type': subscription_type,
+                    'guest_payment': 'true'
+                }
             
             # Créer la session de paiement
             session = stripe.checkout.Session.create(
@@ -32,20 +55,16 @@ class PaymentService:
                         'currency': 'eur',
                         'product_data': {
                             'name': description,
-                            'description': f'Accès complet à la plateforme pour {user.name or user.email}',
+                            'description': user_description,
                         },
                         'unit_amount': price_amount,
                     },
                     'quantity': 1,
                 }],
                 mode='payment',
-                success_url=url_for('payment_success', _external=True) + '?session_id={CHECKOUT_SESSION_ID}',
-                cancel_url=url_for('payment_cancel', _external=True),
-                metadata={
-                    'user_id': str(user.id),
-                    'subscription_type': subscription_type,
-                    'user_email': user.email
-                }
+                success_url=url_for('payment.payment_success', _external=True) + '?session_id={CHECKOUT_SESSION_ID}',
+                cancel_url=url_for('payment.payment_cancel', _external=True),
+                metadata=metadata
             )
             
             return session
@@ -53,6 +72,44 @@ class PaymentService:
         except Exception as e:
             current_app.logger.error(f"Erreur création session Stripe: {str(e)}")
             raise
+    
+    @staticmethod
+    def _create_simulation_session(subscription_type, user=None):
+        """Créer une session de paiement simulée pour les tests"""
+        import uuid
+        
+        # Déterminer le prix selon le type d'abonnement
+        if subscription_type == 'teacher':
+            price_amount = 4000  # 40€ en centimes
+            description = 'Abonnement Enseignant - Accès complet'
+        elif subscription_type == 'school':
+            price_amount = 8000  # 80€ en centimes
+            description = 'Abonnement École - Accès complet'
+        else:
+            raise ValueError("Type d'abonnement invalide")
+        
+        # Créer un objet session simulé
+        class SimulatedSession:
+            def __init__(self):
+                self.id = f"cs_test_{uuid.uuid4().hex[:24]}"
+                self.url = f"http://127.0.0.1:5000/payment/simulate-checkout?session_id={self.id}&type={subscription_type}&amount={price_amount}"
+                self.payment_status = "unpaid"
+                self.amount_total = price_amount
+                self.metadata = {
+                    'subscription_type': subscription_type,
+                    'simulation': 'true'
+                }
+                if user and hasattr(user, 'id'):
+                    self.metadata['user_id'] = str(user.id)
+                    self.metadata['user_email'] = getattr(user, 'email', '')
+                else:
+                    self.metadata['guest_payment'] = 'true'
+        
+        session = SimulatedSession()
+        print(f"[SIMULATION] Session créée: {session.id}")
+        print(f"[SIMULATION] URL de paiement: {session.url}")
+        
+        return session
     
     def verify_payment(self, session_id):
         """Vérifier le statut d'un paiement"""

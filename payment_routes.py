@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
 from flask_login import login_required, current_user
-from payment_service import payment_service
+from payment_service import PaymentService
 from models import User, db
 import stripe
 import os
@@ -9,17 +9,16 @@ import os
 payment_bp = Blueprint('payment', __name__, url_prefix='/payment')
 
 @payment_bp.route('/subscribe/<subscription_type>')
-@login_required
 def subscribe(subscription_type):
     """Page de souscription avec choix du type d'abonnement"""
     if subscription_type not in ['teacher', 'school']:
         flash('Type d\'abonnement invalide.', 'error')
-        return redirect(url_for('subscription_status'))
+        return redirect(url_for('subscription_choice'))
     
-    # Vérifier si l'utilisateur n'a pas déjà un abonnement actif
-    if current_user.subscription_status in ['paid', 'approved']:
+    # Vérifier si l'utilisateur est connecté et a déjà un abonnement actif
+    if current_user.is_authenticated and current_user.subscription_status in ['paid', 'approved']:
         flash('Vous avez déjà un abonnement actif.', 'info')
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('index'))
     
     # Déterminer le prix
     if subscription_type == 'teacher':
@@ -35,7 +34,6 @@ def subscribe(subscription_type):
                          description=description)
 
 @payment_bp.route('/create-checkout-session', methods=['POST'])
-@login_required
 def create_checkout_session():
     """Créer une session de paiement Stripe"""
     try:
@@ -44,8 +42,11 @@ def create_checkout_session():
         if subscription_type not in ['teacher', 'school']:
             return jsonify({'error': 'Type d\'abonnement invalide'}), 400
         
+        # Pour les utilisateurs non connectés, créer une session temporaire
+        user = current_user if current_user.is_authenticated else None
+        
         # Créer la session de paiement
-        session = payment_service.create_checkout_session(current_user, subscription_type)
+        session = PaymentService.create_checkout_session(subscription_type, user)
         
         return jsonify({'checkout_url': session.url})
         
@@ -77,6 +78,41 @@ def payment_success():
         flash('Erreur lors du traitement du paiement. Veuillez contacter le support.', 'error')
     
     return render_template('payment/success.html', session=session)
+
+@payment_bp.route('/simulate-checkout')
+def simulate_checkout():
+    """Page de simulation de paiement pour les tests"""
+    session_id = request.args.get('session_id')
+    subscription_type = request.args.get('type')
+    amount = request.args.get('amount', '4000')
+    
+    if not session_id or not subscription_type:
+        flash('Paramètres de simulation invalides.', 'error')
+        return redirect(url_for('subscription_choice'))
+    
+    # Convertir le montant en euros
+    price_euros = int(amount) / 100
+    
+    return render_template('payment/simulate_checkout.html', 
+                         session_id=session_id,
+                         subscription_type=subscription_type,
+                         amount=amount,
+                         price_euros=price_euros)
+
+@payment_bp.route('/simulate-payment', methods=['POST'])
+def simulate_payment():
+    """Traiter le paiement simulé"""
+    session_id = request.form.get('session_id')
+    action = request.form.get('action')  # 'success' ou 'cancel'
+    
+    if action == 'success':
+        # Simuler un paiement réussi
+        flash('🎉 Paiement simulé réussi ! Redirection vers la page de succès...', 'success')
+        return redirect(url_for('payment.payment_success', session_id=session_id))
+    else:
+        # Simuler une annulation
+        flash('❌ Paiement simulé annulé.', 'info')
+        return redirect(url_for('payment.payment_cancel'))
 
 @payment_bp.route('/cancel')
 @login_required

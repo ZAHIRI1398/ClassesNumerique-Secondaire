@@ -26,6 +26,7 @@ class User(UserMixin, db.Model):
     name = db.Column(db.String(120))
     password_hash = db.Column(db.String(128))
     role = db.Column(db.String(20), nullable=False, default='student')  # 'admin', 'teacher', 'student'
+    school_name = db.Column(db.String(200))  # Nom de l'école d'appartenance (pour les enseignants et écoles)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Système d'inscription payante et validation admin

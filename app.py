@@ -18,6 +18,7 @@ from flask_wtf.csrf import generate_csrf
 
 from extensions import db, init_extensions, login_manager
 from models import User, Class, Course, Exercise, ExerciseAttempt, CourseFile, student_class_association, course_exercise
+from payment_routes import payment_bp
 from forms import ExerciseForm
 from modified_submit import bp as exercise_bp
 
@@ -98,7 +99,7 @@ with app.app_context():
     try:
         # Créer toutes les tables si elles n'existent pas
         db.create_all()
-        app.logger.info("✅ Tables de base de données créées avec succès")
+        app.logger.info("Tables de base de donnees creees avec succes")
         
         # Créer le compte administrateur par défaut si nécessaire
         admin_email = os.environ.get('ADMIN_EMAIL', 'admin@classesnumeriques.com')
@@ -118,9 +119,9 @@ with app.app_context():
             )
             db.session.add(admin_user)
             db.session.commit()
-            app.logger.info(f"✅ Compte administrateur créé: {admin_email}")
+            app.logger.info(f"Compte administrateur cree: {admin_email}")
         else:
-            app.logger.info(f"✅ Compte administrateur existant: {admin_email}")
+            app.logger.info(f"Compte administrateur existant: {admin_email}")
         
         # Approuver automatiquement mr.zahiri@gmail.com et lui donner les droits admin
         zahiri_user = User.query.filter_by(email='mr.zahiri@gmail.com').first()
@@ -130,12 +131,12 @@ with app.app_context():
             zahiri_user.subscription_type = 'admin'
             zahiri_user.approved_by = 'system'
             db.session.commit()
-            app.logger.info("✅ mr.zahiri@gmail.com approuvé et promu administrateur")
+            app.logger.info("mr.zahiri@gmail.com approuve et promu administrateur")
         else:
-            app.logger.info("ℹ️  Compte mr.zahiri@gmail.com non trouvé - sera approuvé à la création")
+            app.logger.info("Compte mr.zahiri@gmail.com non trouve - sera approuve a la creation")
             
     except Exception as e:
-        app.logger.error(f"❌ Erreur lors de l'initialisation de la base: {e}")
+        app.logger.error(f"Erreur lors de l'initialisation de la base: {e}")
         # Ne pas faire planter l'app, continuer quand même
 
 # Enregistrement des blueprints (déjà fait ligne 48)
@@ -253,14 +254,17 @@ def uploaded_file(filename):
 
 # Routes
 @app.route('/')
-@login_required
 def index():
-    if current_user.role == 'admin':
-        return redirect(url_for('admin_dashboard'))
-    elif current_user.is_teacher:
-        return redirect(url_for('teacher_dashboard'))
-    else:  # student
-        return redirect(url_for('view_student_classes'))
+    if current_user.is_authenticated:
+        if current_user.role == 'admin':
+            return redirect(url_for('admin_dashboard'))
+        elif current_user.is_teacher:
+            return redirect(url_for('teacher_dashboard'))
+        else:  # student
+            return redirect(url_for('view_student_classes'))
+    else:
+        # Utilisateurs non connectés voient la belle page d'accueil moderne avec bouton S'abonner
+        return render_template('login.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -298,8 +302,8 @@ def login():
                         # Continuer quand même la connexion
                         pass
                 else:
-                    flash('Votre compte est en attente de validation. Veuillez patienter.', 'warning')
-                    return render_template('login.html')
+                    # Permettre la connexion même en attente pour qu'ils puissent voir le bouton "S'abonner"
+                    flash('Votre compte est en attente de validation. Vous pouvez effectuer un paiement pour accélérer le processus.', 'warning')
             elif user.subscription_status == 'paid' and user.role != 'admin':
                 flash('Votre paiement a été reçu. En attente de validation par l\'administrateur.', 'info')
                 return render_template('login.html')
@@ -330,12 +334,18 @@ def logout():
     flash('Vous avez été déconnecté.', 'info')
     return redirect(url_for('login'))
 
+@app.route('/subscription-choice')
+def subscription_choice():
+    """Page de choix d'abonnement pour les utilisateurs non connectés"""
+    return render_template('subscription_choice.html')
+
 @app.route('/register/teacher', methods=['GET', 'POST'])
 def register_teacher():
     if request.method == 'POST':
         name = request.form.get('name')
         email = request.form.get('email')
         password = request.form.get('password')
+        school_name = request.form.get('school_name')
         
         if User.query.filter_by(email=email).first():
             flash('Cet email est déjà utilisé.', 'error')
@@ -348,7 +358,8 @@ def register_teacher():
             username=username,
             name=name,
             email=email,
-            role='teacher'
+            role='teacher',
+            school_name=school_name
         )
         user.set_password(password)
         
@@ -363,6 +374,44 @@ def register_teacher():
             print(f"Erreur d'inscription : {str(e)}")
     
     return render_template('register_teacher.html')
+
+@app.route('/register/school', methods=['GET', 'POST'])
+def register_school():
+    """Route d'inscription pour les écoles (directeurs/responsables)"""
+    if request.method == 'POST':
+        name = request.form.get('name')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        school_name = request.form.get('school_name')
+        
+        if User.query.filter_by(email=email).first():
+            flash('Cet email est déjà utilisé.', 'error')
+            return redirect(url_for('register_school'))
+        
+        # Générer un username à partir de l'email
+        username = email.split('@')[0]
+        
+        user = User(
+            username=username,
+            name=name,
+            email=email,
+            role='teacher',  # Les responsables d'école sont aussi des enseignants
+            school_name=school_name,
+            subscription_type='school'  # Type d'abonnement école
+        )
+        user.set_password(password)
+        
+        try:
+            db.session.add(user)
+            db.session.commit()
+            flash('Inscription école réussie ! Vous pouvez maintenant vous connecter et procéder au paiement de 80€.', 'success')
+            return redirect(url_for('login'))
+        except Exception as e:
+            db.session.rollback()
+            flash('Erreur lors de l\'inscription.', 'error')
+            app.logger.error(f"Erreur d'inscription école : {str(e)}")
+    
+    return render_template('register.html', user_type='school')
 
 @app.route('/register/student', methods=['GET', 'POST'])
 def register_student():
