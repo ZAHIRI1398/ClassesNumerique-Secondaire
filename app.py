@@ -4705,6 +4705,53 @@ def migrate_school_column():
     except Exception as e:
         db.session.rollback()
         return f"Erreur : {str(e)}"
+
+@app.route('/debug-railway')
+def debug_railway():
+    """Route de diagnostic pour identifier les problemes Railway"""
+    
+    try:
+        debug_info = []
+        
+        # Test 1: Connexion base de données
+        try:
+            from sqlalchemy import text
+            result = db.session.execute(text("SELECT 1"))
+            debug_info.append("✅ Connexion base de donnees OK")
+        except Exception as e:
+            debug_info.append(f"❌ Connexion base de donnees ERREUR: {str(e)}")
+        
+        # Test 2: Structure table user
+        try:
+            result = db.session.execute(text("""
+                SELECT column_name, data_type 
+                FROM information_schema.columns 
+                WHERE table_name = 'user'
+                ORDER BY column_name
+            """))
+            columns = result.fetchall()
+            debug_info.append(f"✅ Table user a {len(columns)} colonnes")
+            for col in columns:
+                debug_info.append(f"  - {col[0]} ({col[1]})")
+        except Exception as e:
+            debug_info.append(f"❌ Structure table user ERREUR: {str(e)}")
+        
+        # Test 3: Import des modèles
+        try:
+            from models import User, Exercise
+            debug_info.append("✅ Import modeles OK")
+        except Exception as e:
+            debug_info.append(f"❌ Import modeles ERREUR: {str(e)}")
+        
+        # Test 4: Variables d'environnement
+        import os
+        debug_info.append(f"✅ FLASK_ENV: {os.environ.get('FLASK_ENV', 'non defini')}")
+        debug_info.append(f"✅ DATABASE_URL: {'defini' if os.environ.get('DATABASE_URL') else 'non defini'}")
+        
+        return "<br>".join(debug_info)
+        
+    except Exception as e:
+        return f"❌ Erreur diagnostic: {str(e)}"
     
     return render_template('admin/dashboard.html', 
                          stats=stats, 
