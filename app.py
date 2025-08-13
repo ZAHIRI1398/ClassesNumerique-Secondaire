@@ -4678,6 +4678,33 @@ def admin_dashboard():
         'approved_users': approved_users,
         'rejected_users': rejected_users
     }
+
+@app.route('/migrate-school-column')
+def migrate_school_column():
+    """Route temporaire pour ajouter la colonne school_name depuis Railway"""
+    
+    try:
+        from sqlalchemy import text
+        
+        # Vérifier si la colonne existe déjà
+        result = db.session.execute(text("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'user' AND column_name = 'school_name'
+        """))
+        
+        if result.fetchone():
+            return "La colonne school_name existe deja !"
+        
+        # Ajouter la colonne school_name
+        db.session.execute(text('ALTER TABLE "user" ADD COLUMN school_name VARCHAR(255);'))
+        db.session.commit()
+        
+        return "Colonne school_name ajoutee avec succes ! Votre application devrait maintenant fonctionner."
+        
+    except Exception as e:
+        db.session.rollback()
+        return f"Erreur : {str(e)}"
     
     return render_template('admin/dashboard.html', 
                          stats=stats, 
