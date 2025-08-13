@@ -255,15 +255,20 @@ def uploaded_file(filename):
 # Routes
 @app.route('/')
 def index():
-    if current_user.is_authenticated:
-        if current_user.role == 'admin':
-            return redirect(url_for('admin_dashboard'))
-        elif current_user.is_teacher:
-            return redirect(url_for('teacher_dashboard'))
-        else:  # student
-            return redirect(url_for('view_student_classes'))
-    else:
-        # Utilisateurs non connectés voient la belle page d'accueil moderne avec bouton S'abonner
+    try:
+        if current_user.is_authenticated:
+            if current_user.role == 'admin':
+                return redirect(url_for('admin_dashboard'))
+            elif current_user.is_teacher:
+                return redirect(url_for('teacher_dashboard'))
+            else:  # student
+                return redirect(url_for('view_student_classes'))
+        else:
+            # Utilisateurs non connectés voient la belle page d'accueil moderne avec bouton S'abonner
+            return render_template('login.html')
+    except Exception as e:
+        # En cas d'erreur avec current_user, afficher la page d'accueil par défaut
+        app.logger.error(f"Erreur route index: {str(e)}")
         return render_template('login.html')
 
 @app.route('/login', methods=['GET', 'POST'])
