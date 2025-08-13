@@ -4817,11 +4817,6 @@ def admin_dashboard():
     except Exception as e:
         app.logger.error(f"Erreur admin dashboard: {str(e)}")
         return f"Dashboard admin temporaire - Statistiques: {total_users if 'total_users' in locals() else 'N/A'} utilisateurs"
-    
-    return render_template('admin/dashboard.html', 
-                         stats=stats, 
-                         users_awaiting_approval=users_awaiting_approval,
-                         recent_registrations=recent_registrations)
 
 @app.route('/admin/subscriptions')
 @login_required
