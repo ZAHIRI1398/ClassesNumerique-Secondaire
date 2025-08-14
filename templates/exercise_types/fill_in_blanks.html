@@ -202,10 +202,34 @@
                 {% endif %}
 
                 {% set blank_counter = [0] %}
-                {% for sentence in content.sentences %}
+                
+                {# Support pour les deux formats : 'sentences' (nouveau) et 'text' (ancien) #}
+                {% if content.sentences %}
+                    {# Format nouveau : sentences (liste de phrases) #}
+                    {% for sentence in content.sentences %}
+                        <div class="mb-4 sentence-container">
+                            <div class="sentence-text">
+                                {% set parts = sentence.split('___') %}
+                                {% for part in parts %}
+                                    {{ part }}
+                                    {% if not loop.last %}
+                                        <input type="text" 
+                                               class="blank-input d-inline-block mx-1" 
+                                               name="answer_{{ blank_counter[0] }}" 
+                                               required 
+                                               placeholder="____"
+                                               style="width: auto; min-width: 80px; max-width: 150px;">
+                                        {% if blank_counter.append(blank_counter.pop() + 1) %}{% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% elif content.text %}
+                    {# Format ancien : text (une seule chaîne avec multiples blancs) #}
                     <div class="mb-4 sentence-container">
                         <div class="sentence-text">
-                            {% set parts = sentence.split('___') %}
+                            {% set parts = content.text.split('___') %}
                             {% for part in parts %}
                                 {{ part }}
                                 {% if not loop.last %}
@@ -220,7 +244,7 @@
                             {% endfor %}
                         </div>
                     </div>
-                {% endfor %}
+                {% endif %}
                 
                 <div class="text-center mt-4">
                     <button type="submit" class="btn submit-btn-fill">
