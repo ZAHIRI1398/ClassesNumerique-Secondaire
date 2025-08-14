@@ -4849,6 +4849,66 @@ def fix_uploads_directory():
     except Exception as e:
         return f"ERREUR lors de la creation du repertoire: {str(e)}"
 
+@app.route('/check-missing-images')
+def check_missing_images():
+    """Route pour identifier les images manquantes en production Railway"""
+    try:
+        import os
+        from pathlib import Path
+        
+        result = []
+        result.append("<h2>DIAGNOSTIC IMAGES PRODUCTION RAILWAY</h2>")
+        
+        # 1. Vérifier le répertoire uploads
+        uploads_dir = Path('static/uploads')
+        result.append(f"<h3>1. Repertoire static/uploads</h3>")
+        result.append(f"<p><strong>Existe:</strong> {uploads_dir.exists()}</p>")
+        
+        if uploads_dir.exists():
+            files = list(uploads_dir.glob('*'))
+            result.append(f"<p><strong>Fichiers presents:</strong> {len(files)}</p>")
+            result.append("<ul>")
+            for f in files:
+                result.append(f"<li>{f.name}</li>")
+            result.append("</ul>")
+        
+        # 2. Vérifier les références dans la DB
+        result.append(f"<h3>2. Exercices avec images dans la base</h3>")
+        exercises_with_images = Exercise.query.filter(Exercise.image_path.isnot(None)).all()
+        result.append(f"<p><strong>Nombre d'exercices avec images:</strong> {len(exercises_with_images)}</p>")
+        
+        missing_images = []
+        for ex in exercises_with_images:
+            if ex.image_path:
+                filename = ex.image_path.split('/')[-1] if '/' in ex.image_path else ex.image_path
+                image_path = uploads_dir / filename
+                
+                result.append(f"<h4>Exercice {ex.id}: {ex.title}</h4>")
+                result.append(f"<p><strong>Image path DB:</strong> {ex.image_path}</p>")
+                result.append(f"<p><strong>Fichier attendu:</strong> {filename}</p>")
+                result.append(f"<p><strong>Fichier existe:</strong> {image_path.exists()}</p>")
+                
+                if not image_path.exists():
+                    missing_images.append(filename)
+                    result.append(f"<p style='color: red;'><strong>MANQUANT</strong></p>")
+                else:
+                    result.append(f"<p style='color: green;'><strong>OK</strong></p>")
+                result.append("<hr>")
+        
+        # 3. Résumé
+        result.append(f"<h3>3. Resume</h3>")
+        result.append(f"<p><strong>Images manquantes:</strong> {len(missing_images)}</p>")
+        if missing_images:
+            result.append("<ul>")
+            for img in missing_images:
+                result.append(f"<li style='color: red;'>{img}</li>")
+            result.append("</ul>")
+        
+        return "<br>".join(result)
+        
+    except Exception as e:
+        return f"<h2>ERREUR:</h2><p>{str(e)}</p>"
+
 @app.route('/debug-railway')
 def debug_railway():
     """Route de diagnostic pour identifier les problemes Railway"""
