@@ -4909,6 +4909,65 @@ def check_missing_images():
     except Exception as e:
         return f"<h2>ERREUR:</h2><p>{str(e)}</p>"
 
+@app.route('/create-simple-placeholders')
+def create_simple_placeholders():
+    """Route pour créer des fichiers placeholder simples sans Pillow"""
+    try:
+        import os
+        from pathlib import Path
+        
+        # Créer le répertoire static/uploads
+        uploads_dir = Path('static/uploads')
+        uploads_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Images connues manquantes
+        placeholder_files = [
+            "Capture d'écran 2025-08-14 145027_20250814_182421_Da3gvm.png",
+            "triangle.png", 
+            "clopepe.png",
+            "corps_humain_exemple.jpg"
+        ]
+        
+        created_files = []
+        
+        for filename in placeholder_files:
+            file_path = uploads_dir / filename
+            
+            if not file_path.exists():
+                # Créer un fichier SVG simple comme placeholder
+                svg_content = f'''<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="400" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="400" fill="#f0f0f0" stroke="#cccccc" stroke-width="3"/>
+  <text x="400" y="180" font-family="Arial, sans-serif" font-size="24" text-anchor="middle" fill="#666666">
+    IMAGE DE L'EXERCICE
+  </text>
+  <text x="400" y="220" font-family="Arial, sans-serif" font-size="18" text-anchor="middle" fill="#999999">
+    {filename}
+  </text>
+  <text x="400" y="250" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#999999">
+    Image temporairement indisponible
+  </text>
+</svg>'''
+                
+                # Sauvegarder le fichier SVG avec l'extension d'origine
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    f.write(svg_content)
+                
+                created_files.append(filename)
+        
+        result = f"<h2>CREATION PLACEHOLDERS REUSSIE</h2>"
+        result += f"<p><strong>Fichiers crees:</strong> {len(created_files)}</p>"
+        result += "<ul>"
+        for f in created_files:
+            result += f"<li>{f}</li>"
+        result += "</ul>"
+        result += f"<p>Les images devraient maintenant s'afficher dans les exercices !</p>"
+        
+        return result
+        
+    except Exception as e:
+        return f"<h2>ERREUR:</h2><p>{str(e)}</p>"
+
 @app.route('/debug-railway')
 def debug_railway():
     """Route de diagnostic pour identifier les problemes Railway"""
