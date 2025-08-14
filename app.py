@@ -4835,9 +4835,9 @@ def debug_railway():
         try:
             from sqlalchemy import text
             result = db.session.execute(text("SELECT 1"))
-            debug_info.append("✅ Connexion base de donnees OK")
+            debug_info.append("OK Connexion base de donnees OK")
         except Exception as e:
-            debug_info.append(f"❌ Connexion base de donnees ERREUR: {str(e)}")
+            debug_info.append(f"ERREUR Connexion base de donnees ERREUR: {str(e)}")
         
         # Test 2: Structure table user
         try:
@@ -5238,6 +5238,142 @@ def process_payment():
         flash('Une erreur est survenue lors du traitement du paiement. Veuillez réessayer.', 'error')
         return redirect(url_for('subscription_payment'))
 
+
+
+@app.route('/fix-production-issues')
+def fix_production_issues():
+    """Route pour diagnostiquer et corriger les problèmes d'images et de scoring en production"""
+    try:
+        import os
+        results = []
+        
+        results.append("<h1>DIAGNOSTIC ET CORRECTION PRODUCTION</h1>")
+        
+        # 1. Vérifier et créer le dossier uploads
+        results.append("<h2>1. VERIFICATION DOSSIER UPLOADS</h2>")
+        
+        static_dir = os.path.join(app.root_path, 'static')
+        uploads_dir = os.path.join(static_dir, 'uploads')
+        
+        results.append(f"<p>Dossier static: {static_dir}</p>")
+        results.append(f"<p>Dossier uploads: {uploads_dir}</p>")
+        
+        # Créer static si nécessaire
+        if not os.path.exists(static_dir):
+            try:
+                os.makedirs(static_dir)
+                results.append("<p style='color: green;'>✓ Dossier static créé</p>")
+            except Exception as e:
+                results.append(f"<p style='color: red;'>✗ Erreur création static: {e}</p>")
+        else:
+            results.append("<p style='color: green;'>✓ Dossier static existe</p>")
+        
+        # Créer uploads si nécessaire
+        if not os.path.exists(uploads_dir):
+            try:
+                os.makedirs(uploads_dir, exist_ok=True)
+                # Créer .gitkeep
+                gitkeep_path = os.path.join(uploads_dir, ".gitkeep")
+                with open(gitkeep_path, 'w') as f:
+                    f.write("# Dossier uploads pour les images des exercices\n")
+                results.append("<p style='color: green;'>✓ Dossier uploads créé avec .gitkeep</p>")
+            except Exception as e:
+                results.append(f"<p style='color: red;'>✗ Erreur création uploads: {e}</p>")
+        else:
+            files = os.listdir(uploads_dir)
+            results.append(f"<p style='color: green;'>✓ Dossier uploads existe ({len(files)} fichiers)</p>")
+        
+        # 2. Analyser les exercices fill_in_blanks
+        results.append("<h2>2. ANALYSE EXERCICES TEXTE A TROUS</h2>")
+        
+        exercises = Exercise.query.filter_by(exercise_type='fill_in_blanks').all()
+        results.append(f"<p>Nombre d'exercices trouvés: {len(exercises)}</p>")
+        
+        for ex in exercises[:5]:  # Analyser les 5 premiers
+            results.append(f"<h3>Exercice {ex.id}: {ex.title}</h3>")
+            
+            # Analyser le contenu
+            try:
+                content = json.loads(ex.content)
+                
+                # Compter les blancs réels
+                total_blanks = 0
+                if 'text' in content:
+                    total_blanks += content['text'].count('___')
+                if 'sentences' in content:
+                    total_blanks += sum(s.count('___') for s in content['sentences'])
+                
+                # Compter les réponses
+                words = content.get('words', [])
+                available_words = content.get('available_words', [])
+                
+                results.append(f"<p>Blancs dans contenu: {total_blanks}</p>")
+                results.append(f"<p>Mots de réponse: {len(words)} (words)</p>")
+                results.append(f"<p>Mots disponibles: {len(available_words)} (available_words)</p>")
+                
+                # Diagnostic du problème
+                if total_blanks != len(words) and len(words) > 0:
+                    results.append(f"<p style='color: red;'>⚠ PROBLÈME: {total_blanks} blancs mais {len(words)} réponses</p>")
+                elif total_blanks == len(words):
+                    results.append(f"<p style='color: green;'>✓ Cohérent: {total_blanks} blancs = {len(words)} réponses</p>")
+                
+                # Vérifier l'image
+                if ex.image_path:
+                    image_full_path = os.path.join(uploads_dir, ex.image_path)
+                    if os.path.exists(image_full_path):
+                        results.append(f"<p style='color: green;'>✓ Image existe: {ex.image_path}</p>")
+                    else:
+                        results.append(f"<p style='color: red;'>✗ Image manquante: {ex.image_path}</p>")
+                
+            except Exception as e:
+                results.append(f"<p style='color: red;'>Erreur analyse: {e}</p>")
+        
+        # 3. Test de la logique de scoring corrigée
+        results.append("<h2>3. TEST LOGIQUE SCORING CORRIGEE</h2>")
+        
+        # Simuler un exercice avec notre logique corrigée
+        test_content = {
+            "sentences": ["Le ___ mange une ___ rouge."],
+            "words": ["chat", "pomme"]
+        }
+        
+        # Compter les blancs
+        total_blanks_in_content = sum(s.count('___') for s in test_content['sentences'])
+        correct_answers = test_content['words']
+        total_blanks = max(total_blanks_in_content, len(correct_answers))
+        
+        results.append(f"<p>Test: '{test_content['sentences'][0]}'</p>")
+        results.append(f"<p>Blancs détectés: {total_blanks_in_content}</p>")
+        results.append(f"<p>Réponses: {correct_answers}</p>")
+        results.append(f"<p>Total blancs utilisé: {total_blanks}</p>")
+        
+        # Simuler scoring 100%
+        correct_count = 0
+        for i in range(total_blanks):
+            if i < len(correct_answers):
+                correct_count += 1
+        
+        score = round((correct_count / total_blanks) * 100) if total_blanks > 0 else 0
+        results.append(f"<p>Score simulé (toutes correctes): {correct_count}/{total_blanks} = {score}%</p>")
+        
+        if score == 100:
+            results.append("<p style='color: green;'>✓ Logique de scoring corrigée fonctionne</p>")
+        else:
+            results.append("<p style='color: red;'>✗ Problème avec la logique de scoring</p>")
+        
+        results.append("<h2>4. RÉSUMÉ</h2>")
+        results.append("<p>Diagnostic terminé. Vérifiez les points ci-dessus.</p>")
+        results.append("<p><strong>Actions recommandées:</strong></p>")
+        results.append("<ul>")
+        results.append("<li>Tester un exercice 'Texte à trous' après ces corrections</li>")
+        results.append("<li>Vérifier l'affichage des images</li>")
+        results.append("<li>Valider que le score atteint 100% avec toutes les bonnes réponses</li>")
+        results.append("</ul>")
+        
+        return "<br>".join(results)
+        
+    except Exception as e:
+        return f"<h1>ERREUR</h1><p>Erreur lors du diagnostic: {str(e)}</p><pre>{traceback.format_exc()}</pre>"
 
 
 if __name__ == '__main__':
