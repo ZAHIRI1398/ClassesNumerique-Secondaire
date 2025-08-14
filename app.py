@@ -5278,12 +5278,19 @@ def fix_fill_in_blanks_words():
                         
                         # Mettre à jour le contenu
                         content['words'] = example_words
+                        content['available_words'] = example_words  # AJOUT: copier vers available_words
                         exercise.content = json.dumps(content)
                         
                         results.append(f"<p style='color: green;'>✓ Ajouté {len(example_words)} mots d'exemple</p>")
                         fixed_count += 1
                     else:
                         results.append("<p style='color: orange;'>⚠ Pas de sentences trouvées</p>")
+                elif words and not available_words:
+                    # Cas où words existe mais available_words est vide - COPIER
+                    content['available_words'] = words
+                    exercise.content = json.dumps(content)
+                    results.append(f"<p style='color: green;'>✓ Copié {len(words)} mots vers available_words</p>")
+                    fixed_count += 1
                 else:
                     results.append("<p style='color: blue;'>ℹ Exercice déjà avec mots</p>")
                     
