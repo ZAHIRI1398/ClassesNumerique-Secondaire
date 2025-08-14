@@ -176,7 +176,7 @@
             {% if exercise.image_path %}
             <div class="card image-display-fill mb-4">
                 <div class="card-body text-center p-4">
-                    <img src="{{ url_for('static', filename='uploads/' + exercise.image_path) }}" 
+                    <img src="{{ url_for('uploaded_file', filename=exercise.image_path.split('/')[-1]) }}" 
                          alt="Image de l'exercice" 
                          class="img-fluid rounded shadow" 
                          style="max-height: 400px;">
