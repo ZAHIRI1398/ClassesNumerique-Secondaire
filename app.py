@@ -3189,17 +3189,27 @@ def handle_exercise_answer(exercise_id):
             total_blanks_in_content = 0
             
             # Analyser le format de l'exercice et compter les blancs réels
-            if 'text' in content:
-                text_blanks = content['text'].count('___')
-                total_blanks_in_content += text_blanks
-                app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Format 'text' detected: {text_blanks} blanks in text")
-            
+            # CORRECTION: Éviter le double comptage entre 'text' et 'sentences'
+            # Priorité à 'sentences' s'il existe, sinon utiliser 'text'
             if 'sentences' in content:
                 sentences_blanks = sum(s.count('___') for s in content['sentences'])
-                total_blanks_in_content += sentences_blanks
-                app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Format 'sentences' detected: {sentences_blanks} blanks in sentences")
+                total_blanks_in_content = sentences_blanks
+                app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Format 'sentences' détecté: {sentences_blanks} blancs dans sentences")
+                # Log détaillé pour chaque phrase et ses blancs
+                for i, sentence in enumerate(content['sentences']):
+                    blanks_in_sentence = sentence.count('___')
+                    app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Phrase {i}: '{sentence}' contient {blanks_in_sentence} blancs")
+            elif 'text' in content:
+                text_blanks = content['text'].count('___')
+                total_blanks_in_content = text_blanks
+                app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Format 'text' détecté: {text_blanks} blancs dans text")
             
-            app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Total blanks found in content: {total_blanks_in_content}")
+            app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Total blancs trouvés dans le contenu: {total_blanks_in_content}")
+            # Log détaillé pour chaque phrase et ses blancs
+            if 'sentences' in content:
+                for i, sentence in enumerate(content['sentences']):
+                    blanks_in_sentence = sentence.count('___')
+                    app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Phrase {i}: '{sentence}' contient {blanks_in_sentence} blancs")
             
             # Récupérer les réponses correctes (peut être 'words' ou 'available_words')
             correct_answers = content.get('words', [])
@@ -3222,6 +3232,7 @@ def handle_exercise_answer(exercise_id):
             user_answers_data = {}
             
             # Vérifier chaque blanc individuellement - Même logique que word_placement
+            app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Traitement de {total_blanks} blancs au total")
             for i in range(total_blanks):
                 # Récupérer la réponse de l'utilisateur pour ce blanc
                 user_answer = request.form.get(f'answer_{i}', '').strip()
