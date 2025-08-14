@@ -3182,36 +3182,52 @@ def handle_exercise_answer(exercise_id):
             app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Form data: {dict(request.form)}")
             app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Exercise content keys: {list(content.keys())}")
             
-            # Debug: Analyser le format de l'exercice
+            # Compter le nombre réel de blancs dans le contenu
+            total_blanks_in_content = 0
+            
+            # Analyser le format de l'exercice et compter les blancs réels
             if 'text' in content:
                 text_blanks = content['text'].count('___')
+                total_blanks_in_content += text_blanks
                 app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Format 'text' detected: {text_blanks} blanks in text")
+            
             if 'sentences' in content:
                 sentences_blanks = sum(s.count('___') for s in content['sentences'])
+                total_blanks_in_content += sentences_blanks
                 app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Format 'sentences' detected: {sentences_blanks} blanks in sentences")
             
-            # Récupérer les réponses correctes
+            app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Total blanks found in content: {total_blanks_in_content}")
+            
+            # Récupérer les réponses correctes (peut être 'words' ou 'available_words')
             correct_answers = content.get('words', [])
+            if not correct_answers:
+                correct_answers = content.get('available_words', [])
+            
             if not correct_answers:
                 app.logger.error(f"[FILL_IN_BLANKS_DEBUG] No correct answers found in exercise content")
                 flash('Erreur: aucune réponse correcte trouvée dans l\'exercice.', 'error')
                 return redirect(url_for('view_exercise', exercise_id=exercise_id))
             
-            app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Found {len(correct_answers)} blanks to check")
-            app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Correct answers: {correct_answers}")
+            app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Found {len(correct_answers)} correct answers: {correct_answers}")
             
-            # Calculer le score
-            total_blanks = len(correct_answers)
+            # Utiliser le nombre réel de blancs trouvés dans le contenu
+            total_blanks = max(total_blanks_in_content, len(correct_answers))
+            app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Using total_blanks = {total_blanks}")
+            
             correct_blanks = 0
             feedback_details = []
             user_answers_data = {}
             
-            for i, correct_answer in enumerate(correct_answers):
+            # Vérifier chaque blanc individuellement
+            for i in range(total_blanks):
                 # Récupérer la réponse de l'utilisateur pour ce blanc
                 user_answer = request.form.get(f'answer_{i}', '').strip()
                 
+                # Récupérer la réponse correcte correspondante
+                correct_answer = correct_answers[i] if i < len(correct_answers) else ''
+                
                 # Vérifier si la réponse est correcte (insensible à la casse)
-                is_correct = user_answer.lower() == correct_answer.lower()
+                is_correct = user_answer.lower() == correct_answer.lower() if correct_answer else False
                 if is_correct:
                     correct_blanks += 1
                 
@@ -3229,7 +3245,7 @@ def handle_exercise_answer(exercise_id):
                 # Sauvegarder les réponses utilisateur
                 user_answers_data[f'answer_{i}'] = user_answer
             
-            # Calculer le score final
+            # Calculer le score final basé sur le nombre réel de blancs
             max_score = total_blanks
             score_count = correct_blanks
             score = round((score_count / max_score) * 100) if max_score > 0 else 0

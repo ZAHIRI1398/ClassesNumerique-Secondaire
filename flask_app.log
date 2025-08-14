@@ -44,3 +44,977 @@ the current application. To solve this, set up an application context
 with app.app_context(). See the documentation for more information.
 2025-08-14 02:26:16,600 - werkzeug - WARNING -  * Debugger is active!
 2025-08-14 02:26:16,603 - werkzeug - INFO -  * Debugger PIN: 773-832-873
+2025-08-14 15:45:41,518 - app - INFO - Tables de base de donnees creees avec succes
+2025-08-14 15:45:41,599 - app - ERROR - Erreur lors de l'initialisation de la base: Working outside of application context.
+
+This typically means that you attempted to use functionality that needed
+the current application. To solve this, set up an application context
+with app.app_context(). See the documentation for more information.
+2025-08-14 15:45:42,493 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2025-08-14 15:45:42,493 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-08-14 15:45:42,504 - werkzeug - INFO -  * Restarting with stat
+2025-08-14 15:45:48,885 - app - INFO - Tables de base de donnees creees avec succes
+2025-08-14 15:45:48,885 - app - ERROR - Erreur lors de l'initialisation de la base: Working outside of application context.
+
+This typically means that you attempted to use functionality that needed
+the current application. To solve this, set up an application context
+with app.app_context(). See the documentation for more information.
+2025-08-14 15:45:48,947 - werkzeug - WARNING -  * Debugger is active!
+2025-08-14 15:45:49,844 - werkzeug - INFO -  * Debugger PIN: 773-832-873
+2025-08-14 15:46:34,946 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Connection: keep-alive
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: none
+Sec-Fetch-User: ?1
+Priority: u=0, i
+
+
+2025-08-14 15:46:34,948 - __main__ - DEBUG - Body: b''
+2025-08-14 15:46:34,949 - __main__ - DEBUG - URL: http://127.0.0.1:5000/
+2025-08-14 15:46:34,950 - __main__ - DEBUG - Method: GET
+2025-08-14 15:46:34,950 - __main__ - DEBUG - Path: /
+2025-08-14 15:46:39,796 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 15:46:39] "GET / HTTP/1.1" 200 -
+2025-08-14 15:46:41,142 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: image/avif,image/webp,image/png,image/svg+xml,image/*;q=0.8,*/*;q=0.5
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Connection: keep-alive
+Referer: http://127.0.0.1:5000/
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=eyJjc3JmX3Rva2VuIjoiZjk5YThhZTBlODQxZTRjODBlNGZjOTc5YTI2MzYxZDRlYWM5NDk5NSJ9.aJ3ovw.FEOIYG-VW9y6MSdGmB8VZsc9POs
+Sec-Fetch-Dest: image
+Sec-Fetch-Mode: no-cors
+Sec-Fetch-Site: same-origin
+Priority: u=6
+
+
+2025-08-14 15:46:41,143 - __main__ - DEBUG - Body: b''
+2025-08-14 15:46:41,143 - __main__ - DEBUG - URL: http://127.0.0.1:5000/favicon.ico
+2025-08-14 15:46:41,144 - __main__ - DEBUG - Method: GET
+2025-08-14 15:46:41,144 - __main__ - DEBUG - Path: /favicon.ico
+2025-08-14 15:46:41,144 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 15:46:41] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-08-14 15:47:17,185 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 142
+Origin: http://127.0.0.1:5000
+Connection: keep-alive
+Referer: http://127.0.0.1:5000/
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=eyJjc3JmX3Rva2VuIjoiZjk5YThhZTBlODQxZTRjODBlNGZjOTc5YTI2MzYxZDRlYWM5NDk5NSJ9.aJ3ovw.FEOIYG-VW9y6MSdGmB8VZsc9POs
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Sec-Fetch-User: ?1
+Priority: u=0, i
+
+
+2025-08-14 15:47:17,187 - __main__ - DEBUG - Body: b''
+2025-08-14 15:47:17,189 - __main__ - DEBUG - URL: http://127.0.0.1:5000/login
+2025-08-14 15:47:17,190 - __main__ - DEBUG - Method: POST
+2025-08-14 15:47:17,191 - __main__ - DEBUG - Path: /login
+2025-08-14 15:47:19,013 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 15:47:19] "POST /login HTTP/1.1" 200 -
+2025-08-14 15:48:15,599 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 141
+Origin: http://127.0.0.1:5000
+Connection: keep-alive
+Referer: http://127.0.0.1:5000/login
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=eyJfZnJlc2giOmZhbHNlLCJjc3JmX3Rva2VuIjoiZjk5YThhZTBlODQxZTRjODBlNGZjOTc5YTI2MzYxZDRlYWM5NDk5NSJ9.aJ3o5w.qGcBNJZLdu-BzHld5QMHqoQqGJY
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Sec-Fetch-User: ?1
+Priority: u=0, i
+
+
+2025-08-14 15:48:15,601 - __main__ - DEBUG - Body: b''
+2025-08-14 15:48:15,602 - __main__ - DEBUG - URL: http://127.0.0.1:5000/login
+2025-08-14 15:48:15,602 - __main__ - DEBUG - Method: POST
+2025-08-14 15:48:15,603 - __main__ - DEBUG - Path: /login
+2025-08-14 15:48:15,608 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 15:48:15] "POST /login HTTP/1.1" 200 -
+2025-08-14 16:07:43,984 - app - INFO - Tables de base de donnees creees avec succes
+2025-08-14 16:07:44,008 - app - ERROR - Erreur lors de l'initialisation de la base: Working outside of application context.
+
+This typically means that you attempted to use functionality that needed
+the current application. To solve this, set up an application context
+with app.app_context(). See the documentation for more information.
+2025-08-14 16:15:15,664 - app - INFO - Tables de base de donnees creees avec succes
+2025-08-14 16:15:15,664 - app - ERROR - Erreur lors de l'initialisation de la base: Working outside of application context.
+
+This typically means that you attempted to use functionality that needed
+the current application. To solve this, set up an application context
+with app.app_context(). See the documentation for more information.
+2025-08-14 16:15:16,545 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2025-08-14 16:15:16,545 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-08-14 16:15:16,547 - werkzeug - INFO -  * Restarting with stat
+2025-08-14 16:15:18,810 - app - INFO - Tables de base de donnees creees avec succes
+2025-08-14 16:15:18,811 - app - ERROR - Erreur lors de l'initialisation de la base: Working outside of application context.
+
+This typically means that you attempted to use functionality that needed
+the current application. To solve this, set up an application context
+with app.app_context(). See the documentation for more information.
+2025-08-14 16:15:18,885 - werkzeug - WARNING -  * Debugger is active!
+2025-08-14 16:15:18,965 - werkzeug - INFO -  * Debugger PIN: 773-832-873
+2025-08-14 16:16:02,499 - werkzeug - INFO -  * Detected change in 'C:\\Users\\JeMat\\OneDrive\\classenumerique20250801\\debug_fill_in_blanks_scoring.py', reloading
+2025-08-14 16:16:06,591 - werkzeug - INFO -  * Restarting with stat
+2025-08-14 16:16:24,683 - app - INFO - Tables de base de donnees creees avec succes
+2025-08-14 16:16:24,683 - app - ERROR - Erreur lors de l'initialisation de la base: Working outside of application context.
+
+This typically means that you attempted to use functionality that needed
+the current application. To solve this, set up an application context
+with app.app_context(). See the documentation for more information.
+2025-08-14 16:16:24,769 - werkzeug - WARNING -  * Debugger is active!
+2025-08-14 16:16:24,773 - werkzeug - INFO -  * Debugger PIN: 773-832-873
+2025-08-14 16:17:02,447 - werkzeug - INFO -  * Detected change in 'C:\\Users\\JeMat\\OneDrive\\classenumerique20250801\\debug_fill_in_blanks_scoring.py', reloading
+2025-08-14 16:17:02,830 - werkzeug - INFO -  * Restarting with stat
+2025-08-14 16:17:07,967 - app - INFO - Tables de base de donnees creees avec succes
+2025-08-14 16:17:07,968 - app - ERROR - Erreur lors de l'initialisation de la base: Working outside of application context.
+
+This typically means that you attempted to use functionality that needed
+the current application. To solve this, set up an application context
+with app.app_context(). See the documentation for more information.
+2025-08-14 16:17:08,066 - werkzeug - WARNING -  * Debugger is active!
+2025-08-14 16:17:08,071 - werkzeug - INFO -  * Debugger PIN: 773-832-873
+2025-08-14 16:17:28,586 - werkzeug - INFO -  * Detected change in 'C:\\Users\\JeMat\\OneDrive\\classenumerique20250801\\debug_fill_in_blanks_scoring.py', reloading
+2025-08-14 16:17:28,948 - werkzeug - INFO -  * Restarting with stat
+2025-08-14 16:17:34,237 - app - INFO - Tables de base de donnees creees avec succes
+2025-08-14 16:17:34,238 - app - ERROR - Erreur lors de l'initialisation de la base: Working outside of application context.
+
+This typically means that you attempted to use functionality that needed
+the current application. To solve this, set up an application context
+with app.app_context(). See the documentation for more information.
+2025-08-14 16:17:34,421 - werkzeug - WARNING -  * Debugger is active!
+2025-08-14 16:17:34,427 - werkzeug - INFO -  * Debugger PIN: 773-832-873
+2025-08-14 16:49:13,979 - app - INFO - Tables de base de donnees creees avec succes
+2025-08-14 16:49:13,980 - app - ERROR - Erreur lors de l'initialisation de la base: Working outside of application context.
+
+This typically means that you attempted to use functionality that needed
+the current application. To solve this, set up an application context
+with app.app_context(). See the documentation for more information.
+2025-08-14 16:49:14,548 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2025-08-14 16:49:14,549 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-08-14 16:49:14,556 - werkzeug - INFO -  * Restarting with stat
+2025-08-14 16:49:16,948 - app - INFO - Tables de base de donnees creees avec succes
+2025-08-14 16:49:16,949 - app - ERROR - Erreur lors de l'initialisation de la base: Working outside of application context.
+
+This typically means that you attempted to use functionality that needed
+the current application. To solve this, set up an application context
+with app.app_context(). See the documentation for more information.
+2025-08-14 16:49:17,007 - werkzeug - WARNING -  * Debugger is active!
+2025-08-14 16:49:17,168 - werkzeug - INFO -  * Debugger PIN: 773-832-873
+2025-08-14 16:49:46,041 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Connection: keep-alive
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=eyJfZnJlc2giOmZhbHNlLCJjc3JmX3Rva2VuIjoiZjk5YThhZTBlODQxZTRjODBlNGZjOTc5YTI2MzYxZDRlYWM5NDk5NSJ9.aJ3pHw.Z098GukTRrOTzwtOjFQZfjF1S_w
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: none
+Sec-Fetch-User: ?1
+Priority: u=0, i
+
+
+2025-08-14 16:49:46,058 - __main__ - DEBUG - Body: b''
+2025-08-14 16:49:46,144 - __main__ - DEBUG - URL: http://127.0.0.1:5000/exercise/exercise_library
+2025-08-14 16:49:46,146 - __main__ - DEBUG - Method: GET
+2025-08-14 16:49:46,146 - __main__ - DEBUG - Path: /exercise/exercise_library
+2025-08-14 16:49:46,228 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 16:49:46] "[32mGET /exercise/exercise_library HTTP/1.1[0m" 302 -
+2025-08-14 16:49:46,290 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Connection: keep-alive
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=.eJwNjMEOgjAQBX9ls2diQCuyfIV3Q8imvlJipYbtjfDv9jSHmczBc0hqEcbj62AqFfyFmS7ghp8JaqCUF1o3KpnU-yqpxNXoV5sLT-fU1MkOizwGTYaGve1hLvmDjUcOIjooWgyug_NDCxe8PESv_a3v3g7qxYnc-fwDBActMg.aJ33ig.zeQC64S7kbko-eKhwylXjwnRTto
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: none
+Sec-Fetch-User: ?1
+Priority: u=0, i
+
+
+2025-08-14 16:49:46,292 - __main__ - DEBUG - Body: b''
+2025-08-14 16:49:46,292 - __main__ - DEBUG - URL: http://127.0.0.1:5000/login?next=/exercise/exercise_library
+2025-08-14 16:49:46,292 - __main__ - DEBUG - Method: GET
+2025-08-14 16:49:46,293 - __main__ - DEBUG - Path: /login
+2025-08-14 16:49:46,509 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 16:49:46] "GET /login?next=/exercise/exercise_library HTTP/1.1" 200 -
+2025-08-14 16:49:46,853 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: image/avif,image/webp,image/png,image/svg+xml,image/*;q=0.8,*/*;q=0.5
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Connection: keep-alive
+Referer: http://127.0.0.1:5000/login?next=%2Fexercise%2Fexercise_library
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=eyJfZnJlc2giOmZhbHNlLCJjc3JmX3Rva2VuIjoiZjk5YThhZTBlODQxZTRjODBlNGZjOTc5YTI2MzYxZDRlYWM5NDk5NSJ9.aJ33ig.BSmYlVEa-YbzWXugDGysb8lXQx8
+Sec-Fetch-Dest: image
+Sec-Fetch-Mode: no-cors
+Sec-Fetch-Site: same-origin
+Priority: u=6
+
+
+2025-08-14 16:49:46,854 - __main__ - DEBUG - Body: b''
+2025-08-14 16:49:46,854 - __main__ - DEBUG - URL: http://127.0.0.1:5000/favicon.ico
+2025-08-14 16:49:46,854 - __main__ - DEBUG - Method: GET
+2025-08-14 16:49:46,854 - __main__ - DEBUG - Path: /favicon.ico
+2025-08-14 16:49:46,855 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 16:49:46] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-08-14 16:49:56,275 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 151
+Origin: http://127.0.0.1:5000
+Connection: keep-alive
+Referer: http://127.0.0.1:5000/login?next=%2Fexercise%2Fexercise_library
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=eyJfZnJlc2giOmZhbHNlLCJjc3JmX3Rva2VuIjoiZjk5YThhZTBlODQxZTRjODBlNGZjOTc5YTI2MzYxZDRlYWM5NDk5NSJ9.aJ33ig.BSmYlVEa-YbzWXugDGysb8lXQx8
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Sec-Fetch-User: ?1
+Priority: u=0, i
+
+
+2025-08-14 16:49:56,276 - __main__ - DEBUG - Body: b''
+2025-08-14 16:49:56,276 - __main__ - DEBUG - URL: http://127.0.0.1:5000/login
+2025-08-14 16:49:56,276 - __main__ - DEBUG - Method: POST
+2025-08-14 16:49:56,277 - __main__ - DEBUG - Path: /login
+2025-08-14 16:49:57,059 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 16:49:57] "POST /login HTTP/1.1" 200 -
+2025-08-14 16:50:12,591 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 149
+Origin: http://127.0.0.1:5000
+Connection: keep-alive
+Referer: http://127.0.0.1:5000/login
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=eyJfZnJlc2giOmZhbHNlLCJjc3JmX3Rva2VuIjoiZjk5YThhZTBlODQxZTRjODBlNGZjOTc5YTI2MzYxZDRlYWM5NDk5NSJ9.aJ33lQ.NSHeBxLkLMJn6uqHNFBj8MgxgPc
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Sec-Fetch-User: ?1
+Priority: u=0, i
+
+
+2025-08-14 16:50:12,591 - __main__ - DEBUG - Body: b''
+2025-08-14 16:50:12,591 - __main__ - DEBUG - URL: http://127.0.0.1:5000/login
+2025-08-14 16:50:12,591 - __main__ - DEBUG - Method: POST
+2025-08-14 16:50:12,592 - __main__ - DEBUG - Path: /login
+2025-08-14 16:50:12,819 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 16:50:12] "[32mPOST /login HTTP/1.1[0m" 302 -
+2025-08-14 16:50:12,854 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Referer: http://127.0.0.1:5000/login
+Connection: keep-alive
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=.eJwljkFqAzEMRa-Sep2FJMseK9scow3BliUSWmZgPAOFkLt3oKvP-_DgvcLdf-p42AiXz1c4bceEsavaGOEcrss82-9zmU_r1w5gso_xtNNHuL1v50NdbTzCZVt3O-jZwyUkzJRRy9QUm0Wi5Dw1zJCRe_OJOqTUCzeO1luSxgXdgadazSLUpl01YlaGCE6OiaJJE8owYZHKhbQRdofWS8nkqSasWbxBpJjpiL7vw9b_Gj5Qx-r3bfm2-ThcpJZqYIXRWAsYu8oklXLM2NmqCouk8P4DD2JScQ.aJ33pA.qAXsFLT0_SsNV_-3m_yw4kwYs3M
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Sec-Fetch-User: ?1
+Priority: u=0, i
+
+
+2025-08-14 16:50:12,854 - __main__ - DEBUG - Body: b''
+2025-08-14 16:50:12,855 - __main__ - DEBUG - URL: http://127.0.0.1:5000/teacher_dashboard
+2025-08-14 16:50:12,855 - __main__ - DEBUG - Method: GET
+2025-08-14 16:50:12,855 - __main__ - DEBUG - Path: /teacher_dashboard
+2025-08-14 16:50:12,901 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 16:50:12] "[32mGET /teacher_dashboard HTTP/1.1[0m" 302 -
+2025-08-14 16:50:12,907 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Referer: http://127.0.0.1:5000/login
+Connection: keep-alive
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=.eJw1j9FqwzAMRX8l83MZliw7dt_GPmMrxZYlGjYSsBMYlP77zMqexBXnoKu7uep37jfp5vxxN9M-hukHs_RuTuZ9W1f5WbZ1ap-HtZKO3heZXszlcfqnpbWtDfaN-Y-JfVqHkI99a0t_aq9DuJzGrSb9Zs57O2SkpZqz8RAwAMe5MBRxiF5pLhBsAKpFZ6zW-xqpkJNafCoUQdXSnLOIs7lwZXYQmKyzigoenaSSMNgZYsoUkQtCVVtqjAHVZw85JC3WoQs4ml-PLu3Zhkbk3vS6b1-yjoWmlGOW8RaBEEcrpJzmlDG4AJUkc6KUvHn8AvQmYhQ.aJ33pA.wcqt-E8Vl2RTXqQeXrdtqbKT7Y0
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Sec-Fetch-User: ?1
+Priority: u=0, i
+
+
+2025-08-14 16:50:12,907 - __main__ - DEBUG - Body: b''
+2025-08-14 16:50:12,907 - __main__ - DEBUG - URL: http://127.0.0.1:5000/
+2025-08-14 16:50:12,908 - __main__ - DEBUG - Method: GET
+2025-08-14 16:50:12,908 - __main__ - DEBUG - Path: /
+2025-08-14 16:50:12,909 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 16:50:12] "[32mGET / HTTP/1.1[0m" 302 -
+2025-08-14 16:50:12,913 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Referer: http://127.0.0.1:5000/login
+Connection: keep-alive
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=.eJw1j9FqwzAMRX8l83MZliw7dt_GPmMrxZYlGjYSsBMYlP77zMqexBXnoKu7uep37jfp5vxxN9M-hukHs_RuTuZ9W1f5WbZ1ap-HtZKO3heZXszlcfqnpbWtDfaN-Y-JfVqHkI99a0t_aq9DuJzGrSb9Zs57O2SkpZqz8RAwAMe5MBRxiF5pLhBsAKpFZ6zW-xqpkJNafCoUQdXSnLOIs7lwZXYQmKyzigoenaSSMNgZYsoUkQtCVVtqjAHVZw85JC3WoQs4ml-PLu3Zhkbk3vS6b1-yjoWmlGOW8RaBEEcrpJzmlDG4AJUkc6KUvHn8AvQmYhQ.aJ33pA.wcqt-E8Vl2RTXqQeXrdtqbKT7Y0
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Sec-Fetch-User: ?1
+Priority: u=0, i
+
+
+2025-08-14 16:50:12,913 - __main__ - DEBUG - Body: b''
+2025-08-14 16:50:12,913 - __main__ - DEBUG - URL: http://127.0.0.1:5000/admin/dashboard
+2025-08-14 16:50:12,913 - __main__ - DEBUG - Method: GET
+2025-08-14 16:50:12,913 - __main__ - DEBUG - Path: /admin/dashboard
+2025-08-14 16:50:13,323 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 16:50:13] "GET /admin/dashboard HTTP/1.1" 200 -
+2025-08-14 16:50:13,580 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/css,*/*;q=0.1
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Connection: keep-alive
+Referer: http://127.0.0.1:5000/admin/dashboard
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=.eJwlzjFuBDEIQNG7uE4BGGPYy4wMBiWKlEgzu1WUu2eklP9X76cddeb13h7P85Vv7fjY7dEGCgmGTg_07ESjeDoKCPL2mrRhjK3s3HP7MGfFKuC5VmaH5bEjOkowdCgqHNTT3EhgotpipXDCXeBbVajGGrjEyqFTF2o35HXl-a_hO-M663h-f-bXPcps6UpIZUwOheQKm7ZIuuDmXGFsNtrvH6uUPt8.aJ33pQ.kEpXx41JugUSJ1GnHAiUnYb5v08
+Sec-Fetch-Dest: style
+Sec-Fetch-Mode: no-cors
+Sec-Fetch-Site: same-origin
+Priority: u=2
+
+
+2025-08-14 16:50:13,580 - __main__ - DEBUG - Body: b''
+2025-08-14 16:50:13,580 - __main__ - DEBUG - URL: http://127.0.0.1:5000/static/css/style.css
+2025-08-14 16:50:13,580 - __main__ - DEBUG - Method: GET
+2025-08-14 16:50:13,580 - __main__ - DEBUG - Path: /static/css/style.css
+2025-08-14 16:50:16,798 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 16:50:16] "GET /static/css/style.css HTTP/1.1" 200 -
+2025-08-14 16:50:22,549 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Connection: keep-alive
+Referer: http://127.0.0.1:5000/admin/dashboard
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=.eJwlzjFuBDEIQNG7uE4BGGPYy4wMBiWKlEgzu1WUu2eklP9X76cddeb13h7P85Vv7fjY7dEGCgmGTg_07ESjeDoKCPL2mrRhjK3s3HP7MGfFKuC5VmaH5bEjOkowdCgqHNTT3EhgotpipXDCXeBbVajGGrjEyqFTF2o35HXl-a_hO-M663h-f-bXPcps6UpIZUwOheQKm7ZIuuDmXGFsNtrvH6uUPt8.aJ33pQ.kEpXx41JugUSJ1GnHAiUnYb5v08
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Sec-Fetch-User: ?1
+Priority: u=0, i
+
+
+2025-08-14 16:50:22,549 - __main__ - DEBUG - Body: b''
+2025-08-14 16:50:22,550 - __main__ - DEBUG - URL: http://127.0.0.1:5000/logout
+2025-08-14 16:50:22,550 - __main__ - DEBUG - Method: GET
+2025-08-14 16:50:22,550 - __main__ - DEBUG - Path: /logout
+2025-08-14 16:50:22,552 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 16:50:22] "[32mGET /logout HTTP/1.1[0m" 302 -
+2025-08-14 16:50:22,557 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Referer: http://127.0.0.1:5000/admin/dashboard
+Connection: keep-alive
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=.eJwtyEEKwjAQBdCrhL8ukmqsmR7EjZYyTGdQlARM6sLSuyvU1YO3YLQnl5sW9JcFrv7APVlGg3Oei-O3ftx19l6pbrhpU3JKKv_cYViHBlJeNtb80IQeRsSR1WsMrQaJXoMJnYj33aFrp6AsFIiOWL9gQymx.aJ33rg.PXmbzR0HUqSEGGJ7J7gc1iW67V4
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Sec-Fetch-User: ?1
+Priority: u=0, i
+
+
+2025-08-14 16:50:22,558 - __main__ - DEBUG - Body: b''
+2025-08-14 16:50:22,558 - __main__ - DEBUG - URL: http://127.0.0.1:5000/login
+2025-08-14 16:50:22,558 - __main__ - DEBUG - Method: GET
+2025-08-14 16:50:22,558 - __main__ - DEBUG - Path: /login
+2025-08-14 16:50:22,559 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 16:50:22] "GET /login HTTP/1.1" 200 -
+2025-08-14 16:50:43,060 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Connection: keep-alive
+Referer: http://127.0.0.1:5000/login
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=eyJfZnJlc2giOmZhbHNlLCJjc3JmX3Rva2VuIjoiZjk5YThhZTBlODQxZTRjODBlNGZjOTc5YTI2MzYxZDRlYWM5NDk5NSJ9.aJ33rg.qmeNJsvuAi4SKzGOA0NeQtHkCao
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Sec-Fetch-User: ?1
+Priority: u=0, i
+
+
+2025-08-14 16:50:43,060 - __main__ - DEBUG - Body: b''
+2025-08-14 16:50:43,060 - __main__ - DEBUG - URL: http://127.0.0.1:5000/register/teacher
+2025-08-14 16:50:43,061 - __main__ - DEBUG - Method: GET
+2025-08-14 16:50:43,061 - __main__ - DEBUG - Path: /register/teacher
+2025-08-14 16:50:43,133 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 16:50:43] "GET /register/teacher HTTP/1.1" 200 -
+2025-08-14 16:50:43,244 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/css,*/*;q=0.1
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Connection: keep-alive
+Referer: http://127.0.0.1:5000/register/teacher
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=eyJfZnJlc2giOmZhbHNlLCJjc3JmX3Rva2VuIjoiZjk5YThhZTBlODQxZTRjODBlNGZjOTc5YTI2MzYxZDRlYWM5NDk5NSJ9.aJ33rg.qmeNJsvuAi4SKzGOA0NeQtHkCao
+Sec-Fetch-Dest: style
+Sec-Fetch-Mode: no-cors
+Sec-Fetch-Site: same-origin
+Priority: u=2
+
+
+2025-08-14 16:50:43,245 - __main__ - DEBUG - Body: b''
+2025-08-14 16:50:43,245 - __main__ - DEBUG - URL: http://127.0.0.1:5000/static/css/style.css
+2025-08-14 16:50:43,245 - __main__ - DEBUG - Method: GET
+2025-08-14 16:50:43,245 - __main__ - DEBUG - Path: /static/css/style.css
+2025-08-14 16:50:43,246 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 16:50:43] "GET /static/css/style.css HTTP/1.1" 200 -
+2025-08-14 16:50:46,281 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Connection: keep-alive
+Referer: http://127.0.0.1:5000/register/teacher
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=eyJfZnJlc2giOmZhbHNlLCJjc3JmX3Rva2VuIjoiZjk5YThhZTBlODQxZTRjODBlNGZjOTc5YTI2MzYxZDRlYWM5NDk5NSJ9.aJ33rg.qmeNJsvuAi4SKzGOA0NeQtHkCao
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Sec-Fetch-User: ?1
+Priority: u=0, i
+
+
+2025-08-14 16:50:46,282 - __main__ - DEBUG - Body: b''
+2025-08-14 16:50:46,282 - __main__ - DEBUG - URL: http://127.0.0.1:5000/login
+2025-08-14 16:50:46,282 - __main__ - DEBUG - Method: GET
+2025-08-14 16:50:46,282 - __main__ - DEBUG - Path: /login
+2025-08-14 16:50:46,284 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 16:50:46] "GET /login HTTP/1.1" 200 -
+2025-08-14 16:51:06,816 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 144
+Origin: http://127.0.0.1:5000
+Connection: keep-alive
+Referer: http://127.0.0.1:5000/login
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=eyJfZnJlc2giOmZhbHNlLCJjc3JmX3Rva2VuIjoiZjk5YThhZTBlODQxZTRjODBlNGZjOTc5YTI2MzYxZDRlYWM5NDk5NSJ9.aJ33rg.qmeNJsvuAi4SKzGOA0NeQtHkCao
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Sec-Fetch-User: ?1
+Priority: u=0, i
+
+
+2025-08-14 16:51:06,816 - __main__ - DEBUG - Body: b''
+2025-08-14 16:51:06,816 - __main__ - DEBUG - URL: http://127.0.0.1:5000/login
+2025-08-14 16:51:06,816 - __main__ - DEBUG - Method: POST
+2025-08-14 16:51:06,816 - __main__ - DEBUG - Path: /login
+2025-08-14 16:51:06,819 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 16:51:06] "POST /login HTTP/1.1" 200 -
+2025-08-14 16:51:34,386 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 144
+Origin: http://127.0.0.1:5000
+Connection: keep-alive
+Referer: http://127.0.0.1:5000/login
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=eyJfZnJlc2giOmZhbHNlLCJjc3JmX3Rva2VuIjoiZjk5YThhZTBlODQxZTRjODBlNGZjOTc5YTI2MzYxZDRlYWM5NDk5NSJ9.aJ332g.uXd8Rx9cGEPcfqU7EbFWwJV8GWE
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Sec-Fetch-User: ?1
+Priority: u=0, i
+
+
+2025-08-14 16:51:34,387 - __main__ - DEBUG - Body: b''
+2025-08-14 16:51:34,387 - __main__ - DEBUG - URL: http://127.0.0.1:5000/login
+2025-08-14 16:51:34,387 - __main__ - DEBUG - Method: POST
+2025-08-14 16:51:34,387 - __main__ - DEBUG - Path: /login
+2025-08-14 16:51:34,389 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 16:51:34] "POST /login HTTP/1.1" 200 -
+2025-08-14 16:52:05,375 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 145
+Origin: http://127.0.0.1:5000
+Connection: keep-alive
+Referer: http://127.0.0.1:5000/login
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=eyJfZnJlc2giOmZhbHNlLCJjc3JmX3Rva2VuIjoiZjk5YThhZTBlODQxZTRjODBlNGZjOTc5YTI2MzYxZDRlYWM5NDk5NSJ9.aJ339g.siM6TECVPXPxn8PAPHCUY2WhCFs
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Sec-Fetch-User: ?1
+Priority: u=0, i
+
+
+2025-08-14 16:52:05,375 - __main__ - DEBUG - Body: b''
+2025-08-14 16:52:05,376 - __main__ - DEBUG - URL: http://127.0.0.1:5000/login
+2025-08-14 16:52:05,376 - __main__ - DEBUG - Method: POST
+2025-08-14 16:52:05,376 - __main__ - DEBUG - Path: /login
+2025-08-14 16:52:05,377 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 16:52:05] "POST /login HTTP/1.1" 200 -
+2025-08-14 16:52:15,230 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 144
+Origin: http://127.0.0.1:5000
+Connection: keep-alive
+Referer: http://127.0.0.1:5000/login
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=eyJfZnJlc2giOmZhbHNlLCJjc3JmX3Rva2VuIjoiZjk5YThhZTBlODQxZTRjODBlNGZjOTc5YTI2MzYxZDRlYWM5NDk5NSJ9.aJ34FQ.M9VbdcVbNjDwlvYYN5aHQDxVGV8
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Sec-Fetch-User: ?1
+Priority: u=0, i
+
+
+2025-08-14 16:52:15,230 - __main__ - DEBUG - Body: b''
+2025-08-14 16:52:15,230 - __main__ - DEBUG - URL: http://127.0.0.1:5000/login
+2025-08-14 16:52:15,230 - __main__ - DEBUG - Method: POST
+2025-08-14 16:52:15,230 - __main__ - DEBUG - Path: /login
+2025-08-14 16:52:15,232 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 16:52:15] "POST /login HTTP/1.1" 200 -
+2025-08-14 16:52:34,701 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 142
+Origin: http://127.0.0.1:5000
+Connection: keep-alive
+Referer: http://127.0.0.1:5000/login
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=eyJfZnJlc2giOmZhbHNlLCJjc3JmX3Rva2VuIjoiZjk5YThhZTBlODQxZTRjODBlNGZjOTc5YTI2MzYxZDRlYWM5NDk5NSJ9.aJ34Hw.y7Jax-u1ZHyyjTonGUQIP0L89BU
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Sec-Fetch-User: ?1
+Priority: u=0, i
+
+
+2025-08-14 16:52:34,701 - __main__ - DEBUG - Body: b''
+2025-08-14 16:52:34,702 - __main__ - DEBUG - URL: http://127.0.0.1:5000/login
+2025-08-14 16:52:34,702 - __main__ - DEBUG - Method: POST
+2025-08-14 16:52:34,702 - __main__ - DEBUG - Path: /login
+2025-08-14 16:52:34,703 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 16:52:34] "POST /login HTTP/1.1" 200 -
+2025-08-14 16:52:47,945 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 145
+Origin: http://127.0.0.1:5000
+Connection: keep-alive
+Referer: http://127.0.0.1:5000/login
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=eyJfZnJlc2giOmZhbHNlLCJjc3JmX3Rva2VuIjoiZjk5YThhZTBlODQxZTRjODBlNGZjOTc5YTI2MzYxZDRlYWM5NDk5NSJ9.aJ34Mg.emF59FLpUWhaJLT6KrGXL1y_5AY
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Sec-Fetch-User: ?1
+Priority: u=0, i
+
+
+2025-08-14 16:52:47,945 - __main__ - DEBUG - Body: b''
+2025-08-14 16:52:47,945 - __main__ - DEBUG - URL: http://127.0.0.1:5000/login
+2025-08-14 16:52:47,945 - __main__ - DEBUG - Method: POST
+2025-08-14 16:52:47,945 - __main__ - DEBUG - Path: /login
+2025-08-14 16:52:47,947 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 16:52:47] "POST /login HTTP/1.1" 200 -
+2025-08-14 16:52:51,883 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Connection: keep-alive
+Referer: http://127.0.0.1:5000/login
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=eyJfZnJlc2giOmZhbHNlLCJjc3JmX3Rva2VuIjoiZjk5YThhZTBlODQxZTRjODBlNGZjOTc5YTI2MzYxZDRlYWM5NDk5NSJ9.aJ34Pw.DI-lIAe2NwT-mNN6QUgu-XFIcfY
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Sec-Fetch-User: ?1
+Priority: u=0, i
+
+
+2025-08-14 16:52:51,883 - __main__ - DEBUG - Body: b''
+2025-08-14 16:52:51,883 - __main__ - DEBUG - URL: http://127.0.0.1:5000/register/teacher
+2025-08-14 16:52:51,883 - __main__ - DEBUG - Method: GET
+2025-08-14 16:52:51,884 - __main__ - DEBUG - Path: /register/teacher
+2025-08-14 16:52:51,884 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 16:52:51] "GET /register/teacher HTTP/1.1" 200 -
+2025-08-14 16:52:51,987 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/css,*/*;q=0.1
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Connection: keep-alive
+Referer: http://127.0.0.1:5000/register/teacher
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=eyJfZnJlc2giOmZhbHNlLCJjc3JmX3Rva2VuIjoiZjk5YThhZTBlODQxZTRjODBlNGZjOTc5YTI2MzYxZDRlYWM5NDk5NSJ9.aJ34Pw.DI-lIAe2NwT-mNN6QUgu-XFIcfY
+Sec-Fetch-Dest: style
+Sec-Fetch-Mode: no-cors
+Sec-Fetch-Site: same-origin
+If-Modified-Since: Fri, 01 Aug 2025 12:32:18 GMT
+If-None-Match: "1754051538.0208235-5690-1638734088"
+Priority: u=2
+
+
+2025-08-14 16:52:51,988 - __main__ - DEBUG - Body: b''
+2025-08-14 16:52:51,988 - __main__ - DEBUG - URL: http://127.0.0.1:5000/static/css/style.css
+2025-08-14 16:52:51,988 - __main__ - DEBUG - Method: GET
+2025-08-14 16:52:51,988 - __main__ - DEBUG - Path: /static/css/style.css
+2025-08-14 16:52:51,989 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 16:52:51] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-08-14 16:53:49,031 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 156
+Origin: http://127.0.0.1:5000
+Connection: keep-alive
+Referer: http://127.0.0.1:5000/register/teacher
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=eyJfZnJlc2giOmZhbHNlLCJjc3JmX3Rva2VuIjoiZjk5YThhZTBlODQxZTRjODBlNGZjOTc5YTI2MzYxZDRlYWM5NDk5NSJ9.aJ34Pw.DI-lIAe2NwT-mNN6QUgu-XFIcfY
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Sec-Fetch-User: ?1
+Priority: u=0, i
+
+
+2025-08-14 16:53:49,031 - __main__ - DEBUG - Body: b''
+2025-08-14 16:53:49,031 - __main__ - DEBUG - URL: http://127.0.0.1:5000/register/teacher
+2025-08-14 16:53:49,031 - __main__ - DEBUG - Method: POST
+2025-08-14 16:53:49,031 - __main__ - DEBUG - Path: /register/teacher
+2025-08-14 16:53:49,461 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 16:53:49] "[32mPOST /register/teacher HTTP/1.1[0m" 302 -
+2025-08-14 16:53:49,467 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Referer: http://127.0.0.1:5000/register/teacher
+Connection: keep-alive
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=.eJwVzUEOgjAQQNGr1FkTU7Qi5QZewI0SMhmnoRFb0mlZSLi7uPrJ2_wVBjehjCzQPVZQeQ9IIWIRqOAWhJKfs49BpWfRmm0R8awO6h6LqDmWhb_qgz5kDhiyWv5MMQSmzOkI_dZX-yOxjNA5nIQrIEluyPHNATpw1mKLrLk1NRtqNRtH9mrx1Jyb-mUYyRprL7D9ACodOXk.aJ34fQ.iSEZf-Zx7kMayezdbmPjCnFhi9k
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Sec-Fetch-User: ?1
+Priority: u=0, i
+
+
+2025-08-14 16:53:49,467 - __main__ - DEBUG - Body: b''
+2025-08-14 16:53:49,468 - __main__ - DEBUG - URL: http://127.0.0.1:5000/login
+2025-08-14 16:53:49,468 - __main__ - DEBUG - Method: GET
+2025-08-14 16:53:49,468 - __main__ - DEBUG - Path: /login
+2025-08-14 16:53:49,469 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 16:53:49] "GET /login HTTP/1.1" 200 -
+2025-08-14 16:53:59,212 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 143
+Origin: http://127.0.0.1:5000
+Connection: keep-alive
+Referer: http://127.0.0.1:5000/login
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=eyJfZnJlc2giOmZhbHNlLCJjc3JmX3Rva2VuIjoiZjk5YThhZTBlODQxZTRjODBlNGZjOTc5YTI2MzYxZDRlYWM5NDk5NSJ9.aJ34fQ.YbAHm-DS7BGnmqLNZZzN8q8m9i0
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Sec-Fetch-User: ?1
+Priority: u=0, i
+
+
+2025-08-14 16:53:59,213 - __main__ - DEBUG - Body: b''
+2025-08-14 16:53:59,213 - __main__ - DEBUG - URL: http://127.0.0.1:5000/login
+2025-08-14 16:53:59,213 - __main__ - DEBUG - Method: POST
+2025-08-14 16:53:59,213 - __main__ - DEBUG - Path: /login
+2025-08-14 16:53:59,454 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 16:53:59] "[32mPOST /login HTTP/1.1[0m" 302 -
+2025-08-14 16:53:59,460 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Referer: http://127.0.0.1:5000/login
+Connection: keep-alive
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=.eJw1j8tOQzEMRH8lZF2hvG_SLf_ABqrKcRy4ouRWeRQE6r-TClhZM56Rj7_5MZ-gvVLj-6dvzvoc_ANqWcsL3_HHrVdiuL2fOzFqnVFh0DuVKROxC5zWBH3dyj173EZj521c6ItRzoR9UGWjsDOs9D4bt2VlgPg8hKBw-h11hk7EznVDam20e3647v5B2sCbO0EetlLocx5i9bc3WluJ3c30YTd_qNRe-b7XQVOtie-5lU45iX6JKCNppWw2S5ROOGlSzItKwtrkTTSaUrQhGi9zFmYBINICIiZELR0aoUVWWVqlKcSgnFikD2C8wqhkyiIm753KFqwEF3IUWmmnJvRxNKp_NFNiq_nYtzcq08ghgAcS5I0kg16QyRiWAMppJ5MhwGBCsPz6A7ZRgyM.aJ34hw.POZqbwTVPdPqLE5ad-lF5LNTI74
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Sec-Fetch-User: ?1
+Priority: u=0, i
+
+
+2025-08-14 16:53:59,460 - __main__ - DEBUG - Body: b''
+2025-08-14 16:53:59,460 - __main__ - DEBUG - URL: http://127.0.0.1:5000/teacher_dashboard
+2025-08-14 16:53:59,461 - __main__ - DEBUG - Method: GET
+2025-08-14 16:53:59,461 - __main__ - DEBUG - Path: /teacher_dashboard
+2025-08-14 16:53:59,490 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 16:53:59] "GET /teacher_dashboard HTTP/1.1" 200 -
+2025-08-14 16:53:59,521 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/css,*/*;q=0.1
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Connection: keep-alive
+Referer: http://127.0.0.1:5000/teacher_dashboard
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=.eJwtzjFuBDEIQNG7uE4BGGPYy4wMBiWKlEgzu1WUu2eKlP9X76cddeb13h7P85Vv7fjY7dEGCgmGTg_07ESjeDoKCPL2mrRhjK3s3HP7MGfFKuC5VmaH5bEjOkowdCgqHNTT3EhgotpipXDCXeBbVajGGrjEyqFTF2o35HXl-a-5M66zjuf3Z37do8yWroRUxuRQSK6waYukC27OFcZmo_3-AavPPuA.aJ34hw.xg4_GDhH4saOXN-vKsv57WeqUaY
+Sec-Fetch-Dest: style
+Sec-Fetch-Mode: no-cors
+Sec-Fetch-Site: same-origin
+If-Modified-Since: Fri, 01 Aug 2025 12:32:18 GMT
+If-None-Match: "1754051538.0208235-5690-1638734088"
+Priority: u=2
+
+
+2025-08-14 16:53:59,521 - __main__ - DEBUG - Body: b''
+2025-08-14 16:53:59,521 - __main__ - DEBUG - URL: http://127.0.0.1:5000/static/css/style.css
+2025-08-14 16:53:59,521 - __main__ - DEBUG - Method: GET
+2025-08-14 16:53:59,521 - __main__ - DEBUG - Path: /static/css/style.css
+2025-08-14 16:53:59,523 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 16:53:59] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-08-14 16:54:02,658 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Connection: keep-alive
+Referer: http://127.0.0.1:5000/teacher_dashboard
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=.eJwtzjFuBDEIQNG7uE4BGGPYy4wMBiWKlEgzu1WUu2eKlP9X76cddeb13h7P85Vv7fjY7dEGCgmGTg_07ESjeDoKCPL2mrRhjK3s3HP7MGfFKuC5VmaH5bEjOkowdCgqHNTT3EhgotpipXDCXeBbVajGGrjEyqFTF2o35HXl-a-5M66zjuf3Z37do8yWroRUxuRQSK6waYukC27OFcZmo_3-AavPPuA.aJ34hw.xg4_GDhH4saOXN-vKsv57WeqUaY
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Sec-Fetch-User: ?1
+Priority: u=0, i
+
+
+2025-08-14 16:54:02,659 - __main__ - DEBUG - Body: b''
+2025-08-14 16:54:02,659 - __main__ - DEBUG - URL: http://127.0.0.1:5000/exercise/exercise_library
+2025-08-14 16:54:02,659 - __main__ - DEBUG - Method: GET
+2025-08-14 16:54:02,660 - __main__ - DEBUG - Path: /exercise/exercise_library
+2025-08-14 16:54:02,843 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 16:54:02] "GET /exercise/exercise_library HTTP/1.1" 200 -
+2025-08-14 16:54:02,872 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/css,*/*;q=0.1
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Connection: keep-alive
+Referer: http://127.0.0.1:5000/exercise/exercise_library
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=.eJwtzjFuBDEIQNG7uE4BGGPYy4wMBiWKlEgzu1WUu2eKlP9X76cddeb13h7P85Vv7fjY7dEGCgmGTg_07ESjeDoKCPL2mrRhjK3s3HP7MGfFKuC5VmaH5bEjOkowdCgqHNTT3EhgotpipXDCXeBbVajGGrjEyqFTF2o35HXl-a-5M66zjuf3Z37do8yWroRUxuRQSK6waYukC27OFcZmo_3-AavPPuA.aJ34hw.xg4_GDhH4saOXN-vKsv57WeqUaY
+Sec-Fetch-Dest: style
+Sec-Fetch-Mode: no-cors
+Sec-Fetch-Site: same-origin
+If-Modified-Since: Fri, 01 Aug 2025 12:32:18 GMT
+If-None-Match: "1754051538.0208235-5690-1638734088"
+Priority: u=2
+
+
+2025-08-14 16:54:02,873 - __main__ - DEBUG - Body: b''
+2025-08-14 16:54:02,873 - __main__ - DEBUG - URL: http://127.0.0.1:5000/static/css/style.css
+2025-08-14 16:54:02,874 - __main__ - DEBUG - Method: GET
+2025-08-14 16:54:02,876 - __main__ - DEBUG - Path: /static/css/style.css
+2025-08-14 16:54:02,878 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 16:54:02] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-08-14 16:54:16,483 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Connection: keep-alive
+Referer: http://127.0.0.1:5000/exercise/exercise_library
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=.eJwtzjFuBDEIQNG7uE4BGGPYy4wMBiWKlEgzu1WUu2eKlP9X76cddeb13h7P85Vv7fjY7dEGCgmGTg_07ESjeDoKCPL2mrRhjK3s3HP7MGfFKuC5VmaH5bEjOkowdCgqHNTT3EhgotpipXDCXeBbVajGGrjEyqFTF2o35HXl-a-5M66zjuf3Z37do8yWroRUxuRQSK6waYukC27OFcZmo_3-AavPPuA.aJ34hw.xg4_GDhH4saOXN-vKsv57WeqUaY
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Sec-Fetch-User: ?1
+Priority: u=0, i
+
+
+2025-08-14 16:54:16,483 - __main__ - DEBUG - Body: b''
+2025-08-14 16:54:16,484 - __main__ - DEBUG - URL: http://127.0.0.1:5000/exercise/exercise_library?search=&type=fill_in_blanks&subject=
+2025-08-14 16:54:16,484 - __main__ - DEBUG - Method: GET
+2025-08-14 16:54:16,484 - __main__ - DEBUG - Path: /exercise/exercise_library
+2025-08-14 16:54:16,512 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 16:54:16] "GET /exercise/exercise_library?search=&type=fill_in_blanks&subject= HTTP/1.1" 200 -
+2025-08-14 16:54:16,564 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/css,*/*;q=0.1
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Connection: keep-alive
+Referer: http://127.0.0.1:5000/exercise/exercise_library?search=&type=fill_in_blanks&subject=
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=.eJwtzjFuBDEIQNG7uE4BGGPYy4wMBiWKlEgzu1WUu2eKlP9X76cddeb13h7P85Vv7fjY7dEGCgmGTg_07ESjeDoKCPL2mrRhjK3s3HP7MGfFKuC5VmaH5bEjOkowdCgqHNTT3EhgotpipXDCXeBbVajGGrjEyqFTF2o35HXl-a-5M66zjuf3Z37do8yWroRUxuRQSK6waYukC27OFcZmo_3-AavPPuA.aJ34hw.xg4_GDhH4saOXN-vKsv57WeqUaY
+Sec-Fetch-Dest: style
+Sec-Fetch-Mode: no-cors
+Sec-Fetch-Site: same-origin
+If-Modified-Since: Fri, 01 Aug 2025 12:32:18 GMT
+If-None-Match: "1754051538.0208235-5690-1638734088"
+Priority: u=2
+
+
+2025-08-14 16:54:16,564 - __main__ - DEBUG - Body: b''
+2025-08-14 16:54:16,565 - __main__ - DEBUG - URL: http://127.0.0.1:5000/static/css/style.css
+2025-08-14 16:54:16,565 - __main__ - DEBUG - Method: GET
+2025-08-14 16:54:16,565 - __main__ - DEBUG - Path: /static/css/style.css
+2025-08-14 16:54:16,566 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 16:54:16] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-08-14 16:54:18,168 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Connection: keep-alive
+Referer: http://127.0.0.1:5000/exercise/exercise_library?search=&type=fill_in_blanks&subject=
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=.eJwtzjFuBDEIQNG7uE4BGGPYy4wMBiWKlEgzu1WUu2eKlP9X76cddeb13h7P85Vv7fjY7dEGCgmGTg_07ESjeDoKCPL2mrRhjK3s3HP7MGfFKuC5VmaH5bEjOkowdCgqHNTT3EhgotpipXDCXeBbVajGGrjEyqFTF2o35HXl-a-5M66zjuf3Z37do8yWroRUxuRQSK6waYukC27OFcZmo_3-AavPPuA.aJ34hw.xg4_GDhH4saOXN-vKsv57WeqUaY
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Sec-Fetch-User: ?1
+Priority: u=0, i
+
+
+2025-08-14 16:54:18,169 - __main__ - DEBUG - Body: b''
+2025-08-14 16:54:18,169 - __main__ - DEBUG - URL: http://127.0.0.1:5000/exercise/2
+2025-08-14 16:54:18,169 - __main__ - DEBUG - Method: GET
+2025-08-14 16:54:18,169 - __main__ - DEBUG - Path: /exercise/2
+2025-08-14 16:54:18,169 - app - INFO - Accessing exercise 2
+2025-08-14 16:54:18,228 - app - INFO - Found exercise: Texte a trous - Les verbes
+2025-08-14 16:54:18,228 - app - INFO - Course ID: None, Course: None
+2025-08-14 16:54:18,228 - app - INFO - Exercise type: fill_in_blanks
+2025-08-14 16:54:18,228 - app - INFO - Raw content: {"text": "Je ___ (aller) a l'ecole. Tu ___ (avoir) un livre. Il ___ (etre) content.", "words": ["vais", "as", "est"], "available_words": ["vais", "as", "est", "va", "ai", "es"]}
+2025-08-14 16:54:18,229 - app - INFO - Parsed content: {'text': "Je ___ (aller) a l'ecole. Tu ___ (avoir) un livre. Il ___ (etre) content.", 'words': [], 'available_words': ['vais', 'as', 'est', 'va', 'ai', 'es'], 'sentences': []}
+2025-08-14 16:54:18,229 - app - INFO - Using template: exercise_types/fill_in_blanks.html
+2025-08-14 16:54:18,229 - app - INFO - Variables for template:
+2025-08-14 16:54:18,229 - app - INFO - - exercise: <Exercise Texte a trous - Les verbes>
+2025-08-14 16:54:18,229 - app - INFO - - attempt: None
+2025-08-14 16:54:18,229 - app - INFO - - content: {'text': "Je ___ (aller) a l'ecole. Tu ___ (avoir) un livre. Il ___ (etre) content.", 'words': [], 'available_words': ['vais', 'as', 'est', 'va', 'ai', 'es'], 'sentences': []}
+2025-08-14 16:54:18,230 - app - INFO - - progress: None
+2025-08-14 16:54:18,230 - app - INFO - - course: None
+2025-08-14 16:54:18,299 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 16:54:18] "GET /exercise/2 HTTP/1.1" 200 -
+2025-08-14 16:54:18,334 - __main__ - DEBUG - Headers: Host: 127.0.0.1:5000
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:141.0) Gecko/20100101 Firefox/141.0
+Accept: text/css,*/*;q=0.1
+Accept-Language: fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3
+Accept-Encoding: gzip, deflate, br, zstd
+Connection: keep-alive
+Referer: http://127.0.0.1:5000/exercise/2
+Cookie: csrf_token=ImY5OWE4YWUwZTg0MWU0YzgwZTRmYzk3OWEyNjM2MWQ0ZWFjOTQ5OTUi.aJ3ovw.3J_MWJQF5LFn3dFMwF4Kxjx7iIg; session=.eJwtzjFuBDEIQNG7uE4BGGPYy4wMBiWKlEgzu1WUu2eKlP9X76cddeb13h7P85Vv7fjY7dEGCgmGTg_07ESjeDoKCPL2mrRhjK3s3HP7MGfFKuC5VmaH5bEjOkowdCgqHNTT3EhgotpipXDCXeBbVajGGrjEyqFTF2o35HXl-a-5M66zjuf3Z37do8yWroRUxuRQSK6waYukC27OFcZmo_3-AavPPuA.aJ34hw.xg4_GDhH4saOXN-vKsv57WeqUaY
+Sec-Fetch-Dest: style
+Sec-Fetch-Mode: no-cors
+Sec-Fetch-Site: same-origin
+If-Modified-Since: Fri, 01 Aug 2025 12:32:18 GMT
+If-None-Match: "1754051538.0208235-5690-1638734088"
+Priority: u=2
+
+
+2025-08-14 16:54:18,335 - __main__ - DEBUG - Body: b''
+2025-08-14 16:54:18,335 - __main__ - DEBUG - URL: http://127.0.0.1:5000/static/css/style.css
+2025-08-14 16:54:18,335 - __main__ - DEBUG - Method: GET
+2025-08-14 16:54:18,335 - __main__ - DEBUG - Path: /static/css/style.css
+2025-08-14 16:54:18,337 - werkzeug - INFO - 127.0.0.1 - - [14/Aug/2025 16:54:18] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-08-14 18:02:03,247 - werkzeug - INFO -  * Detected change in 'C:\\Users\\JeMat\\OneDrive\\classenumerique20250801\\app.py', reloading
+2025-08-14 18:02:03,983 - werkzeug - INFO -  * Detected change in 'C:\\Users\\JeMat\\OneDrive\\classenumerique20250801\\app.py', reloading
+2025-08-14 18:02:21,208 - werkzeug - INFO -  * Restarting with stat
+2025-08-14 18:02:22,585 - werkzeug - INFO -  * Restarting with stat
+2025-08-14 18:02:47,931 - app - INFO - Tables de base de donnees creees avec succes
+2025-08-14 18:02:47,931 - app - INFO - Tables de base de donnees creees avec succes
+2025-08-14 18:02:47,931 - app - ERROR - Erreur lors de l'initialisation de la base: Working outside of application context.
+
+This typically means that you attempted to use functionality that needed
+the current application. To solve this, set up an application context
+with app.app_context(). See the documentation for more information.
+2025-08-14 18:02:47,931 - app - ERROR - Erreur lors de l'initialisation de la base: Working outside of application context.
+
+This typically means that you attempted to use functionality that needed
+the current application. To solve this, set up an application context
+with app.app_context(). See the documentation for more information.
+2025-08-14 18:02:59,074 - werkzeug - WARNING -  * Debugger is active!
+2025-08-14 18:02:59,074 - werkzeug - WARNING -  * Debugger is active!
+2025-08-14 18:02:59,302 - werkzeug - INFO -  * Debugger PIN: 773-832-873
+2025-08-14 18:02:59,501 - werkzeug - INFO -  * Debugger PIN: 773-832-873
+2025-08-14 18:28:37,731 - werkzeug - INFO -  * Detected change in 'C:\\Users\\JeMat\\OneDrive\\classenumerique20250801\\app.py', reloading
+2025-08-14 18:28:57,599 - werkzeug - INFO -  * Restarting with stat
+2025-08-14 18:30:15,873 - app - INFO - Tables de base de donnees creees avec succes
+2025-08-14 18:30:15,874 - app - ERROR - Erreur lors de l'initialisation de la base: Working outside of application context.
+
+This typically means that you attempted to use functionality that needed
+the current application. To solve this, set up an application context
+with app.app_context(). See the documentation for more information.
+2025-08-14 18:30:17,103 - werkzeug - WARNING -  * Debugger is active!
+2025-08-14 18:30:17,811 - werkzeug - INFO -  * Debugger PIN: 773-832-873
+2025-08-14 18:31:01,594 - werkzeug - INFO -  * Detected change in 'C:\\Users\\JeMat\\OneDrive\\classenumerique20250801\\test_fill_in_blanks_scoring.py', reloading
+2025-08-14 18:31:01,936 - werkzeug - INFO -  * Restarting with stat
+2025-08-14 18:31:09,394 - app - INFO - Tables de base de donnees creees avec succes
+2025-08-14 18:31:09,395 - app - ERROR - Erreur lors de l'initialisation de la base: Working outside of application context.
+
+This typically means that you attempted to use functionality that needed
+the current application. To solve this, set up an application context
+with app.app_context(). See the documentation for more information.
+2025-08-14 18:31:09,470 - werkzeug - WARNING -  * Debugger is active!
+2025-08-14 18:31:09,472 - werkzeug - INFO -  * Debugger PIN: 773-832-873
+2025-08-14 18:31:41,169 - werkzeug - INFO -  * Detected change in 'C:\\Users\\JeMat\\OneDrive\\classenumerique20250801\\test_fill_in_blanks_scoring.py', reloading
+2025-08-14 18:31:41,586 - werkzeug - INFO -  * Restarting with stat
+2025-08-14 18:31:45,327 - app - INFO - Tables de base de donnees creees avec succes
+2025-08-14 18:31:45,327 - app - ERROR - Erreur lors de l'initialisation de la base: Working outside of application context.
+
+This typically means that you attempted to use functionality that needed
+the current application. To solve this, set up an application context
+with app.app_context(). See the documentation for more information.
+2025-08-14 18:31:45,409 - werkzeug - WARNING -  * Debugger is active!
+2025-08-14 18:31:45,411 - werkzeug - INFO -  * Debugger PIN: 773-832-873
+2025-08-14 18:31:56,056 - werkzeug - INFO -  * Detected change in 'C:\\Users\\JeMat\\OneDrive\\classenumerique20250801\\test_fill_in_blanks_scoring.py', reloading
+2025-08-14 18:31:56,481 - werkzeug - INFO -  * Restarting with stat
+2025-08-14 18:32:00,277 - app - INFO - Tables de base de donnees creees avec succes
+2025-08-14 18:32:00,278 - app - ERROR - Erreur lors de l'initialisation de la base: Working outside of application context.
+
+This typically means that you attempted to use functionality that needed
+the current application. To solve this, set up an application context
+with app.app_context(). See the documentation for more information.
+2025-08-14 18:32:00,359 - werkzeug - WARNING -  * Debugger is active!
+2025-08-14 18:32:00,362 - werkzeug - INFO -  * Debugger PIN: 773-832-873
+2025-08-14 18:32:06,945 - werkzeug - INFO -  * Detected change in 'C:\\Users\\JeMat\\OneDrive\\classenumerique20250801\\test_fill_in_blanks_scoring.py', reloading
+2025-08-14 18:32:07,306 - werkzeug - INFO -  * Restarting with stat
+2025-08-14 18:32:13,621 - app - INFO - Tables de base de donnees creees avec succes
+2025-08-14 18:32:13,681 - app - ERROR - Erreur lors de l'initialisation de la base: Working outside of application context.
+
+This typically means that you attempted to use functionality that needed
+the current application. To solve this, set up an application context
+with app.app_context(). See the documentation for more information.
+2025-08-14 18:32:13,790 - werkzeug - WARNING -  * Debugger is active!
+2025-08-14 18:32:13,793 - werkzeug - INFO -  * Debugger PIN: 773-832-873
