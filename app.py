@@ -3180,6 +3180,15 @@ def handle_exercise_answer(exercise_id):
             content = json.loads(exercise.content)
             app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Processing fill_in_blanks exercise {exercise_id}")
             app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Form data: {dict(request.form)}")
+            app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Exercise content keys: {list(content.keys())}")
+            
+            # Debug: Analyser le format de l'exercice
+            if 'text' in content:
+                text_blanks = content['text'].count('___')
+                app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Format 'text' detected: {text_blanks} blanks in text")
+            if 'sentences' in content:
+                sentences_blanks = sum(s.count('___') for s in content['sentences'])
+                app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Format 'sentences' detected: {sentences_blanks} blanks in sentences")
             
             # Récupérer les réponses correctes
             correct_answers = content.get('words', [])
@@ -3189,6 +3198,7 @@ def handle_exercise_answer(exercise_id):
                 return redirect(url_for('view_exercise', exercise_id=exercise_id))
             
             app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Found {len(correct_answers)} blanks to check")
+            app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Correct answers: {correct_answers}")
             
             # Calculer le score
             total_blanks = len(correct_answers)
@@ -4869,6 +4879,109 @@ def debug_railway():
 def test_simple():
     """Route ultra-simple pour tester si Flask fonctionne"""
     return "✅ Flask fonctionne parfaitement sur Railway !"
+
+@app.route('/debug-fill-in-blanks-railway')
+def debug_fill_in_blanks_railway():
+    """Route de diagnostic spécifique pour les problèmes fill_in_blanks sur Railway"""
+    try:
+        debug_info = []
+        
+        # 1. Vérifier les exercices fill_in_blanks
+        exercises = Exercise.query.filter_by(exercise_type='fill_in_blanks').all()
+        debug_info.append(f"<h2>1. EXERCICES FILL_IN_BLANKS: {len(exercises)} trouvés</h2>")
+        
+        for ex in exercises:
+            debug_info.append(f"<h3>Exercice {ex.id}: {ex.title}</h3>")
+            debug_info.append(f"<p><strong>Image path:</strong> {ex.image_path}</p>")
+            
+            # Analyser le contenu JSON
+            content = json.loads(ex.content)
+            debug_info.append(f"<p><strong>Format JSON:</strong> {list(content.keys())}</p>")
+            
+            if 'text' in content:
+                text = content['text']
+                blank_count = text.count('___')
+                debug_info.append(f"<p><strong>Text:</strong> {text}</p>")
+                debug_info.append(f"<p><strong>Blancs dans text:</strong> {blank_count}</p>")
+            
+            if 'sentences' in content:
+                sentences = content['sentences']
+                total_blanks = sum(sentence.count('___') for sentence in sentences)
+                debug_info.append(f"<p><strong>Sentences:</strong> {sentences}</p>")
+                debug_info.append(f"<p><strong>Blancs dans sentences:</strong> {total_blanks}</p>")
+            
+            words = content.get('words', [])
+            debug_info.append(f"<p><strong>Words:</strong> {words} (count: {len(words)})</p>")
+            
+            # Vérifier la cohérence blancs/mots
+            if 'text' in content:
+                text_blanks = content['text'].count('___')
+                word_count = len(words)
+                if text_blanks != word_count:
+                    debug_info.append(f"<p style='color: red;'><strong>ALERTE:</strong> {text_blanks} blancs mais {word_count} mots!</p>")
+                else:
+                    debug_info.append(f"<p style='color: green;'><strong>OK:</strong> {text_blanks} blancs = {word_count} mots</p>")
+        
+        # 2. Vérifier les dossiers et fichiers d'images
+        debug_info.append("<h2>2. VERIFICATION DOSSIERS IMAGES</h2>")
+        
+        import os
+        static_dir = os.path.join(app.root_path, 'static')
+        uploads_dir = os.path.join(static_dir, 'uploads')
+        
+        debug_info.append(f"<p><strong>Dossier static:</strong> {static_dir} - Existe: {os.path.exists(static_dir)}</p>")
+        debug_info.append(f"<p><strong>Dossier uploads:</strong> {uploads_dir} - Existe: {os.path.exists(uploads_dir)}</p>")
+        
+        if os.path.exists(uploads_dir):
+            files = os.listdir(uploads_dir)
+            debug_info.append(f"<p><strong>Fichiers dans uploads:</strong> {len(files)}</p>")
+            debug_info.append("<ul>")
+            for f in files[:10]:  # Afficher les 10 premiers
+                debug_info.append(f"<li>{f}</li>")
+            if len(files) > 10:
+                debug_info.append(f"<li>... et {len(files) - 10} autres</li>")
+            debug_info.append("</ul>")
+        
+        # 3. Test de la logique de scoring
+        debug_info.append("<h2>3. TEST LOGIQUE SCORING</h2>")
+        
+        if exercises:
+            test_exercise = exercises[0]
+            content = json.loads(test_exercise.content)
+            correct_answers = content.get('words', [])
+            
+            debug_info.append(f"<h3>Test avec exercice: {test_exercise.title}</h3>")
+            debug_info.append(f"<p><strong>Réponses correctes:</strong> {correct_answers}</p>")
+            
+            # Test scoring parfait
+            total_blanks = len(correct_answers)
+            score_perfect = round((total_blanks / total_blanks) * 100) if total_blanks > 0 else 0
+            debug_info.append(f"<p><strong>Score parfait attendu:</strong> {total_blanks}/{total_blanks} = {score_perfect}%</p>")
+            
+            # Test scoring partiel (bug Railway)
+            if total_blanks >= 2:
+                score_partial = round((1 / total_blanks) * 100)
+                debug_info.append(f"<p><strong>Score avec 1 seul blanc correct:</strong> 1/{total_blanks} = {score_partial}%</p>")
+                if score_partial == 50:
+                    debug_info.append("<p style='color: red;'><strong>BUG IDENTIFIE:</strong> C'est exactement le problème Railway (50%)!</p>")
+        
+        # 4. Vérifier les variables d'environnement
+        debug_info.append("<h2>4. VARIABLES ENVIRONNEMENT</h2>")
+        env_vars = ['DATABASE_URL', 'FLASK_ENV', 'PORT']
+        for var in env_vars:
+            value = os.environ.get(var, 'NON DEFINI')
+            if var == 'DATABASE_URL' and value != 'NON DEFINI':
+                value = value[:30] + "..." if len(value) > 30 else value
+            debug_info.append(f"<p><strong>{var}:</strong> {value}</p>")
+        
+        # 5. Test de la route d'image
+        debug_info.append("<h2>5. TEST ROUTE IMAGE</h2>")
+        debug_info.append(f"<p><strong>Route statique Flask:</strong> {url_for('static', filename='uploads/test.png')}</p>")
+        
+        return "<br>".join(debug_info)
+        
+    except Exception as e:
+        return f"<h2>❌ Erreur diagnostic:</h2><p>{str(e)}</p>"
 
 
 
