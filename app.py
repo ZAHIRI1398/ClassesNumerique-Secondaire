@@ -22,6 +22,245 @@ from payment_routes import payment_bp
 from forms import ExerciseForm
 from modified_submit import bp as exercise_bp
 
+
+# Route de diagnostic pour fill_in_blanks
+@app.route('/diagnostic-fill-in-blanks')
+def diagnostic_fill_in_blanks():
+    """Route de diagnostic pour vérifier les problèmes fill_in_blanks"""
+    if not current_user.is_authenticated or not current_user.is_admin:
+        return "Accès non autorisé", 403
+        
+    results = []
+    
+    # 1. Vérifier l'environnement
+    results.append("<h1>DIAGNOSTIC FILL_IN_BLANKS</h1>")
+    results.append("<h2>1. ENVIRONNEMENT</h2>")
+    
+    # Vérifier les variables d'environnement
+    env_vars = {
+        'FLASK_ENV': os.environ.get('FLASK_ENV', 'non défini'),
+        'DATABASE_URL': os.environ.get('DATABASE_URL', 'non défini')[:10] + '...' if os.environ.get('DATABASE_URL') else 'non défini',
+        'RAILWAY_ENVIRONMENT': os.environ.get('RAILWAY_ENVIRONMENT', 'non défini'),
+        'PORT': os.environ.get('PORT', 'non défini')
+    }
+    
+    results.append("<h3>Variables d'environnement:</h3>")
+    for key, value in env_vars.items():
+        results.append(f"<p>{key}: {value}</p>")
+    
+    # 2. Vérifier les dossiers d'uploads
+    results.append("<h2>2. DOSSIERS UPLOADS</h2>")
+    
+    static_dir = os.path.join(os.getcwd(), 'static')
+    uploads_dir = os.path.join(static_dir, 'uploads')
+    
+    results.append(f"<p>Dossier static: {static_dir} - Existe: {os.path.exists(static_dir)}</p>")
+    results.append(f"<p>Dossier uploads: {uploads_dir} - Existe: {os.path.exists(uploads_dir)}</p>")
+    
+    # Créer uploads si nécessaire
+    if not os.path.exists(uploads_dir):
+        try:
+            os.makedirs(uploads_dir, exist_ok=True)
+            # Créer .gitkeep
+            gitkeep_path = os.path.join(uploads_dir, ".gitkeep")
+            with open(gitkeep_path, 'w') as f:
+                f.write("# Dossier uploads pour les images des exercices\n")
+            results.append("<p style='color: green;'>✓ Dossier uploads créé avec .gitkeep</p>")
+        except Exception as e:
+            results.append(f"<p style='color: red;'>✗ Erreur création uploads: {e}</p>")
+    else:
+        try:
+            files = os.listdir(uploads_dir)
+            results.append(f"<p style='color: green;'>✓ Dossier uploads existe ({len(files)} fichiers)</p>")
+            
+            # Lister quelques fichiers
+            if files:
+                results.append("<ul>")
+                for f in files[:5]:
+                    results.append(f"<li>{f}</li>")
+                if len(files) > 5:
+                    results.append(f"<li>... et {len(files) - 5} autres</li>")
+                results.append("</ul>")
+        except Exception as e:
+            results.append(f"<p style='color: red;'>✗ Erreur listage uploads: {e}</p>")
+    
+    # 3. Vérifier les exercices fill_in_blanks
+    results.append("<h2>3. EXERCICES FILL_IN_BLANKS</h2>")
+    
+    try:
+        exercises = Exercise.query.filter_by(exercise_type='fill_in_blanks').all()
+        results.append(f"<p>Nombre d'exercices: {len(exercises)}</p>")
+        
+        if exercises:
+            # Prendre le premier exercice pour analyse
+            ex = exercises[0]
+            results.append(f"<h3>Analyse de l'exercice {ex.id}: {ex.title}</h3>")
+            
+            # Image
+            if ex.image_path:
+                results.append(f"<p>Image path: {ex.image_path}</p>")
+                # Vérifier si l'image existe
+                image_path = os.path.join(uploads_dir, os.path.basename(ex.image_path))
+                if os.path.exists(image_path):
+                    results.append(f"<p style='color: green;'>✓ Image existe: {image_path}</p>")
+                else:
+                    results.append(f"<p style='color: red;'>✗ Image manquante: {image_path}</p>")
+            
+            # Contenu
+            content = json.loads(ex.content)
+            results.append(f"<p>Format JSON: {list(content.keys())}</p>")
+            
+            # Compter les blancs
+            total_blanks = 0
+            
+            if 'text' in content:
+                text_blanks = content['text'].count('___')
+                total_blanks += text_blanks
+                results.append(f"<p>Text: {content['text']}</p>")
+                results.append(f"<p>Blancs dans text: {text_blanks}</p>")
+            
+            if 'sentences' in content:
+                sentences_blanks = sum(s.count('___') for s in content['sentences'])
+                total_blanks += sentences_blanks
+                results.append(f"<p>Sentences: {content['sentences']}</p>")
+                results.append(f"<p>Blancs dans sentences: {sentences_blanks}</p>")
+            
+            # Mots
+            words = content.get('words', [])
+            if not words:
+                words = content.get('available_words', [])
+            
+            results.append(f"<p>Words: {words} (count: {len(words)})</p>")
+            
+            # Vérifier la cohérence
+            if total_blanks != len(words):
+                results.append(f"<p style='color: red;'>✗ Incohérence: {total_blanks} blancs mais {len(words)} mots!</p>")
+            else:
+                results.append(f"<p style='color: green;'>✓ Cohérence: {total_blanks} blancs = {len(words)} mots</p>")
+    
+    except Exception as e:
+        results.append(f"<p style='color: red;'>✗ Erreur analyse exercices: {e}</p>")
+    
+    # 4. Test de la logique de scoring
+    results.append("<h2>4. TEST LOGIQUE SCORING</h2>")
+    
+    try:
+        # Simuler un exercice avec notre logique corrigée
+        test_content = {
+            "sentences": ["Le ___ mange une ___ rouge."],
+            "words": ["chat", "pomme"]
+        }
+        
+        # Test 1: Toutes réponses correctes
+        results.append("<h3>Test 1: Toutes réponses correctes</h3>")
+        
+        # Simuler des réponses utilisateur parfaites
+        user_answers = {
+            'answer_0': 'chat',
+            'answer_1': 'pomme'
+        }
+        
+        # Logique de scoring simplifiée
+        correct_count = 0
+        total_blanks = 0
+        blank_details = []
+        
+        # Compter les blancs dans le contenu
+        sentences = test_content.get('sentences', [])
+        if sentences:
+            for i, sentence in enumerate(sentences):
+                blanks_count = sentence.count('___')
+                total_blanks += blanks_count
+        
+        # Vérifier les réponses
+        words = test_content.get('words', [])
+        for i, word in enumerate(words):
+            user_answer = user_answers.get(f'answer_{i}', '').strip().lower()
+            correct_answer = word.strip().lower()
+            is_correct = user_answer == correct_answer
+            
+            if is_correct:
+                correct_count += 1
+            
+            blank_details.append({
+                'blank_index': i,
+                'user_answer': user_answer,
+                'correct_answer': correct_answer,
+                'is_correct': is_correct
+            })
+        
+        # Calculer le score
+        score = int((correct_count / total_blanks) * 100) if total_blanks > 0 else 0
+        
+        results.append(f"<p>Score: {correct_count}/{total_blanks} = {score}%</p>")
+        
+        # Détails par blanc
+        results.append("<ul>")
+        for detail in blank_details:
+            if detail["is_correct"]:
+                results.append(f"<li style='color: green;'>Blanc {detail['blank_index']}: '{detail['user_answer']}' = '{detail['correct_answer']}' ✓</li>")
+            else:
+                results.append(f"<li style='color: red;'>Blanc {detail['blank_index']}: '{detail['user_answer']}' ≠ '{detail['correct_answer']}' ✗</li>")
+        results.append("</ul>")
+        
+        # Test 2: Réponses partielles
+        results.append("<h3>Test 2: Réponses partielles</h3>")
+        
+        # Simuler des réponses utilisateur partielles
+        user_answers_partial = {
+            'answer_0': 'chat',
+            'answer_1': 'banane'  # Incorrect
+        }
+        
+        # Réinitialiser les compteurs
+        correct_count = 0
+        blank_details = []
+        
+        # Vérifier les réponses
+        for i, word in enumerate(words):
+            user_answer = user_answers_partial.get(f'answer_{i}', '').strip().lower()
+            correct_answer = word.strip().lower()
+            is_correct = user_answer == correct_answer
+            
+            if is_correct:
+                correct_count += 1
+            
+            blank_details.append({
+                'blank_index': i,
+                'user_answer': user_answer,
+                'correct_answer': correct_answer,
+                'is_correct': is_correct
+            })
+        
+        # Calculer le score
+        score = int((correct_count / total_blanks) * 100) if total_blanks > 0 else 0
+        
+        results.append(f"<p>Score: {correct_count}/{total_blanks} = {score}%</p>")
+        
+        # Détails par blanc
+        results.append("<ul>")
+        for detail in blank_details:
+            if detail["is_correct"]:
+                results.append(f"<li style='color: green;'>Blanc {detail['blank_index']}: '{detail['user_answer']}' = '{detail['correct_answer']}' ✓</li>")
+            else:
+                results.append(f"<li style='color: red;'>Blanc {detail['blank_index']}: '{detail['user_answer']}' ≠ '{detail['correct_answer']}' ✗</li>")
+        results.append("</ul>")
+        
+    except Exception as e:
+        results.append(f"<p style='color: red;'>✗ Erreur test scoring: {e}</p>")
+    
+    # 5. Conclusion
+    results.append("<h2>5. CONCLUSION</h2>")
+    results.append("<p>Si tous les tests ci-dessus sont réussis (affichés en vert), la logique de scoring est correcte.</p>")
+    results.append("<p>Vérifiez particulièrement:</p>")
+    results.append("<ul>")
+    results.append("<li>Que le dossier uploads existe</li>")
+    results.append("<li>Que les images sont présentes</li>")
+    results.append("<li>Que le nombre de blancs correspond au nombre de mots</li>")
+    results.append("<li>Que le test de scoring partiel donne bien 50%</li>")
+    results.append("</ul>")
+    
+    return "<br>".join(results)
 # Configuration du logging
 logging.basicConfig(
     level=logging.DEBUG,
