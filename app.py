@@ -3176,7 +3176,7 @@ def handle_exercise_answer(exercise_id):
             answers = user_answers
         
         elif exercise.exercise_type == 'fill_in_blanks':
-            # Gestion des exercices Texte à trous
+            # Gestion des exercices Texte à trous avec la même logique que Mots à placer
             content = json.loads(exercise.content)
             app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Processing fill_in_blanks exercise {exercise_id}")
             app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Form data: {dict(request.form)}")
@@ -3218,7 +3218,7 @@ def handle_exercise_answer(exercise_id):
             feedback_details = []
             user_answers_data = {}
             
-            # Vérifier chaque blanc individuellement
+            # Vérifier chaque blanc individuellement - Même logique que word_placement
             for i in range(total_blanks):
                 # Récupérer la réponse de l'utilisateur pour ce blanc
                 user_answer = request.form.get(f'answer_{i}', '').strip()
@@ -3226,17 +3226,19 @@ def handle_exercise_answer(exercise_id):
                 # Récupérer la réponse correcte correspondante
                 correct_answer = correct_answers[i] if i < len(correct_answers) else ''
                 
+                app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Blank {i}:")
+                app.logger.info(f"  - Réponse étudiant (answer_{i}): {user_answer}")
+                app.logger.info(f"  - Réponse attendue: {correct_answer}")
+                
                 # Vérifier si la réponse est correcte (insensible à la casse)
-                is_correct = user_answer.lower() == correct_answer.lower() if correct_answer else False
+                is_correct = user_answer and user_answer.strip().lower() == correct_answer.strip().lower()
                 if is_correct:
                     correct_blanks += 1
-                
-                app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Blank {i}: user='{user_answer}', correct='{correct_answer}', is_correct={is_correct}")
                 
                 # Créer le feedback pour ce blanc
                 feedback_details.append({
                     'blank_index': i,
-                    'user_answer': user_answer,
+                    'user_answer': user_answer or '',
                     'correct_answer': correct_answer,
                     'is_correct': is_correct,
                     'status': 'Correct' if is_correct else f'Attendu: {correct_answer}, Réponse: {user_answer or "Vide"}'
@@ -3245,12 +3247,10 @@ def handle_exercise_answer(exercise_id):
                 # Sauvegarder les réponses utilisateur
                 user_answers_data[f'answer_{i}'] = user_answer
             
-            # Calculer le score final basé sur le nombre réel de blancs
-            max_score = total_blanks
-            score_count = correct_blanks
-            score = round((score_count / max_score) * 100) if max_score > 0 else 0
+            # Calculer le score final basé sur le nombre réel de blancs - Exactement comme word_placement
+            score = (correct_blanks / total_blanks) * 100 if total_blanks > 0 else 0
             
-            app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Final score: {score_count}/{max_score} = {score}%")
+            app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Score final: {score}% ({correct_blanks}/{total_blanks})")
             
             feedback_summary = {
                 'score': score,
