@@ -22,296 +22,6 @@ from payment_routes import payment_bp
 from forms import ExerciseForm
 from modified_submit import bp as exercise_bp
 
-
-# Route de diagnostic pour fill_in_blanks sur Railway
-import os
-import sys
-import json
-import datetime
-import platform
-
-def get_system_info():
-    """Récupère les informations système"""
-    info = {
-        "platform": platform.platform(),
-        "python_version": platform.python_version(),
-        "date": datetime.datetime.now().isoformat(),
-        "env_vars": {k: v for k, v in os.environ.items() if k in ['FLASK_ENV', 'FLASK_DEBUG', 'DATABASE_URL', 'RAILWAY_ENVIRONMENT']}
-    }
-    return info
-
-def test_fill_in_blanks_scoring(content, user_answers):
-    """
-    Teste la logique de scoring pour un exercice fill_in_blanks
-    
-    Args:
-        content: Contenu JSON de l'exercice
-        user_answers: Dictionnaire des réponses utilisateur (answer_0, answer_1, etc.)
-        
-    Returns:
-        dict: Résultats du test avec score et détails
-    """
-    results = {
-        "success": True,
-        "score": 0,
-        "correct_count": 0,
-        "total_blanks": 0,
-        "details": [],
-        "error": None
-    }
-    
-    try:
-        # Logique de comptage des blancs
-        total_blanks_in_content = 0
-        
-        if 'text' in content:
-            text_blanks = content['text'].count('___')
-            total_blanks_in_content += text_blanks
-            results["details"].append(f"Format 'text' détecté: {text_blanks} blancs")
-        
-        if 'sentences' in content:
-            sentences_blanks = sum(s.count('___') for s in content['sentences'])
-            total_blanks_in_content += sentences_blanks
-            results["details"].append(f"Format 'sentences' détecté: {sentences_blanks} blancs")
-        
-        # Récupérer les réponses correctes
-        correct_answers = content.get('words', [])
-        if not correct_answers:
-            correct_answers = content.get('available_words', [])
-        
-        results["details"].append(f"Trouvé {len(correct_answers)} réponses correctes: {correct_answers}")
-        
-        # Utiliser le nombre réel de blancs trouvés dans le contenu
-        total_blanks = max(total_blanks_in_content, len(correct_answers))
-        results["total_blanks"] = total_blanks
-        
-        # Vérifier chaque réponse
-        correct_blanks = 0
-        blank_details = []
-        
-        for i in range(total_blanks):
-            user_answer = user_answers.get(f'answer_{i}', '').strip()
-            correct_answer = correct_answers[i] if i < len(correct_answers) else ''
-            
-            # Logique word_placement
-            is_correct = user_answer and user_answer.strip().lower() == correct_answer.strip().lower()
-            if is_correct:
-                correct_blanks += 1
-            
-            blank_details.append({
-                "blank_index": i,
-                "user_answer": user_answer,
-                "correct_answer": correct_answer,
-                "is_correct": is_correct
-            })
-        
-        results["correct_count"] = correct_blanks
-        results["blank_details"] = blank_details
-        
-        # Calculer le score final avec la logique word_placement
-        score = (correct_blanks / total_blanks) * 100 if total_blanks > 0 else 0
-        results["score"] = score
-        
-    except Exception as e:
-        results["success"] = False
-        results["error"] = str(e)
-    
-    return results
-
-@app.route('/diagnostic-fill-in-blanks')
-def diagnostic_fill_in_blanks():
-    """Route de diagnostic pour vérifier les problèmes fill_in_blanks sur Railway"""
-    if not current_user.is_authenticated or not current_user.is_admin:
-        return "Accès non autorisé", 403
-        
-    results = []
-    
-    # 1. Vérifier l'environnement
-    results.append("<h1>DIAGNOSTIC FILL_IN_BLANKS RAILWAY</h1>")
-    results.append("<h2>1. ENVIRONNEMENT</h2>")
-    
-    # Vérifier les variables d'environnement
-    env_vars = {
-        'FLASK_ENV': os.environ.get('FLASK_ENV', 'non défini'),
-        'DATABASE_URL': os.environ.get('DATABASE_URL', 'non défini')[:10] + '...' if os.environ.get('DATABASE_URL') else 'non défini',
-        'RAILWAY_ENVIRONMENT': os.environ.get('RAILWAY_ENVIRONMENT', 'non défini'),
-        'PORT': os.environ.get('PORT', 'non défini')
-    }
-    
-    results.append("<h3>Variables d'environnement:</h3>")
-    for key, value in env_vars.items():
-        results.append(f"<p>{key}: {value}</p>")
-    
-    # 2. Vérifier les dossiers d'uploads
-    results.append("<h2>2. DOSSIERS UPLOADS</h2>")
-    
-    static_dir = os.path.join(os.getcwd(), 'static')
-    uploads_dir = os.path.join(static_dir, 'uploads')
-    
-    results.append(f"<p>Dossier static: {static_dir} - Existe: {os.path.exists(static_dir)}</p>")
-    results.append(f"<p>Dossier uploads: {uploads_dir} - Existe: {os.path.exists(uploads_dir)}</p>")
-    
-    # Créer uploads si nécessaire
-    if not os.path.exists(uploads_dir):
-        try:
-            os.makedirs(uploads_dir, exist_ok=True)
-            # Créer .gitkeep
-            gitkeep_path = os.path.join(uploads_dir, ".gitkeep")
-            with open(gitkeep_path, 'w') as f:
-                f.write("# Dossier uploads pour les images des exercices\n")
-            results.append("<p style='color: green;'>✓ Dossier uploads créé avec .gitkeep</p>")
-        except Exception as e:
-            results.append(f"<p style='color: red;'>✗ Erreur création uploads: {e}</p>")
-    else:
-        try:
-            files = os.listdir(uploads_dir)
-            results.append(f"<p style='color: green;'>✓ Dossier uploads existe ({len(files)} fichiers)</p>")
-            
-            # Lister quelques fichiers
-            if files:
-                results.append("<ul>")
-                for f in files[:5]:
-                    results.append(f"<li>{f}</li>")
-                if len(files) > 5:
-                    results.append(f"<li>... et {len(files) - 5} autres</li>")
-                results.append("</ul>")
-        except Exception as e:
-            results.append(f"<p style='color: red;'>✗ Erreur listage uploads: {e}</p>")
-    
-    # 3. Vérifier les exercices fill_in_blanks
-    results.append("<h2>3. EXERCICES FILL_IN_BLANKS</h2>")
-    
-    try:
-        exercises = Exercise.query.filter_by(exercise_type='fill_in_blanks').all()
-        results.append(f"<p>Nombre d'exercices: {len(exercises)}</p>")
-        
-        if exercises:
-            # Prendre le premier exercice pour analyse
-            ex = exercises[0]
-            results.append(f"<h3>Analyse de l'exercice {ex.id}: {ex.title}</h3>")
-            
-            # Image
-            if ex.image_path:
-                results.append(f"<p>Image path: {ex.image_path}</p>")
-                # Vérifier si l'image existe
-                image_path = os.path.join(uploads_dir, os.path.basename(ex.image_path))
-                if os.path.exists(image_path):
-                    results.append(f"<p style='color: green;'>✓ Image existe: {image_path}</p>")
-                else:
-                    results.append(f"<p style='color: red;'>✗ Image manquante: {image_path}</p>")
-            
-            # Contenu
-            content = json.loads(ex.content)
-            results.append(f"<p>Format JSON: {list(content.keys())}</p>")
-            
-            # Compter les blancs
-            total_blanks = 0
-            
-            if 'text' in content:
-                text_blanks = content['text'].count('___')
-                total_blanks += text_blanks
-                results.append(f"<p>Text: {content['text']}</p>")
-                results.append(f"<p>Blancs dans text: {text_blanks}</p>")
-            
-            if 'sentences' in content:
-                sentences_blanks = sum(s.count('___') for s in content['sentences'])
-                total_blanks += sentences_blanks
-                results.append(f"<p>Sentences: {content['sentences']}</p>")
-                results.append(f"<p>Blancs dans sentences: {sentences_blanks}</p>")
-            
-            # Mots
-            words = content.get('words', [])
-            if not words:
-                words = content.get('available_words', [])
-            
-            results.append(f"<p>Words: {words} (count: {len(words)})</p>")
-            
-            # Vérifier la cohérence
-            if total_blanks != len(words):
-                results.append(f"<p style='color: red;'>✗ Incohérence: {total_blanks} blancs mais {len(words)} mots!</p>")
-            else:
-                results.append(f"<p style='color: green;'>✓ Cohérence: {total_blanks} blancs = {len(words)} mots</p>")
-    
-    except Exception as e:
-        results.append(f"<p style='color: red;'>✗ Erreur analyse exercices: {e}</p>")
-    
-    # 4. Test de la logique de scoring
-    results.append("<h2>4. TEST LOGIQUE SCORING</h2>")
-    
-    try:
-        # Simuler un exercice avec notre logique corrigée
-        test_content = {
-            "sentences": ["Le ___ mange une ___ rouge."],
-            "words": ["chat", "pomme"]
-        }
-        
-        # Test 1: Toutes réponses correctes
-        results.append("<h3>Test 1: Toutes réponses correctes</h3>")
-        
-        # Simuler des réponses utilisateur parfaites
-        user_answers = {
-            'answer_0': 'chat',
-            'answer_1': 'pomme'
-        }
-        
-        # Utiliser notre fonction de test
-        test_results = test_fill_in_blanks_scoring(test_content, user_answers)
-        
-        if test_results["success"]:
-            results.append(f"<p>Score: {test_results['correct_count']}/{test_results['total_blanks']} = {test_results['score']}%</p>")
-            
-            # Détails par blanc
-            results.append("<ul>")
-            for detail in test_results["blank_details"]:
-                if detail["is_correct"]:
-                    results.append(f"<li style='color: green;'>Blanc {detail['blank_index']}: '{detail['user_answer']}' = '{detail['correct_answer']}' ✓</li>")
-                else:
-                    results.append(f"<li style='color: red;'>Blanc {detail['blank_index']}: '{detail['user_answer']}' ≠ '{detail['correct_answer']}' ✗</li>")
-            results.append("</ul>")
-        else:
-            results.append(f"<p style='color: red;'>Erreur test: {test_results['error']}</p>")
-        
-        # Test 2: Réponses partielles
-        results.append("<h3>Test 2: Réponses partielles</h3>")
-        
-        # Simuler des réponses utilisateur partielles
-        user_answers_partial = {
-            'answer_0': 'chat',
-            'answer_1': 'banane'  # Incorrect
-        }
-        
-        # Utiliser notre fonction de test
-        test_results_partial = test_fill_in_blanks_scoring(test_content, user_answers_partial)
-        
-        if test_results_partial["success"]:
-            results.append(f"<p>Score: {test_results_partial['correct_count']}/{test_results_partial['total_blanks']} = {test_results_partial['score']}%</p>")
-            
-            # Détails par blanc
-            results.append("<ul>")
-            for detail in test_results_partial["blank_details"]:
-                if detail["is_correct"]:
-                    results.append(f"<li style='color: green;'>Blanc {detail['blank_index']}: '{detail['user_answer']}' = '{detail['correct_answer']}' ✓</li>")
-                else:
-                    results.append(f"<li style='color: red;'>Blanc {detail['blank_index']}: '{detail['user_answer']}' ≠ '{detail['correct_answer']}' ✗</li>")
-            results.append("</ul>")
-        else:
-            results.append(f"<p style='color: red;'>Erreur test: {test_results_partial['error']}</p>")
-        
-    except Exception as e:
-        results.append(f"<p style='color: red;'>✗ Erreur test scoring: {e}</p>")
-    
-    # 5. Conclusion
-    results.append("<h2>5. CONCLUSION</h2>")
-    results.append("<p>Si tous les tests ci-dessus sont réussis (affichés en vert), la logique de scoring est correcte.</p>")
-    results.append("<p>Vérifiez particulièrement:</p>")
-    results.append("<ul>")
-    results.append("<li>Que le dossier uploads existe</li>")
-    results.append("<li>Que les images sont présentes</li>")
-    results.append("<li>Que le nombre de blancs correspond au nombre de mots</li>")
-    results.append("<li>Que le test de scoring partiel donne bien 50%</li>")
-    results.append("</ul>")
-    
-    return "<br>".join(results)
 # Configuration du logging
 logging.basicConfig(
     level=logging.DEBUG,
@@ -5780,10 +5490,54 @@ def fix_production_issues():
                 with open(gitkeep_path, 'w') as f:
                     f.write("# Dossier uploads pour les images des exercices\n")
                 results.append("<p style='color: green;'>✓ Dossier uploads créé avec .gitkeep</p>")
+            except Exception as e:
+                results.append(f"<p style='color: red;'>✗ Erreur création uploads: {e}</p>")
         else:
+            files = os.listdir(uploads_dir)
+            results.append(f"<p style='color: green;'>✓ Dossier uploads existe ({len(files)} fichiers)</p>")
+        
+        # 2. Analyser les exercices fill_in_blanks
+        results.append("<h2>2. ANALYSE EXERCICES TEXTE A TROUS</h2>")
+        
+        exercises = Exercise.query.filter_by(exercise_type='fill_in_blanks').all()
+        results.append(f"<p>Nombre d'exercices trouvés: {len(exercises)}</p>")
+        
+        for ex in exercises[:5]:  # Analyser les 5 premiers
+            results.append(f"<h3>Exercice {ex.id}: {ex.title}</h3>")
+            
+            # Analyser le contenu
             try:
-                files = os.listdir(uploads_dir)
-                results.append(f"<p style='color: green;'>✓ Dossier uploads existe ({len(files)} fichiers)</p>")
+                content = json.loads(ex.content)
+                
+                # Compter les blancs réels
+                total_blanks = 0
+                if 'text' in content:
+                    total_blanks += content['text'].count('___')
+                if 'sentences' in content:
+                    total_blanks += sum(s.count('___') for s in content['sentences'])
+                
+                # Compter les réponses
+                words = content.get('words', [])
+                available_words = content.get('available_words', [])
+                
+                results.append(f"<p>Blancs dans contenu: {total_blanks}</p>")
+                results.append(f"<p>Mots de réponse: {len(words)} (words)</p>")
+                results.append(f"<p>Mots disponibles: {len(available_words)} (available_words)</p>")
+                
+                # Diagnostic du problème
+                if total_blanks != len(words) and len(words) > 0:
+                    results.append(f"<p style='color: red;'>⚠ PROBLÈME: {total_blanks} blancs mais {len(words)} réponses</p>")
+                elif total_blanks == len(words):
+                    results.append(f"<p style='color: green;'>✓ Cohérent: {total_blanks} blancs = {len(words)} réponses</p>")
+                
+                # Vérifier l'image
+                if ex.image_path:
+                    image_full_path = os.path.join(uploads_dir, ex.image_path)
+                    if os.path.exists(image_full_path):
+                        results.append(f"<p style='color: green;'>✓ Image existe: {ex.image_path}</p>")
+                    else:
+                        results.append(f"<p style='color: red;'>✗ Image manquante: {ex.image_path}</p>")
+                
             except Exception as e:
                 results.append(f"<p style='color: red;'>Erreur analyse: {e}</p>")
         
