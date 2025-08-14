@@ -4664,6 +4664,21 @@ def subscription_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+def admin_required(f):
+    """Décorateur pour vérifier que l'utilisateur est administrateur"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            flash('Vous devez être connecté pour accéder à cette page.', 'error')
+            return redirect(url_for('login'))
+        
+        if current_user.role != 'admin':
+            flash('Accès non autorisé. Droits administrateur requis.', 'error')
+            return redirect(url_for('login'))
+        
+        return f(*args, **kwargs)
+    return decorated_function
+
 @app.route('/admin/dashboard')
 @login_required
 @admin_required

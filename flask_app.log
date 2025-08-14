@@ -24,3 +24,5 @@
 2025-08-14 02:10:13,471 - werkzeug - INFO -  * Restarting with stat
 2025-08-14 02:10:57,779 - werkzeug - WARNING -  * Debugger is active!
 2025-08-14 02:10:57,920 - werkzeug - INFO -  * Debugger PIN: 773-832-873
+2025-08-14 02:19:34,618 - werkzeug - INFO -  * Detected change in 'C:\\Users\\JeMat\\OneDrive\\classenumerique20250801\\app.py', reloading
+2025-08-14 02:19:37,850 - werkzeug - INFO -  * Restarting with stat
