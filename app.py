@@ -5240,6 +5240,68 @@ def process_payment():
 
 
 
+@app.route('/fix-fill-in-blanks-words')
+def fix_fill_in_blanks_words():
+    """Route pour corriger les exercices Fill-in-the-Blanks avec mots manquants"""
+    try:
+        results = []
+        results.append("<h1>CORRECTION EXERCICES FILL-IN-THE-BLANKS</h1>")
+        
+        # Récupérer tous les exercices fill_in_blanks
+        exercises = Exercise.query.filter_by(exercise_type='fill_in_blanks').all()
+        results.append(f"<h2>Exercices trouvés: {len(exercises)}</h2>")
+        
+        fixed_count = 0
+        
+        for exercise in exercises:
+            results.append(f"<h3>Exercice {exercise.id}: {exercise.title}</h3>")
+            
+            try:
+                content = json.loads(exercise.content)
+                
+                # Vérifier si les mots sont manquants
+                words = content.get('words', [])
+                available_words = content.get('available_words', [])
+                
+                results.append(f"<p>Mots actuels: {len(words)} | Available_words: {len(available_words)}</p>")
+                
+                if not words and not available_words:
+                    # Exercice sans mots - on va en ajouter des exemples
+                    if 'sentences' in content:
+                        sentences = content['sentences']
+                        total_blanks = sum(s.count('___') for s in sentences)
+                        
+                        # Créer des mots d'exemple basés sur le nombre de blancs
+                        example_words = []
+                        for i in range(total_blanks):
+                            example_words.append(f"mot{i+1}")
+                        
+                        # Mettre à jour le contenu
+                        content['words'] = example_words
+                        exercise.content = json.dumps(content)
+                        
+                        results.append(f"<p style='color: green;'>✓ Ajouté {len(example_words)} mots d'exemple</p>")
+                        fixed_count += 1
+                    else:
+                        results.append("<p style='color: orange;'>⚠ Pas de sentences trouvées</p>")
+                else:
+                    results.append("<p style='color: blue;'>ℹ Exercice déjà avec mots</p>")
+                    
+            except Exception as e:
+                results.append(f"<p style='color: red;'>✗ Erreur: {e}</p>")
+        
+        # Sauvegarder les changements
+        if fixed_count > 0:
+            db.session.commit()
+            results.append(f"<h2 style='color: green;'>✓ {fixed_count} exercices corrigés et sauvegardés</h2>")
+        else:
+            results.append("<h2 style='color: blue;'>ℹ Aucune correction nécessaire</h2>")
+        
+        return "<br>".join(results)
+        
+    except Exception as e:
+        return f"<h1>Erreur</h1><p>{str(e)}</p>"
+
 @app.route('/fix-production-issues')
 def fix_production_issues():
     """Route pour diagnostiquer et corriger les problèmes d'images et de scoring en production"""
