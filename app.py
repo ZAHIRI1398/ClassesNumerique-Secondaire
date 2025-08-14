@@ -3175,9 +3175,70 @@ def handle_exercise_answer(exercise_id):
             # Pour flashcards, on utilise le score calculé côté frontend
             answers = user_answers
         
+        elif exercise.exercise_type == 'fill_in_blanks':
+            # Gestion des exercices Texte à trous
+            content = json.loads(exercise.content)
+            app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Processing fill_in_blanks exercise {exercise_id}")
+            app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Form data: {dict(request.form)}")
+            
+            # Récupérer les réponses correctes
+            correct_answers = content.get('words', [])
+            if not correct_answers:
+                app.logger.error(f"[FILL_IN_BLANKS_DEBUG] No correct answers found in exercise content")
+                flash('Erreur: aucune réponse correcte trouvée dans l\'exercice.', 'error')
+                return redirect(url_for('view_exercise', exercise_id=exercise_id))
+            
+            app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Found {len(correct_answers)} blanks to check")
+            
+            # Calculer le score
+            total_blanks = len(correct_answers)
+            correct_blanks = 0
+            feedback_details = []
+            user_answers_data = {}
+            
+            for i, correct_answer in enumerate(correct_answers):
+                # Récupérer la réponse de l'utilisateur pour ce blanc
+                user_answer = request.form.get(f'answer_{i}', '').strip()
+                
+                # Vérifier si la réponse est correcte (insensible à la casse)
+                is_correct = user_answer.lower() == correct_answer.lower()
+                if is_correct:
+                    correct_blanks += 1
+                
+                app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Blank {i}: user='{user_answer}', correct='{correct_answer}', is_correct={is_correct}")
+                
+                # Créer le feedback pour ce blanc
+                feedback_details.append({
+                    'blank_index': i,
+                    'user_answer': user_answer,
+                    'correct_answer': correct_answer,
+                    'is_correct': is_correct,
+                    'status': 'Correct' if is_correct else f'Attendu: {correct_answer}, Réponse: {user_answer or "Vide"}'
+                })
+                
+                # Sauvegarder les réponses utilisateur
+                user_answers_data[f'answer_{i}'] = user_answer
+            
+            # Calculer le score final
+            max_score = total_blanks
+            score_count = correct_blanks
+            score = round((score_count / max_score) * 100) if max_score > 0 else 0
+            
+            app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Final score: {score_count}/{max_score} = {score}%")
+            
+            feedback_summary = {
+                'score': score,
+                'correct_blanks': correct_blanks,
+                'total_blanks': total_blanks,
+                'details': feedback_details
+            }
+            
+            # Pour fill_in_blanks, on utilise le score calculé
+            answers = user_answers_data
+        
         # Créer une nouvelle tentative
-        # Pour drag_and_drop, pairs, underline_words, dictation, image_labeling, flashcards, qcm_multichoix, feedback est feedback_summary (sinon feedback dict habituel)
-        if exercise.exercise_type in ['drag_and_drop', 'pairs', 'underline_words', 'dictation', 'image_labeling', 'flashcards', 'qcm_multichoix']:
+        # Pour drag_and_drop, pairs, underline_words, dictation, image_labeling, flashcards, qcm_multichoix, fill_in_blanks, feedback est feedback_summary (sinon feedback dict habituel)
+        if exercise.exercise_type in ['drag_and_drop', 'pairs', 'underline_words', 'dictation', 'image_labeling', 'flashcards', 'qcm_multichoix', 'fill_in_blanks']:
             feedback_to_save = feedback_summary
         else:
             feedback_to_save = feedback
@@ -5047,6 +5108,8 @@ def process_payment():
         print(f"[ERROR] Erreur lors du traitement du paiement : {e}")
         flash('Une erreur est survenue lors du traitement du paiement. Veuillez réessayer.', 'error')
         return redirect(url_for('subscription_payment'))
+
+
 
 if __name__ == '__main__':
     with app.app_context():
