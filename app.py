@@ -4824,6 +4824,31 @@ def migrate_school_column():
         db.session.rollback()
         return f"Erreur : {str(e)}"
 
+@app.route('/fix-uploads-directory')
+def fix_uploads_directory():
+    """Route temporaire pour créer le répertoire static/uploads en production Railway"""
+    
+    try:
+        import os
+        from pathlib import Path
+        
+        # Créer le répertoire static/uploads
+        uploads_dir = Path('static/uploads')
+        uploads_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Créer un fichier .gitkeep pour que le répertoire soit conservé
+        gitkeep_file = uploads_dir / '.gitkeep'
+        gitkeep_file.touch()
+        
+        # Vérifier que le répertoire existe
+        if uploads_dir.exists():
+            return f"SUCCES: Repertoire {uploads_dir} cree avec succes en production Railway ! Les images pourront maintenant etre uploadees et affichees."
+        else:
+            return f"ERREUR: Le repertoire {uploads_dir} n'a pas pu etre cree."
+            
+    except Exception as e:
+        return f"ERREUR lors de la creation du repertoire: {str(e)}"
+
 @app.route('/debug-railway')
 def debug_railway():
     """Route de diagnostic pour identifier les problemes Railway"""
