@@ -39,6 +39,234 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.logger.setLevel(logging.DEBUG)
 
+
+# Route de diagnostic pour tous les exercices fill_in_blanks
+@app.route('/debug-all-fill-in-blanks')
+def debug_all_fill_in_blanks():
+    # Route de diagnostic pour analyser tous les exercices fill_in_blanks
+    if not current_user.is_authenticated or not current_user.is_admin:
+        return "Accès non autorisé", 403
+        
+    results = []
+    
+    # En-tête
+    results.append("<h1>DIAGNOSTIC TOUS LES EXERCICES FILL_IN_BLANKS</h1>")
+    
+    # 1. Environnement
+    results.append("<h2>1. ENVIRONNEMENT</h2>")
+    
+    # Vérifier les variables d'environnement
+    env_vars = {
+        'FLASK_ENV': os.environ.get('FLASK_ENV', 'non défini'),
+        'DATABASE_URL': os.environ.get('DATABASE_URL', 'non défini')[:10] + '...' if os.environ.get('DATABASE_URL') else 'non défini',
+        'RAILWAY_ENVIRONMENT': os.environ.get('RAILWAY_ENVIRONMENT', 'non défini'),
+        'PORT': os.environ.get('PORT', 'non défini')
+    }
+    
+    results.append("<h3>Variables d'environnement:</h3>")
+    for key, value in env_vars.items():
+        results.append(f"<p>{key}: {value}</p>")
+    
+    # 2. Liste des exercices
+    results.append("<h2>2. LISTE DES EXERCICES FILL_IN_BLANKS</h2>")
+    
+    try:
+        exercises = Exercise.query.filter_by(exercise_type='fill_in_blanks').all()
+        results.append(f"<p>Nombre d'exercices fill_in_blanks: {len(exercises)}</p>")
+        
+        if exercises:
+            results.append("<table border='1' style='border-collapse: collapse; width: 100%;'>")
+            results.append("<tr><th>ID</th><th>Titre</th><th>Image</th><th>Blancs</th><th>Mots</th><th>Cohérence</th></tr>")
+            
+            for ex in exercises:
+                try:
+                    content = json.loads(ex.content)
+                    
+                    # Compter les blancs
+                    total_blanks = 0
+                    
+                    if 'sentences' in content:
+                        sentences_blanks = sum(s.count('___') for s in content['sentences'])
+                        total_blanks = sentences_blanks
+                    elif 'text' in content:
+                        text_blanks = content['text'].count('___')
+                        total_blanks = text_blanks
+                    
+                    # Compter les mots
+                    words = []
+                    if 'words' in content:
+                        words = content['words']
+                    elif 'available_words' in content:
+                        words = content['available_words']
+                    
+                    # Vérifier la cohérence
+                    coherence = "✓" if total_blanks == len(words) else "✗"
+                    coherence_color = "green" if total_blanks == len(words) else "red"
+                    
+                    # Image
+                    has_image = "✓" if ex.image_path else "✗"
+                    image_color = "green" if ex.image_path else "gray"
+                    
+                    results.append(f"<tr>")
+                    results.append(f"<td>{ex.id}</td>")
+                    results.append(f"<td>{ex.title}</td>")
+                    results.append(f"<td style='color: {image_color};'>{has_image}</td>")
+                    results.append(f"<td>{total_blanks}</td>")
+                    results.append(f"<td>{len(words)}</td>")
+                    results.append(f"<td style='color: {coherence_color};'>{coherence}</td>")
+                    results.append(f"</tr>")
+                except Exception as e:
+                    results.append(f"<tr><td>{ex.id}</td><td>{ex.title}</td><td colspan='4' style='color: red;'>Erreur: {str(e)}</td></tr>")
+            
+            results.append("</table>")
+        else:
+            results.append("<p>Aucun exercice fill_in_blanks trouvé.</p>")
+    except Exception as e:
+        results.append(f"<p style='color: red;'>Erreur lors de la récupération des exercices: {str(e)}</p>")
+    
+    # 3. Liste des exercices word_placement
+    results.append("<h2>3. LISTE DES EXERCICES WORD_PLACEMENT</h2>")
+    
+    try:
+        exercises = Exercise.query.filter_by(exercise_type='word_placement').all()
+        results.append(f"<p>Nombre d'exercices word_placement: {len(exercises)}</p>")
+        
+        if exercises:
+            results.append("<table border='1' style='border-collapse: collapse; width: 100%;'>")
+            results.append("<tr><th>ID</th><th>Titre</th><th>Image</th><th>Blancs</th><th>Mots</th><th>Cohérence</th></tr>")
+            
+            for ex in exercises:
+                try:
+                    content = json.loads(ex.content)
+                    
+                    # Compter les blancs
+                    total_blanks = 0
+                    
+                    if 'sentences' in content:
+                        sentences_blanks = sum(s.count('___') for s in content['sentences'])
+                        total_blanks = sentences_blanks
+                    elif 'text' in content:
+                        text_blanks = content['text'].count('___')
+                        total_blanks = text_blanks
+                    
+                    # Compter les mots
+                    words = []
+                    if 'words' in content:
+                        words = content['words']
+                    elif 'available_words' in content:
+                        words = content['available_words']
+                    
+                    # Vérifier la cohérence
+                    coherence = "✓" if total_blanks == len(words) else "✗"
+                    coherence_color = "green" if total_blanks == len(words) else "red"
+                    
+                    # Image
+                    has_image = "✓" if ex.image_path else "✗"
+                    image_color = "green" if ex.image_path else "gray"
+                    
+                    results.append(f"<tr>")
+                    results.append(f"<td>{ex.id}</td>")
+                    results.append(f"<td>{ex.title}</td>")
+                    results.append(f"<td style='color: {image_color};'>{has_image}</td>")
+                    results.append(f"<td>{total_blanks}</td>")
+                    results.append(f"<td>{len(words)}</td>")
+                    results.append(f"<td style='color: {coherence_color};'>{coherence}</td>")
+                    results.append(f"</tr>")
+                except Exception as e:
+                    results.append(f"<tr><td>{ex.id}</td><td>{ex.title}</td><td colspan='4' style='color: red;'>Erreur: {str(e)}</td></tr>")
+            
+            results.append("</table>")
+        else:
+            results.append("<p>Aucun exercice word_placement trouvé.</p>")
+    except Exception as e:
+        results.append(f"<p style='color: red;'>Erreur lors de la récupération des exercices: {str(e)}</p>")
+    
+    # 4. Test de la logique de scoring
+    results.append("<h2>4. TEST DE LA LOGIQUE DE SCORING</h2>")
+    
+    # Test avec sentences
+    results.append("<h3>Test avec sentences</h3>")
+    test_content_sentences = {
+        "sentences": ["Le ___ mange une ___ rouge."],
+        "words": ["chat", "pomme"]
+    }
+    
+    # Simuler des réponses utilisateur parfaites
+    user_answers_sentences = {
+        'answer_0': 'chat',
+        'answer_1': 'pomme'
+    }
+    
+    # Calculer le score
+    try:
+        total_blanks = sum(s.count('___') for s in test_content_sentences['sentences'])
+        correct_blanks = 0
+        
+        for i in range(total_blanks):
+            answer_key = f'answer_{i}'
+            user_answer = user_answers_sentences.get(answer_key, '')
+            correct_answer = test_content_sentences['words'][i] if i < len(test_content_sentences['words']) else ''
+            
+            if user_answer.lower() == correct_answer.lower():
+                correct_blanks += 1
+        
+        score = round((correct_blanks / total_blanks) * 100) if total_blanks > 0 else 0
+        
+        results.append(f"<p>Score avec sentences: {correct_blanks}/{total_blanks} = {score}%</p>")
+        if score == 100:
+            results.append("<p style='color: green;'>✓ Test sentences réussi!</p>")
+        else:
+            results.append("<p style='color: red;'>✗ Test sentences échoué!</p>")
+    except Exception as e:
+        results.append(f"<p style='color: red;'>Erreur test sentences: {str(e)}</p>")
+    
+    # Test avec text
+    results.append("<h3>Test avec text</h3>")
+    test_content_text = {
+        "text": "Le ___ mange une ___ rouge.",
+        "words": ["chat", "pomme"]
+    }
+    
+    # Simuler des réponses utilisateur parfaites
+    user_answers_text = {
+        'answer_0': 'chat',
+        'answer_1': 'pomme'
+    }
+    
+    # Calculer le score
+    try:
+        total_blanks = test_content_text['text'].count('___')
+        correct_blanks = 0
+        
+        for i in range(total_blanks):
+            answer_key = f'answer_{i}'
+            user_answer = user_answers_text.get(answer_key, '')
+            correct_answer = test_content_text['words'][i] if i < len(test_content_text['words']) else ''
+            
+            if user_answer.lower() == correct_answer.lower():
+                correct_blanks += 1
+        
+        score = round((correct_blanks / total_blanks) * 100) if total_blanks > 0 else 0
+        
+        results.append(f"<p>Score avec text: {correct_blanks}/{total_blanks} = {score}%</p>")
+        if score == 100:
+            results.append("<p style='color: green;'>✓ Test text réussi!</p>")
+        else:
+            results.append("<p style='color: red;'>✗ Test text échoué!</p>")
+    except Exception as e:
+        results.append(f"<p style='color: red;'>Erreur test text: {str(e)}</p>")
+    
+    # 5. Conclusion
+    results.append("<h2>5. CONCLUSION</h2>")
+    results.append("<p>Si tous les tests ci-dessus sont réussis (affichés en vert), la logique de scoring est correcte.</p>")
+    results.append("<p>Vérifiez particulièrement:</p>")
+    results.append("<ul>")
+    results.append("<li>Que le nombre de blancs correspond au nombre de mots pour chaque exercice</li>")
+    results.append("<li>Que les tests de scoring donnent bien 100%</li>")
+    results.append("<li>Que les exercices problématiques sont identifiés (marqués en rouge)</li>")
+    results.append("</ul>")
+    
+    return "<br>".join(results)
 # Configuration selon l'environnement
 config_name = os.environ.get('FLASK_ENV', 'development')
 if config_name == 'production':
@@ -2237,10 +2465,16 @@ def submit_answer(exercise_id, course_id=0):
 
         sentences = content['sentences']
         correct_answers = content['answers']
-        total_blanks = len(correct_answers)
+        
+        # CORRECTION: Compter le nombre réel de blancs dans les phrases
+        total_blanks_in_sentences = sum(s.count('___') for s in sentences)
+        total_blanks = max(total_blanks_in_sentences, len(correct_answers))
+        
         correct_count = 0
         
-        print(f"[WORD_PLACEMENT_DEBUG] Total blanks: {total_blanks}")
+        print(f"[WORD_PLACEMENT_DEBUG] Total blanks in sentences: {total_blanks_in_sentences}")
+        print(f"[WORD_PLACEMENT_DEBUG] Total answers: {len(correct_answers)}")
+        print(f"[WORD_PLACEMENT_DEBUG] Using total_blanks = {total_blanks}")
         print(f"[WORD_PLACEMENT_DEBUG] Expected answers: {correct_answers}")
 
         # Vérifier chaque réponse
@@ -2269,7 +2503,7 @@ def submit_answer(exercise_id, course_id=0):
                 })
 
         score = (correct_count / total_blanks) * 100 if total_blanks > 0 else 0
-        print(f"[WORD_PLACEMENT_DEBUG] Score final: {score}% ({correct_count}/{total_blanks})")
+        print(f"[WORD_PLACEMENT_DEBUG] Score final: {score}% ({correct_count}/{total_blanks} = {correct_count/total_blanks if total_blanks > 0 else 0})")
 
     else:
         print(f"[ERROR] Type d'exercice non pris en charge: {exercise.exercise_type}")
