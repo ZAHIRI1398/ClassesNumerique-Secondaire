@@ -26,3 +26,21 @@
 2025-08-14 02:10:57,920 - werkzeug - INFO -  * Debugger PIN: 773-832-873
 2025-08-14 02:19:34,618 - werkzeug - INFO -  * Detected change in 'C:\\Users\\JeMat\\OneDrive\\classenumerique20250801\\app.py', reloading
 2025-08-14 02:19:37,850 - werkzeug - INFO -  * Restarting with stat
+2025-08-14 02:19:52,437 - app - INFO - Tables de base de donnees creees avec succes
+2025-08-14 02:19:52,437 - app - ERROR - Erreur lors de l'initialisation de la base: Working outside of application context.
+
+This typically means that you attempted to use functionality that needed
+the current application. To solve this, set up an application context
+with app.app_context(). See the documentation for more information.
+2025-08-14 02:19:52,722 - werkzeug - WARNING -  * Debugger is active!
+2025-08-14 02:19:52,786 - werkzeug - INFO -  * Debugger PIN: 773-832-873
+2025-08-14 02:26:11,856 - werkzeug - INFO -  * Detected change in 'C:\\Users\\JeMat\\OneDrive\\classenumerique20250801\\app.py', reloading
+2025-08-14 02:26:12,321 - werkzeug - INFO -  * Restarting with stat
+2025-08-14 02:26:16,544 - app - INFO - Tables de base de donnees creees avec succes
+2025-08-14 02:26:16,544 - app - ERROR - Erreur lors de l'initialisation de la base: Working outside of application context.
+
+This typically means that you attempted to use functionality that needed
+the current application. To solve this, set up an application context
+with app.app_context(). See the documentation for more information.
+2025-08-14 02:26:16,600 - werkzeug - WARNING -  * Debugger is active!
+2025-08-14 02:26:16,603 - werkzeug - INFO -  * Debugger PIN: 773-832-873

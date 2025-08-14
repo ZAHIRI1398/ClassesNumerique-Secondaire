@@ -4704,6 +4704,11 @@ def admin_dashboard():
         'approved_users': approved_users,
         'rejected_users': rejected_users
     }
+    
+    return render_template('admin/dashboard.html', 
+                         stats=stats, 
+                         users_awaiting_approval=users_awaiting_approval,
+                         recent_registrations=recent_registrations)
 
 @app.route('/migrate-school-column')
 def migrate_school_column():
