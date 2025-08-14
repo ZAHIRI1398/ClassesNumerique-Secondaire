@@ -5843,3 +5843,52 @@ if __name__ == '__main__':
         db.create_all()
         
     app.run(debug=True)
+
+
+
+@app.route('/debug-form-data', methods=['GET', 'POST'])
+@login_required
+def debug_form_data():
+    # Route de débogage pour analyser les données POST des formulaires
+    if not current_user.is_admin:
+        flash('Accès non autorisé.', 'danger')
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        app.logger.info(f"[DEBUG_FORM_DATA] Données POST reçues: {dict(request.form)}")
+        
+        # Analyser les données du formulaire
+        form_data = dict(request.form)
+        
+        # Extraire les champs answer_X
+        answer_fields = {k: v for k, v in form_data.items() if k.startswith('answer_')}
+        
+        # Analyser les indices des champs answer_X
+        answer_indices = []
+        for key in answer_fields.keys():
+            try:
+                index = int(key.split('_')[1])
+                answer_indices.append(index)
+            except (ValueError, IndexError):
+                pass
+        
+        # Trier les indices
+        answer_indices.sort()
+        
+        # Créer un rapport détaillé
+        report = {
+            'total_fields': len(form_data),
+            'answer_fields': len(answer_fields),
+            'answer_indices': answer_indices,
+            'answer_values': {f"answer_{i}": form_data.get(f"answer_{i}", "") for i in answer_indices},
+            'all_form_data': form_data
+        }
+        
+        return jsonify({
+            'success': True,
+            'message': 'Données du formulaire analysées avec succès',
+            'report': report
+        })
+    
+    # Afficher un formulaire de test pour les requêtes GET
+    return render_template('debug/form_data.html')
