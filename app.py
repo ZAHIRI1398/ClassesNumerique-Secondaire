@@ -95,11 +95,13 @@ from extensions import init_extensions
 init_extensions(app)
 
 # Initialisation automatique de la base de données
-with app.app_context():
+def init_database():
+    """Initialise la base de données de manière sécurisée"""
     try:
-        # Créer toutes les tables si elles n'existent pas
-        db.create_all()
-        app.logger.info("Tables de base de donnees creees avec succes")
+        with app.app_context():
+            # Créer toutes les tables si elles n'existent pas
+            db.create_all()
+            app.logger.info("Tables de base de donnees creees avec succes")
         
         # Créer le compte administrateur par défaut si nécessaire
         admin_email = os.environ.get('ADMIN_EMAIL', 'admin@classesnumeriques.com')
@@ -123,21 +125,25 @@ with app.app_context():
         else:
             app.logger.info(f"Compte administrateur existant: {admin_email}")
         
-        # Approuver automatiquement mr.zahiri@gmail.com et lui donner les droits admin
-        zahiri_user = User.query.filter_by(email='mr.zahiri@gmail.com').first()
-        if zahiri_user:
-            zahiri_user.subscription_status = 'approved'
-            zahiri_user.role = 'admin'  # Donner les droits admin
-            zahiri_user.subscription_type = 'admin'
-            zahiri_user.approved_by = 'system'
-            db.session.commit()
-            app.logger.info("mr.zahiri@gmail.com approuve et promu administrateur")
-        else:
-            app.logger.info("Compte mr.zahiri@gmail.com non trouve - sera approuve a la creation")
-            
+            # Approuver automatiquement mr.zahiri@gmail.com et lui donner les droits admin
+            zahiri_user = User.query.filter_by(email='mr.zahiri@gmail.com').first()
+            if zahiri_user:
+                zahiri_user.subscription_status = 'approved'
+                zahiri_user.role = 'admin'  # Donner les droits admin
+                zahiri_user.subscription_type = 'admin'
+                zahiri_user.approved_by = 'system'
+                db.session.commit()
+                app.logger.info("mr.zahiri@gmail.com approuve et promu administrateur")
+            else:
+                app.logger.info("Compte mr.zahiri@gmail.com non trouve - sera approuve a la creation")
+                
     except Exception as e:
         app.logger.error(f"Erreur lors de l'initialisation de la base: {e}")
         # Ne pas faire planter l'app, continuer quand même
+
+# Initialiser la base de données seulement si on n'est pas en mode import
+if __name__ == '__main__' or os.environ.get('FLASK_ENV') == 'production':
+    init_database()
 
 # Enregistrement des blueprints (déjà fait ligne 48)
 
