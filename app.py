@@ -2179,62 +2179,94 @@ def submit_answer(exercise_id, course_id=0):
                 'first': first,
                 'student_answer': student_answer,
                 'correct_answer': correct_second,
+                'is_correct': is_correct
+            })
+
         score = (correct_pairs / total_pairs) * 100 if total_pairs > 0 else 0
 
     elif exercise.exercise_type == 'fill_in_blanks':
         content = exercise.get_content()
-        print("[FILL_IN_BLANKS_DEBUG] Contenu de l'exercice:", content)
+        print("[DEBUG] Contenu de l'exercice:", content)
 
-        # Support pour les deux formats : 'words'/'available_words' (nouveau) et structure ancienne
-        correct_answers = []
-        
-        if 'words' in content and isinstance(content['words'], list):
-            correct_answers = content['words']
-            print(f"[FILL_IN_BLANKS_DEBUG] Format 'words' détecté: {correct_answers}")
-        elif 'available_words' in content and isinstance(content['available_words'], list):
-            correct_answers = content['available_words']
-            print(f"[FILL_IN_BLANKS_DEBUG] Format 'available_words' détecté: {correct_answers}")
-        else:
-            print("[FILL_IN_BLANKS_DEBUG] Structure invalide - aucune liste de réponses correctes trouvée!")
-            flash('Structure de l\'exercice invalide : réponses correctes manquantes.', 'error')
+        # Vérification de la structure attendue
+        if not isinstance(content, dict) or 'sentences' not in content or not isinstance(content['sentences'], list):
+            app.logger.error(f"[ERREUR STRUCTURE] L'exercice {exercise.id} n'a pas de clé 'sentences' valide dans son contenu: {content}")
+            flash("Erreur de configuration de l'exercice : structure des phrases manquante ou invalide.", 'error')
             return redirect(url_for('view_exercise', exercise_id=exercise_id, course_id=course_id))
 
-        # Récupérer toutes les réponses de l'utilisateur dans l'ordre séquentiel
-        user_answers = []
-        i = 0
-        while True:
-            answer = request.form.get(f'answer_{i}')
-            if answer is None:
-                break
-            user_answers.append(answer.strip())
-            i += 1
+        total_questions = len(content['sentences'])
+        correct_answers = 0
+
+        for i in range(total_questions):
+            student_answer = request.form.get(f'answer_{i}')
+            correct_answer = content['sentences'][i]['answer']
+            print(f"[DEBUG] Question {i + 1}:")
+            print(f"[DEBUG] - Réponse de l'étudiant : {student_answer}")
+            print(f"[DEBUG] - Réponse correcte : {correct_answer}")
+
+            if student_answer and student_answer.strip().lower() == correct_answer.strip().lower():
+                correct_answers += 1
+                feedback.append({
+                    'question': content['sentences'][i]['text'],
+                    'student_answer': student_answer,
+                    'correct_answer': correct_answer,
+                    'is_correct': True
+                })
+            else:
+                feedback.append({
+                    'question': content['sentences'][i]['text'],
+                    'student_answer': student_answer or '',
+                    'correct_answer': correct_answer,
+                    'is_correct': False
+                })
+
+        score = (correct_answers / total_questions) * 100 if total_questions > 0 else 0
+
+    elif exercise.exercise_type == 'word_placement':
+        print("\n=== DÉBUT SCORING WORD_PLACEMENT ===")
+        content = exercise.get_content()
+        print(f"[WORD_PLACEMENT_DEBUG] Content: {content}")
         
-        print(f"[FILL_IN_BLANKS_DEBUG] Réponses utilisateur: {user_answers}")
-        print(f"[FILL_IN_BLANKS_DEBUG] Réponses correctes: {correct_answers}")
+        if not isinstance(content, dict) or 'sentences' not in content or 'answers' not in content:
+            print("[WORD_PLACEMENT_DEBUG] Structure invalide!")
+            flash('Structure de l\'exercice invalide.', 'error')
+            return redirect(url_for('view_exercise', exercise_id=exercise_id))
+
+        sentences = content['sentences']
+        correct_answers = content['answers']
+        total_blanks = len(correct_answers)
+        correct_count = 0
         
-        if len(user_answers) != len(correct_answers):
-            print(f"[FILL_IN_BLANKS_DEBUG] Nombre de réponses incorrect: {len(user_answers)} vs {len(correct_answers)}")
-            flash('Nombre de réponses incorrect.', 'error')
-            return redirect(url_for('view_exercise', exercise_id=exercise_id, course_id=course_id))
-        
-        score = 0
-        feedback = []
-        for i, (user_ans, correct_ans) in enumerate(zip(user_answers, correct_answers)):
-            # Comparaison insensible à la casse et aux espaces
-            is_correct = user_ans.strip().lower() == correct_ans.strip().lower()
-            score += 1 if is_correct else 0
-            feedback.append({
-                'user_answer': user_ans,
-                'correct_answer': correct_ans,
-                'is_correct': is_correct,
-                'position': i + 1
-            })
-            print(f"[FILL_IN_BLANKS_DEBUG] Blanc {i+1}: '{user_ans}' vs '{correct_ans}' = {'✅' if is_correct else '❌'}")
-        
-        max_score = len(correct_answers)
-        score = (score / max_score) * 100 if max_score > 0 else 0
-        
-        print(f"[FILL_IN_BLANKS_DEBUG] Score final: {score}% ({score}/{max_score})")
+        print(f"[WORD_PLACEMENT_DEBUG] Total blanks: {total_blanks}")
+        print(f"[WORD_PLACEMENT_DEBUG] Expected answers: {correct_answers}")
+
+        # Vérifier chaque réponse
+        for i in range(total_blanks):
+            student_answer = request.form.get(f'answer_{i}')
+            expected_answer = correct_answers[i] if i < len(correct_answers) else ''
+            
+            print(f"[WORD_PLACEMENT_DEBUG] Blank {i}:")
+            print(f"  - Réponse étudiant (answer_{i}): {student_answer}")
+            print(f"  - Réponse attendue: {expected_answer}")
+            
+            if student_answer and student_answer.strip().lower() == expected_answer.strip().lower():
+                correct_count += 1
+                feedback.append({
+                    'blank_index': i,
+                    'student_answer': student_answer,
+                    'correct_answer': expected_answer,
+                    'is_correct': True
+                })
+            else:
+                feedback.append({
+                    'blank_index': i,
+                    'student_answer': student_answer or '',
+                    'correct_answer': expected_answer,
+                    'is_correct': False
+                })
+
+        score = (correct_count / total_blanks) * 100 if total_blanks > 0 else 0
+        print(f"[WORD_PLACEMENT_DEBUG] Score final: {score}% ({correct_count}/{total_blanks})")
 
     else:
         print(f"[ERROR] Type d'exercice non pris en charge: {exercise.exercise_type}")
