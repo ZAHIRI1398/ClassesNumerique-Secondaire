@@ -1993,34 +1993,10 @@ def submit_exercise(exercise_id):
         app.logger.debug(f'Score final: {score}%')
     
     elif exercise.exercise_type == 'fill_in_blanks':
-        user_answers = []
-        correct_answers = content.get('answers', [])
-        i = 0
-        while True:
-            answer = request.form.get(f'answer_{i}')
-            if answer is None:
-                break
-            user_answers.append(answer.strip())
-            i += 1
-        
-        if len(user_answers) != len(correct_answers):
-            flash('Nombre de réponses incorrect.', 'error')
-            return redirect(url_for('view_exercise', exercise_id=exercise_id))
-        
-        score = 0
-        feedback = []
-        for i, (user_ans, correct_ans) in enumerate(zip(user_answers, correct_answers)):
-            is_correct = user_ans.strip().lower() == correct_ans.strip().lower()
-            score += 1 if is_correct else 0
-            feedback.append({
-                'user_answer': user_ans,
-                'correct_answer': correct_ans,
-                'is_correct': is_correct
-            })
-        
-        max_score = len(correct_answers)
-        score = (score / max_score) * 100 if max_score > 0 else 0
-    
+        # Cette implémentation a été désactivée car elle est en conflit avec l'implémentation plus complète
+        # Voir lignes ~3415-3510 pour l'implémentation active.
+        pass
+
     elif exercise.exercise_type == 'word_placement':
         user_answers = []
         correct_answers = content.get('answers', [])
@@ -3484,12 +3460,134 @@ def handle_exercise_answer(exercise_id):
                     correct_blanks += 1
                 
                 # Créer le feedback pour ce blanc
+                # Déterminer l'index de la phrase à laquelle appartient ce blanc
+                sentence_index = -1
+                if 'sentences' in content:
+                    blank_count = 0
+                    for idx, sentence in enumerate(content['sentences']):
+                        blanks_in_sentence = sentence.count('___')
+                        if blank_count <= i < blank_count + blanks_in_sentence:
+                            sentence_index = idx
+                            break
+                        blank_count += blanks_in_sentence
+                
                 feedback_details.append({
                     'blank_index': i,
                     'user_answer': user_answer or '',
                     'correct_answer': correct_answer,
                     'is_correct': is_correct,
-                    'status': 'Correct' if is_correct else f'Attendu: {correct_answer}, Réponse: {user_answer or "Vide"}'
+                    'status': 'Correct' if is_correct else f'Attendu: {correct_answer}, Réponse: {user_answer or "Vide"}',
+                    'sentence_index': sentence_index,
+                    'sentence': content['sentences'][sentence_index] if sentence_index >= 0 and 'sentences' in content else ''
+                })
+                
+                # Sauvegarder les réponses utilisateur
+                user_answers_data[f'answer_{i}'] = user_answer
+            
+            # Calculer le score final basé sur le nombre réel de blancs - Exactement comme word_placement
+            score = (correct_blanks / total_blanks) * 100 if total_blanks > 0 else 0
+            
+            app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Score final: {score}% ({correct_blanks}/{total_blanks})")
+            
+            feedback_summary = {
+                'score': score,
+                'correct_blanks': correct_blanks,
+                'total_blanks': total_blanks,
+                'details': feedback_details
+            }
+            
+            # Pour fill_in_blanks, on utilise le score calculé
+            answers = user_answers_data
+        
+                # Logique de scoring pour fill_in_blanks
+        elif exercise.exercise_type == 'fill_in_blanks':
+            app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Traitement de l'exercice fill_in_blanks ID {exercise_id}")
+            content = exercise.get_content()
+            app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Contenu de l'exercice: {content}")
+            
+            total_blanks_in_content = 0
+            
+            # Analyser le format de l'exercice et compter les blancs réels
+            # CORRECTION: Éviter le double comptage entre 'text' et 'sentences'
+            # Priorité à 'sentences' s'il existe, sinon utiliser 'text'
+            if 'sentences' in content:
+                sentences_blanks = sum(s.count('___') for s in content['sentences'])
+                total_blanks_in_content = sentences_blanks
+                app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Format 'sentences' détecté: {sentences_blanks} blancs dans sentences")
+                # Log détaillé pour chaque phrase et ses blancs
+                for i, sentence in enumerate(content['sentences']):
+                    blanks_in_sentence = sentence.count('___')
+                    app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Phrase {i}: '{sentence}' contient {blanks_in_sentence} blancs")
+            elif 'text' in content:
+                text_blanks = content['text'].count('___')
+                total_blanks_in_content = text_blanks
+                app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Format 'text' détecté: {text_blanks} blancs dans text")
+            
+            app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Total blancs trouvés dans le contenu: {total_blanks_in_content}")
+            # Log détaillé pour chaque phrase et ses blancs
+            if 'sentences' in content:
+                for i, sentence in enumerate(content['sentences']):
+                    blanks_in_sentence = sentence.count('___')
+                    app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Phrase {i}: '{sentence}' contient {blanks_in_sentence} blancs")
+            
+            # Récupérer les réponses correctes (peut être 'words' ou 'available_words')
+            correct_answers = content.get('words', [])
+            if not correct_answers:
+                correct_answers = content.get('available_words', [])
+            
+            if not correct_answers:
+                app.logger.error(f"[FILL_IN_BLANKS_DEBUG] No correct answers found in exercise content")
+                flash('Erreur: aucune réponse correcte trouvée dans l\'exercice.', 'error')
+                return redirect(url_for('view_exercise', exercise_id=exercise_id))
+            
+            app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Found {len(correct_answers)} correct answers: {correct_answers}")
+            
+            # Utiliser le nombre réel de blancs trouvés dans le contenu
+            total_blanks = max(total_blanks_in_content, len(correct_answers))
+            app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Using total_blanks = {total_blanks}")
+            
+            correct_blanks = 0
+            feedback_details = []
+            user_answers_data = {}
+            
+            # Vérifier chaque blanc individuellement - Même logique que word_placement
+            app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Traitement de {total_blanks} blancs au total")
+            for i in range(total_blanks):
+                # Récupérer la réponse de l'utilisateur pour ce blanc
+                user_answer = request.form.get(f'answer_{i}', '').strip()
+                
+                # Récupérer la réponse correcte correspondante
+                correct_answer = correct_answers[i] if i < len(correct_answers) else ''
+                
+                app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Blank {i}:")
+                app.logger.info(f"  - Réponse étudiant (answer_{i}): {user_answer}")
+                app.logger.info(f"  - Réponse attendue: {correct_answer}")
+                
+                # Vérifier si la réponse est correcte (insensible à la casse)
+                is_correct = user_answer and user_answer.strip().lower() == correct_answer.strip().lower()
+                if is_correct:
+                    correct_blanks += 1
+                
+                # Créer le feedback pour ce blanc
+                # Déterminer l'index de la phrase à laquelle appartient ce blanc
+                sentence_index = -1
+                if 'sentences' in content:
+                    blank_count = 0
+                    for idx, sentence in enumerate(content['sentences']):
+                        blanks_in_sentence = sentence.count('___')
+                        if blank_count <= i < blank_count + blanks_in_sentence:
+                            sentence_index = idx
+                            break
+                        blank_count += blanks_in_sentence
+                
+                feedback_details.append({
+                    'blank_index': i,
+                    'user_answer': user_answer or '',
+                    'correct_answer': correct_answer,
+                    'is_correct': is_correct,
+                    'status': 'Correct' if is_correct else f'Attendu: {correct_answer}, Réponse: {user_answer or "Vide"}',
+                    'sentence_index': sentence_index,
+                    'sentence': content['sentences'][sentence_index] if sentence_index >= 0 and 'sentences' in content else ''
                 })
                 
                 # Sauvegarder les réponses utilisateur
@@ -3537,7 +3635,7 @@ def handle_exercise_answer(exercise_id):
             flash(f'Vous avez obtenu {score:.1f}%. Continuez vos efforts !', 'warning')
         
         # Rediriger vers l'exercice avec le feedback
-        return redirect(url_for('view_exercise', exercise_id=exercise_id, course_id=course_id))
+        return render_template('feedback.html', exercise=exercise, attempt=attempt, answers=answers, feedback=feedback_to_save)
     
     except Exception as e:
         app.logger.error(f"Erreur lors de la soumission: {e}")
@@ -3700,27 +3798,10 @@ def edit_exercise(exercise_id):
         elif exercise.exercise_type == 'qcm_multichoix':
             return render_template('exercise_types/qcm_multichoix_edit.html', exercise=exercise, content=content)
         elif exercise.exercise_type == 'fill_in_blanks':
-            return render_template('exercise_types/fill_in_blanks_edit.html', exercise=exercise, content=content)
-        elif exercise.exercise_type == 'word_placement':
-            return render_template('exercise_types/word_placement_edit.html', exercise=exercise, content=content)
-        elif exercise.exercise_type == 'underline_words':
-            return render_template('exercise_types/underline_words_edit.html', exercise=exercise, content=content)
-        elif exercise.exercise_type == 'drag_and_drop':
-            return render_template('exercise_types/drag_and_drop_edit.html', exercise=exercise, content=content)
-        elif exercise.exercise_type == 'pairs':
-            return render_template('exercise_types/pairs_edit.html', exercise=exercise, content=content)
-        elif exercise.exercise_type == 'word_search':
-            return render_template('exercise_types/word_search_edit.html', exercise=exercise, content=content)
-        elif exercise.exercise_type == 'dictation':
-            return render_template('exercise_types/dictation_edit.html', exercise=exercise, content=content)
-        elif exercise.exercise_type == 'image_labeling':
-            return render_template('exercise_types/image_labeling_edit.html', exercise=exercise, content=content)
-        elif exercise.exercise_type == 'flashcards':
-            return render_template('exercise_types/flashcards_edit.html', exercise=exercise, content=content)
-        else:
-            # Template générique pour les autres types
-            return render_template('edit_exercise.html', exercise=exercise, content=content)
-    
+            # Cette implémentation a été désactivée car elle est en conflit avec l'implémentation plus complète
+            # Voir lignes ~3415-3510 pour l'implémentation active.
+            pass
+
     elif request.method == 'POST':
         try:
             # Mettre à jour les champs de base

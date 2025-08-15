@@ -94,19 +94,73 @@
                         </div>
                     </div>
                 {% elif exercise.exercise_type == 'fill_in_blanks' %}
-                    {% for item in feedback %}
-                    <div class="card mb-3">
-                        <div class="card-body">
-                            <h5 class="card-title">Phrase {{ loop.index }}</h5>
-                            <p class="mb-2"><strong>Phrase avec trous :</strong> {{ item.sentence }}</p>
-                            <p class="mb-2"><strong>Votre réponse :</strong> {{ item.student_answer }}</p>
-                            <div class="alert {{ 'alert-success' if item.is_correct else 'alert-danger' }}">
-                                <strong>{{ 'Correct' if item.is_correct else 'Incorrect' }}</strong>
+                    {% if feedback.details is defined %}
+                        {# Nouveau format de feedback avec détails #}
+                        {% set sentences = {} %}
+                        {% for item in feedback.details %}
+                            {% if item.sentence_index is defined %}
+                                {% if sentences[item.sentence_index] is not defined %}
+                                    {% set _ = sentences.__setitem__(item.sentence_index, {
+                                        'sentence': item.sentence if item.sentence is defined else '',
+                                        'blanks': []
+                                    }) %}
+                                {% endif %}
+                                {% set _ = sentences[item.sentence_index].blanks.append({
+                                    'blank_index': item.blank_index,
+                                    'user_answer': item.user_answer,
+                                    'correct_answer': item.correct_answer,
+                                    'is_correct': item.is_correct
+                                }) %}
+                            {% else %}
+                                {# Format de détails simple #}
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Réponse {{ loop.index }}</h5>
+                                        <p class="mb-2"><strong>Votre réponse:</strong> {{ item.user_answer }}</p>
+                                        <p class="mb-2"><strong>Réponse correcte:</strong> {{ item.correct_answer }}</p>
+                                        <div class="alert {{ 'alert-success' if item.is_correct else 'alert-danger' }}">
+                                            <strong>{{ 'Correct' if item.is_correct else 'Incorrect' }}</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {# Afficher les phrases regroupées #}
+                        {% for sentence_index, sentence_data in sentences.items() %}
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h5 class="card-title">Phrase {{ sentence_index + 1 }}</h5>
+                                    <p class="mb-2"><strong>Phrase avec trous:</strong> {{ sentence_data.sentence }}</p>
+                                    
+                                    {% for blank in sentence_data.blanks %}
+                                        <div class="mb-3">
+                                            <p class="mb-1"><strong>Blanc {{ blank.blank_index + 1 }}:</strong></p>
+                                            <p class="mb-1"><strong>Votre réponse:</strong> {{ blank.user_answer }}</p>
+                                            <p class="mb-1"><strong>Réponse correcte:</strong> {{ blank.correct_answer }}</p>
+                                            <div class="alert {{ 'alert-success' if blank.is_correct else 'alert-danger' }} mt-2 mb-2">
+                                                <strong>{{ 'Correct' if blank.is_correct else 'Incorrect' }}</strong>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        {# Ancien format de feedback #}
+                        {% for item in feedback %}
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">Phrase {{ loop.index }}</h5>
+                                <p class="mb-2"><strong>Phrase avec trous:</strong> {{ item.sentence }}</p>
+                                <p class="mb-2"><strong>Votre réponse:</strong> {{ item.student_answer }}</p>
+                                <div class="alert {{ 'alert-success' if item.is_correct else 'alert-danger' }}">
+                                    <strong>{{ 'Correct' if item.is_correct else 'Incorrect' }}</strong>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    {% endfor %}
-
+                        {% endfor %}
+                    {% endif %}
                 {% elif exercise.exercise_type == 'underline_words' %}
                     {% for item in feedback %}
                     <div class="card mb-3">
