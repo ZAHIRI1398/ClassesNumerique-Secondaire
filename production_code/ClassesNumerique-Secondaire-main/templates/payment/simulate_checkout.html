@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Simulation de Paiement - Classe Numérique{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0">🧪 Mode Simulation - Paiement Test</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Mode Test :</strong> Ceci est une simulation de paiement pour tester le workflow. 
+                        Aucun vrai paiement ne sera effectué.
+                    </div>
+
+                    <h5>Récapitulatif de votre commande</h5>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <strong>Type d'abonnement :</strong>
+                            {% if subscription_type == 'teacher' %}
+                                <span class="badge bg-primary">Enseignant</span>
+                            {% else %}
+                                <span class="badge bg-success">École</span>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Montant :</strong>
+                            <span class="h5 text-success">{{ price_euros }}€</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6>Session ID de test :</h6>
+                        <code>{{ session_id }}</code>
+                    </div>
+
+                    <hr>
+
+                    <h5>Simulation du processus de paiement</h5>
+                    <p class="text-muted">Choisissez le résultat que vous souhaitez simuler :</p>
+
+                    <form method="POST" action="{{ url_for('payment.simulate_payment') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <input type="hidden" name="session_id" value="{{ session_id }}">
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <button type="submit" name="action" value="success" class="btn btn-success btn-lg w-100">
+                                    <i class="fas fa-check-circle"></i>
+                                    Simuler Paiement Réussi
+                                </button>
+                                <small class="text-muted d-block mt-2">
+                                    Simule un paiement réussi et redirige vers la page de succès
+                                </small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <button type="submit" name="action" value="cancel" class="btn btn-secondary btn-lg w-100">
+                                    <i class="fas fa-times-circle"></i>
+                                    Simuler Annulation
+                                </button>
+                                <small class="text-muted d-block mt-2">
+                                    Simule une annulation de paiement
+                                </small>
+                            </div>
+                        </div>
+                    </form>
+
+                    <div class="mt-4">
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Note :</strong> En mode production, cette page serait remplacée par l'interface de paiement Stripe réelle.
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <a href="{{ url_for('subscription_choice') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-arrow-left"></i>
+                            Retour aux abonnements
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
