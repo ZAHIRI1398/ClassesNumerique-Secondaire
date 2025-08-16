@@ -7,6 +7,18 @@ import unicodedata
 from datetime import datetime, timedelta
 from functools import wraps
 
+def get_blank_location(global_blank_index, sentences):
+    """Détermine à quelle phrase et à quel indice dans cette phrase correspond un indice global de blanc"""
+    blank_count = 0
+    for idx, sentence in enumerate(sentences):
+        blanks_in_sentence = sentence.count('___')
+        if blank_count <= global_blank_index < blank_count + blanks_in_sentence:
+            # Calculer l'indice local du blanc dans cette phrase
+            local_blank_index = global_blank_index - blank_count
+            return idx, local_blank_index
+        blank_count += blanks_in_sentence
+    return -1, -1
+
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, session, current_app, abort
 from flask_login import login_user, login_required, logout_user, current_user
 from werkzeug.utils import secure_filename
@@ -1055,6 +1067,7 @@ def view_exercise(exercise_id, course_id=None):
     #         return redirect(url_for('index'))
     
     attempt = None
+    user_answers = {}
     # Si l'utilisateur est un étudiant
     # TEMPORAIREMENT DÉSACTIVÉ POUR TEST SANS AUTHENTIFICATION
     # if current_user.role == 'student':
@@ -1063,6 +1076,38 @@ def view_exercise(exercise_id, course_id=None):
     #         exercise_id=exercise_id,
     #         student_id=current_user.id
     #     ).order_by(ExerciseAttempt.created_at.desc()).first()
+    
+    # Pour les tests sans authentification, récupérer la dernière tentative
+    attempt = ExerciseAttempt.query.filter_by(
+        exercise_id=exercise_id
+    ).order_by(ExerciseAttempt.created_at.desc()).first()
+    
+    # Si une tentative existe, récupérer les réponses de l'utilisateur
+    # mais seulement si l'exercice a été soumis (pour éviter d'afficher les réponses par défaut)
+    show_answers = False
+    if attempt:
+        print(f'[VIEW_EXERCISE_DEBUG] Found attempt ID: {attempt.id}')
+        # Vérifier si l'exercice a été soumis (présence de feedback)
+        if attempt.feedback and attempt.feedback.strip():
+            show_answers = True
+            try:
+                # Récupérer les réponses de l'utilisateur depuis le feedback
+                feedback = json.loads(attempt.feedback) if attempt.feedback else []
+                for item in feedback:
+                    if 'student_answer' in item and 'blank_index' in item:
+                        user_answers[f'answer_{item["blank_index"]}'] = item['student_answer']
+                    elif 'student_answer' in item:
+                        # Pour les autres formats de feedback
+                        blank_counter = len(user_answers)
+                        user_answers[f'answer_{blank_counter}'] = item['student_answer']
+                print(f'[VIEW_EXERCISE_DEBUG] User answers: {user_answers}')
+            except Exception as e:
+                app.logger.error(f'Error parsing attempt feedback: {str(e)}')
+                print(f'[VIEW_EXERCISE_DEBUG] Error parsing feedback: {str(e)}')
+        else:
+            print(f'[VIEW_EXERCISE_DEBUG] Attempt exists but no feedback, not showing answers')
+            # Réinitialiser user_answers pour éviter d'afficher des réponses par défaut
+            user_answers = {}
     
     # Les enseignants peuvent accéder directement aux exercices
     # TEMPORAIREMENT DÉSACTIVÉ POUR TEST SANS AUTHENTIFICATION
@@ -1371,7 +1416,9 @@ def view_exercise(exercise_id, course_id=None):
                             attempt=attempt,
                             content=content,
                             progress=progress,
-                            course=course)
+                            course=course,
+                            user_answers=user_answers,
+                            show_answers=show_answers)
     except Exception as e:
         app.logger.error(f'Error rendering template: {str(e)}')
         app.logger.exception('Full template error:')
@@ -3462,14 +3509,10 @@ def handle_exercise_answer(exercise_id):
                 # Créer le feedback pour ce blanc
                 # Déterminer l'index de la phrase à laquelle appartient ce blanc
                 sentence_index = -1
+                local_blank_index = -1
                 if 'sentences' in content:
-                    blank_count = 0
-                    for idx, sentence in enumerate(content['sentences']):
-                        blanks_in_sentence = sentence.count('___')
-                        if blank_count <= i < blank_count + blanks_in_sentence:
-                            sentence_index = idx
-                            break
-                        blank_count += blanks_in_sentence
+                    sentence_index, local_blank_index = get_blank_location(i, content['sentences'])
+                    app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Blank {i} est dans la phrase {sentence_index}, position locale {local_blank_index}")
                 
                 feedback_details.append({
                     'blank_index': i,
@@ -3571,14 +3614,10 @@ def handle_exercise_answer(exercise_id):
                 # Créer le feedback pour ce blanc
                 # Déterminer l'index de la phrase à laquelle appartient ce blanc
                 sentence_index = -1
+                local_blank_index = -1
                 if 'sentences' in content:
-                    blank_count = 0
-                    for idx, sentence in enumerate(content['sentences']):
-                        blanks_in_sentence = sentence.count('___')
-                        if blank_count <= i < blank_count + blanks_in_sentence:
-                            sentence_index = idx
-                            break
-                        blank_count += blanks_in_sentence
+                    sentence_index, local_blank_index = get_blank_location(i, content['sentences'])
+                    app.logger.info(f"[FILL_IN_BLANKS_DEBUG] Blank {i} est dans la phrase {sentence_index}, position locale {local_blank_index}")
                 
                 feedback_details.append({
                     'blank_index': i,
@@ -3798,9 +3837,32 @@ def edit_exercise(exercise_id):
         elif exercise.exercise_type == 'qcm_multichoix':
             return render_template('exercise_types/qcm_multichoix_edit.html', exercise=exercise, content=content)
         elif exercise.exercise_type == 'fill_in_blanks':
-            # Cette implémentation a été désactivée car elle est en conflit avec l'implémentation plus complète
-            # Voir lignes ~3415-3510 pour l'implémentation active.
-            pass
+            # Rendre le template spécifique pour l'édition des exercices de type texte à trous
+            return render_template('exercise_types/fill_in_blanks_edit.html', exercise=exercise, content=content)
+        elif exercise.exercise_type == 'drag_and_drop':
+            # Rendre le template spécifique pour l'édition des exercices de type glisser-déposer
+            return render_template('exercise_types/drag_and_drop_edit.html', exercise=exercise, content=content)
+        elif exercise.exercise_type == 'word_search':
+            # Rendre le template spécifique pour l'édition des exercices de type mots mêlés
+            return render_template('exercise_types/word_search_edit.html', exercise=exercise, content=content)
+        elif exercise.exercise_type == 'pairs':
+            # Rendre le template spécifique pour l'édition des exercices de type association de paires
+            return render_template('exercise_types/pairs_edit.html', exercise=exercise, content=content)
+        elif exercise.exercise_type == 'word_placement':
+            # Rendre le template spécifique pour l'édition des exercices de type mots à placer
+            return render_template('exercise_types/word_placement_edit.html', exercise=exercise, content=content)
+        elif exercise.exercise_type == 'underline_words':
+            # Rendre le template spécifique pour l'édition des exercices de type souligner les mots
+            return render_template('exercise_types/underline_words_edit.html', exercise=exercise, content=content)
+        elif exercise.exercise_type == 'dictation':
+            # Rendre le template spécifique pour l'édition des exercices de type dictée
+            return render_template('exercise_types/dictation_edit.html', exercise=exercise, content=content)
+        elif exercise.exercise_type == 'image_labeling':
+            # Rendre le template spécifique pour l'édition des exercices de type étiquetage d'image
+            return render_template('exercise_types/image_labeling_edit.html', exercise=exercise, content=content)
+        elif exercise.exercise_type == 'flashcards':
+            # Rendre le template spécifique pour l'édition des exercices de type cartes mémoire
+            return render_template('exercise_types/flashcards_edit.html', exercise=exercise, content=content)
 
     elif request.method == 'POST':
         try:
