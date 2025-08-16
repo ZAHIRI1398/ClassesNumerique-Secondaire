@@ -48,8 +48,24 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Création de l'application Flask
 app = Flask(__name__)
 app.logger.setLevel(logging.DEBUG)
+
+# Configuration selon l'environnement
+config_name = os.environ.get('FLASK_ENV', 'development')
+if config_name == 'production':
+    from config import ProductionConfig
+    app.config.from_object(ProductionConfig)
+    app.logger.info("Configuration de production chargée")
+else:
+    from config import DevelopmentConfig
+    app.config.from_object(DevelopmentConfig)
+    app.logger.info("Configuration de développement chargée")
+
+# Initialisation des extensions
+from extensions import init_extensions
+init_extensions(app)
 
 
 # Route de diagnostic pour tous les exercices fill_in_blanks
@@ -279,21 +295,9 @@ def debug_all_fill_in_blanks():
     results.append("</ul>")
     
     return "<br>".join(results)
-# Configuration selon l'environnement
-config_name = os.environ.get('FLASK_ENV', 'development')
-if config_name == 'production':
-    from config import ProductionConfig
-    app.config.from_object(ProductionConfig)
-else:
-    app.config['SECRET_KEY'] = 'your-secret-key-here'
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
 # Global request logging removed to restore normal operation
 
-# Initialize CSRF protection
-csrf = CSRFProtect()
-csrf.init_app(app)
+# Initialize CSRF protection (déjà fait dans init_extensions)
 
 # Register blueprints
 app.register_blueprint(exercise_bp, url_prefix='/exercise')
@@ -333,10 +337,6 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'pdf', 'doc', 'docx'}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# Initialisation des extensions
-from extensions import init_extensions
-init_extensions(app)
-
 # Initialisation automatique de la base de données
 def init_database():
     """Initialise la base de données de manière sécurisée"""
@@ -346,40 +346,40 @@ def init_database():
             db.create_all()
             app.logger.info("Tables de base de donnees creees avec succes")
         
-        # Créer le compte administrateur par défaut si nécessaire
-        admin_email = os.environ.get('ADMIN_EMAIL', 'admin@classesnumeriques.com')
-        admin_user = User.query.filter_by(email=admin_email).first()
-        
-        if not admin_user:
-            from werkzeug.security import generate_password_hash
-            admin_user = User(
-                username='admin',
-                email=admin_email,
-                name='Administrateur',
-                password_hash=generate_password_hash('AdminSecure2024!'),
-                role='admin',
-                subscription_status='approved',
-                subscription_type='admin',
-                approved_by='system'
-            )
-            db.session.add(admin_user)
-            db.session.commit()
-            app.logger.info(f"Compte administrateur cree: {admin_email}")
-        else:
-            app.logger.info(f"Compte administrateur existant: {admin_email}")
-        
-            # Approuver automatiquement mr.zahiri@gmail.com et lui donner les droits admin
-            zahiri_user = User.query.filter_by(email='mr.zahiri@gmail.com').first()
-            if zahiri_user:
-                zahiri_user.subscription_status = 'approved'
-                zahiri_user.role = 'admin'  # Donner les droits admin
-                zahiri_user.subscription_type = 'admin'
-                zahiri_user.approved_by = 'system'
+            # Créer le compte administrateur par défaut si nécessaire
+            admin_email = os.environ.get('ADMIN_EMAIL', 'admin@classesnumeriques.com')
+            admin_user = User.query.filter_by(email=admin_email).first()
+            
+            if not admin_user:
+                from werkzeug.security import generate_password_hash
+                admin_user = User(
+                    username='admin',
+                    email=admin_email,
+                    name='Administrateur',
+                    password_hash=generate_password_hash('AdminSecure2024!'),
+                    role='admin',
+                    subscription_status='approved',
+                    subscription_type='admin',
+                    approved_by='system'
+                )
+                db.session.add(admin_user)
                 db.session.commit()
-                app.logger.info("mr.zahiri@gmail.com approuve et promu administrateur")
+                app.logger.info(f"Compte administrateur cree: {admin_email}")
             else:
-                app.logger.info("Compte mr.zahiri@gmail.com non trouve - sera approuve a la creation")
-                
+                app.logger.info(f"Compte administrateur existant: {admin_email}")
+            
+                # Approuver automatiquement mr.zahiri@gmail.com et lui donner les droits admin
+                zahiri_user = User.query.filter_by(email='mr.zahiri@gmail.com').first()
+                if zahiri_user:
+                    zahiri_user.subscription_status = 'approved'
+                    zahiri_user.role = 'admin'  # Donner les droits admin
+                    zahiri_user.subscription_type = 'admin'
+                    zahiri_user.approved_by = 'system'
+                    db.session.commit()
+                    app.logger.info("mr.zahiri@gmail.com approuve et promu administrateur")
+                else:
+                    app.logger.info("Compte mr.zahiri@gmail.com non trouve - sera approuve a la creation")
+                    
     except Exception as e:
         app.logger.error(f"Erreur lors de l'initialisation de la base: {e}")
         # Ne pas faire planter l'app, continuer quand même
@@ -522,10 +522,191 @@ def index():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    app.logger.debug(f"[LOGIN] Méthode: {request.method}")
+    app.logger.debug(f"[LOGIN] Headers: {request.headers}")
+    app.logger.debug(f"[LOGIN] Form data: {request.form}")
+    app.logger.debug(f"[LOGIN] Cookies: {request.cookies}")
+    
     if current_user.is_authenticated:
+        app.logger.debug(f"[LOGIN] Utilisateur déjà authentifié: {current_user.email}")
         return redirect(url_for('index'))
     
     if request.method == 'POST':
+        app.logger.debug(f"[LOGIN] Contenu du formulaire: {request.form}")
+        email = request.form.get('email')
+        password = request.form.get('password')
+        remember_me = request.form.get('remember_me') == '1'
+        app.logger.debug(f"[LOGIN] Email: {email}, Remember me: {remember_me}")
+        
+        # Vérifier le token CSRF
+        app.logger.debug(f"[LOGIN] CSRF token dans le formulaire: {request.form.get('csrf_token')}")
+        app.logger.debug(f"[LOGIN] CSRF token dans la session: {session.get('csrf_token')}")
+        app.logger.debug(f"[LOGIN] Session: {session}")
+        app.logger.debug(f"[LOGIN] Session ID: {session.sid if hasattr(session, 'sid') else 'N/A'}")
+        app.logger.debug(f"[LOGIN] Session modifiée: {session.modified}")
+        app.logger.debug(f"[LOGIN] Session permanente: {session.permanent}")
+        app.logger.debug(f"[LOGIN] Session nouvelle: {session.new if hasattr(session, 'new') else 'N/A'}")
+        app.logger.debug(f"[LOGIN] Config SESSION_COOKIE_SECURE: {app.config.get('SESSION_COOKIE_SECURE')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_COOKIE_HTTPONLY: {app.config.get('SESSION_COOKIE_HTTPONLY')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_COOKIE_SAMESITE: {app.config.get('SESSION_COOKIE_SAMESITE')}")
+        app.logger.debug(f"[LOGIN] Config SECRET_KEY: {'Définie' if app.config.get('SECRET_KEY') else 'Non définie'}")
+        app.logger.debug(f"[LOGIN] Config DEBUG: {app.config.get('DEBUG')}")
+        app.logger.debug(f"[LOGIN] Config ENV: {app.config.get('ENV')}")
+        app.logger.debug(f"[LOGIN] Config TESTING: {app.config.get('TESTING')}")
+        app.logger.debug(f"[LOGIN] Config SERVER_NAME: {app.config.get('SERVER_NAME')}")
+        app.logger.debug(f"[LOGIN] Config APPLICATION_ROOT: {app.config.get('APPLICATION_ROOT')}")
+        app.logger.debug(f"[LOGIN] Config PREFERRED_URL_SCHEME: {app.config.get('PREFERRED_URL_SCHEME')}")
+        app.logger.debug(f"[LOGIN] Config MAX_CONTENT_LENGTH: {app.config.get('MAX_CONTENT_LENGTH')}")
+        app.logger.debug(f"[LOGIN] Config TEMPLATES_AUTO_RELOAD: {app.config.get('TEMPLATES_AUTO_RELOAD')}")
+        app.logger.debug(f"[LOGIN] Config EXPLAIN_TEMPLATE_LOADING: {app.config.get('EXPLAIN_TEMPLATE_LOADING')}")
+        app.logger.debug(f"[LOGIN] Config PRESERVE_CONTEXT_ON_EXCEPTION: {app.config.get('PRESERVE_CONTEXT_ON_EXCEPTION')}")
+        app.logger.debug(f"[LOGIN] Config TRAP_HTTP_EXCEPTIONS: {app.config.get('TRAP_HTTP_EXCEPTIONS')}")
+        app.logger.debug(f"[LOGIN] Config TRAP_BAD_REQUEST_ERRORS: {app.config.get('TRAP_BAD_REQUEST_ERRORS')}")
+        app.logger.debug(f"[LOGIN] Config JSON_AS_ASCII: {app.config.get('JSON_AS_ASCII')}")
+        app.logger.debug(f"[LOGIN] Config JSON_SORT_KEYS: {app.config.get('JSON_SORT_KEYS')}")
+        app.logger.debug(f"[LOGIN] Config JSONIFY_PRETTYPRINT_REGULAR: {app.config.get('JSONIFY_PRETTYPRINT_REGULAR')}")
+        app.logger.debug(f"[LOGIN] Config JSONIFY_MIMETYPE: {app.config.get('JSONIFY_MIMETYPE')}")
+        app.logger.debug(f"[LOGIN] Config MAX_COOKIE_SIZE: {app.config.get('MAX_COOKIE_SIZE')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_COOKIE_NAME: {app.config.get('SESSION_COOKIE_NAME')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_COOKIE_DOMAIN: {app.config.get('SESSION_COOKIE_DOMAIN')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_COOKIE_PATH: {app.config.get('SESSION_COOKIE_PATH')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_COOKIE_MAX_AGE: {app.config.get('SESSION_COOKIE_MAX_AGE')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_REFRESH_EACH_REQUEST: {app.config.get('SESSION_REFRESH_EACH_REQUEST')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_USE_SIGNER: {app.config.get('SESSION_USE_SIGNER')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_FILE_DIR: {app.config.get('SESSION_FILE_DIR')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_FILE_THRESHOLD: {app.config.get('SESSION_FILE_THRESHOLD')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_FILE_MODE: {app.config.get('SESSION_FILE_MODE')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MONGODB_DB: {app.config.get('SESSION_MONGODB_DB')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MONGODB_COLLECT: {app.config.get('SESSION_MONGODB_COLLECT')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_REDIS_URL: {app.config.get('SESSION_REDIS_URL')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MEMCACHED_SERVERS: {app.config.get('SESSION_MEMCACHED_SERVERS')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_TYPE: {app.config.get('SESSION_TYPE')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_PERMANENT: {app.config.get('SESSION_PERMANENT')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_USE_SIGNER: {app.config.get('SESSION_USE_SIGNER')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_KEY_PREFIX: {app.config.get('SESSION_KEY_PREFIX')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_REDIS: {app.config.get('SESSION_REDIS')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MEMCACHED: {app.config.get('SESSION_MEMCACHED')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_FILE_DIR: {app.config.get('SESSION_FILE_DIR')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_SQLALCHEMY: {app.config.get('SESSION_SQLALCHEMY')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_SQLALCHEMY_TABLE: {app.config.get('SESSION_SQLALCHEMY_TABLE')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MONGODB: {app.config.get('SESSION_MONGODB')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MONGODB_DB: {app.config.get('SESSION_MONGODB_DB')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MONGODB_COLLECT: {app.config.get('SESSION_MONGODB_COLLECT')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_REDIS_URL: {app.config.get('SESSION_REDIS_URL')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MEMCACHED_SERVERS: {app.config.get('SESSION_MEMCACHED_SERVERS')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_TYPE: {app.config.get('SESSION_TYPE')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_PERMANENT: {app.config.get('SESSION_PERMANENT')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_USE_SIGNER: {app.config.get('SESSION_USE_SIGNER')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_KEY_PREFIX: {app.config.get('SESSION_KEY_PREFIX')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_REDIS: {app.config.get('SESSION_REDIS')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MEMCACHED: {app.config.get('SESSION_MEMCACHED')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_FILE_DIR: {app.config.get('SESSION_FILE_DIR')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_SQLALCHEMY: {app.config.get('SESSION_SQLALCHEMY')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_SQLALCHEMY_TABLE: {app.config.get('SESSION_SQLALCHEMY_TABLE')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MONGODB: {app.config.get('SESSION_MONGODB')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MONGODB_DB: {app.config.get('SESSION_MONGODB_DB')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MONGODB_COLLECT: {app.config.get('SESSION_MONGODB_COLLECT')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_REDIS_URL: {app.config.get('SESSION_REDIS_URL')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MEMCACHED_SERVERS: {app.config.get('SESSION_MEMCACHED_SERVERS')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_TYPE: {app.config.get('SESSION_TYPE')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_PERMANENT: {app.config.get('SESSION_PERMANENT')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_USE_SIGNER: {app.config.get('SESSION_USE_SIGNER')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_KEY_PREFIX: {app.config.get('SESSION_KEY_PREFIX')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_REDIS: {app.config.get('SESSION_REDIS')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MEMCACHED: {app.config.get('SESSION_MEMCACHED')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_FILE_DIR: {app.config.get('SESSION_FILE_DIR')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_SQLALCHEMY: {app.config.get('SESSION_SQLALCHEMY')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_SQLALCHEMY_TABLE: {app.config.get('SESSION_SQLALCHEMY_TABLE')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MONGODB: {app.config.get('SESSION_MONGODB')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MONGODB_DB: {app.config.get('SESSION_MONGODB_DB')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MONGODB_COLLECT: {app.config.get('SESSION_MONGODB_COLLECT')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_REDIS_URL: {app.config.get('SESSION_REDIS_URL')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MEMCACHED_SERVERS: {app.config.get('SESSION_MEMCACHED_SERVERS')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_TYPE: {app.config.get('SESSION_TYPE')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_PERMANENT: {app.config.get('SESSION_PERMANENT')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_USE_SIGNER: {app.config.get('SESSION_USE_SIGNER')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_KEY_PREFIX: {app.config.get('SESSION_KEY_PREFIX')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_REDIS: {app.config.get('SESSION_REDIS')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MEMCACHED: {app.config.get('SESSION_MEMCACHED')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_FILE_DIR: {app.config.get('SESSION_FILE_DIR')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_SQLALCHEMY: {app.config.get('SESSION_SQLALCHEMY')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_SQLALCHEMY_TABLE: {app.config.get('SESSION_SQLALCHEMY_TABLE')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MONGODB: {app.config.get('SESSION_MONGODB')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MONGODB_DB: {app.config.get('SESSION_MONGODB_DB')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MONGODB_COLLECT: {app.config.get('SESSION_MONGODB_COLLECT')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_REDIS_URL: {app.config.get('SESSION_REDIS_URL')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MEMCACHED_SERVERS: {app.config.get('SESSION_MEMCACHED_SERVERS')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_TYPE: {app.config.get('SESSION_TYPE')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_PERMANENT: {app.config.get('SESSION_PERMANENT')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_USE_SIGNER: {app.config.get('SESSION_USE_SIGNER')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_KEY_PREFIX: {app.config.get('SESSION_KEY_PREFIX')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_REDIS: {app.config.get('SESSION_REDIS')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MEMCACHED: {app.config.get('SESSION_MEMCACHED')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_FILE_DIR: {app.config.get('SESSION_FILE_DIR')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_SQLALCHEMY: {app.config.get('SESSION_SQLALCHEMY')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_SQLALCHEMY_TABLE: {app.config.get('SESSION_SQLALCHEMY_TABLE')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MONGODB: {app.config.get('SESSION_MONGODB')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MONGODB_DB: {app.config.get('SESSION_MONGODB_DB')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MONGODB_COLLECT: {app.config.get('SESSION_MONGODB_COLLECT')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_REDIS_URL: {app.config.get('SESSION_REDIS_URL')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MEMCACHED_SERVERS: {app.config.get('SESSION_MEMCACHED_SERVERS')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_TYPE: {app.config.get('SESSION_TYPE')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_PERMANENT: {app.config.get('SESSION_PERMANENT')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_USE_SIGNER: {app.config.get('SESSION_USE_SIGNER')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_KEY_PREFIX: {app.config.get('SESSION_KEY_PREFIX')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_REDIS: {app.config.get('SESSION_REDIS')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MEMCACHED: {app.config.get('SESSION_MEMCACHED')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_FILE_DIR: {app.config.get('SESSION_FILE_DIR')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_SQLALCHEMY: {app.config.get('SESSION_SQLALCHEMY')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_SQLALCHEMY_TABLE: {app.config.get('SESSION_SQLALCHEMY_TABLE')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MONGODB: {app.config.get('SESSION_MONGODB')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MONGODB_DB: {app.config.get('SESSION_MONGODB_DB')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MONGODB_COLLECT: {app.config.get('SESSION_MONGODB_COLLECT')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_REDIS_URL: {app.config.get('SESSION_REDIS_URL')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MEMCACHED_SERVERS: {app.config.get('SESSION_MEMCACHED_SERVERS')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_TYPE: {app.config.get('SESSION_TYPE')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_PERMANENT: {app.config.get('SESSION_PERMANENT')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_USE_SIGNER: {app.config.get('SESSION_USE_SIGNER')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_KEY_PREFIX: {app.config.get('SESSION_KEY_PREFIX')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_REDIS: {app.config.get('SESSION_REDIS')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MEMCACHED: {app.config.get('SESSION_MEMCACHED')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_FILE_DIR: {app.config.get('SESSION_FILE_DIR')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_SQLALCHEMY: {app.config.get('SESSION_SQLALCHEMY')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_SQLALCHEMY_TABLE: {app.config.get('SESSION_SQLALCHEMY_TABLE')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MONGODB: {app.config.get('SESSION_MONGODB')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MONGODB_DB: {app.config.get('SESSION_MONGODB_DB')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MONGODB_COLLECT: {app.config.get('SESSION_MONGODB_COLLECT')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_REDIS_URL: {app.config.get('SESSION_REDIS_URL')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MEMCACHED_SERVERS: {app.config.get('SESSION_MEMCACHED_SERVERS')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_TYPE: {app.config.get('SESSION_TYPE')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_PERMANENT: {app.config.get('SESSION_PERMANENT')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_USE_SIGNER: {app.config.get('SESSION_USE_SIGNER')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_KEY_PREFIX: {app.config.get('SESSION_KEY_PREFIX')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_REDIS: {app.config.get('SESSION_REDIS')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MEMCACHED: {app.config.get('SESSION_MEMCACHED')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_FILE_DIR: {app.config.get('SESSION_FILE_DIR')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_SQLALCHEMY: {app.config.get('SESSION_SQLALCHEMY')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_SQLALCHEMY_TABLE: {app.config.get('SESSION_SQLALCHEMY_TABLE')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MONGODB: {app.config.get('SESSION_MONGODB')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MONGODB_DB: {app.config.get('SESSION_MONGODB_DB')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MONGODB_COLLECT: {app.config.get('SESSION_MONGODB_COLLECT')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_REDIS_URL: {app.config.get('SESSION_REDIS_URL')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MEMCACHED_SERVERS: {app.config.get('SESSION_MEMCACHED_SERVERS')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_TYPE: {app.config.get('SESSION_TYPE')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_PERMANENT: {app.config.get('SESSION_PERMANENT')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_USE_SIGNER: {app.config.get('SESSION_USE_SIGNER')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_KEY_PREFIX: {app.config.get('SESSION_KEY_PREFIX')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_REDIS: {app.config.get('SESSION_REDIS')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MEMCACHED: {app.config.get('SESSION_MEMCACHED')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_FILE_DIR: {app.config.get('SESSION_FILE_DIR')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_SQLALCHEMY: {app.config.get('SESSION_SQLALCHEMY')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_SQLALCHEMY_TABLE: {app.config.get('SESSION_SQLALCHEMY_TABLE')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MONGODB: {app.config.get('SESSION_MONGODB')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MONGODB_DB: {app.config.get('SESSION_MONGODB_DB')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MONGODB_COLLECT: {app.config.get('SESSION_MONGODB_COLLECT')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_REDIS_URL: {app.config.get('SESSION_REDIS_URL')}")
+        app.logger.debug(f"[LOGIN] Config SESSION_MEMCACHED_SERVERS: {app.config.get('SESSION_MEMCACHED_SERVERS')}")
+        
         email = request.form.get('email')
         password = request.form.get('password')
         remember_me = request.form.get('remember_me') == '1'
@@ -5981,6 +6162,7 @@ def fix_production_issues():
 
 
 if __name__ == '__main__':
+    app.debug = True
     with app.app_context():
         # Créer les tables si elles n'existent pas
         db.create_all()
