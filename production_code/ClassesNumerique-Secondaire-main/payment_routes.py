@@ -12,17 +12,23 @@ payment_bp = Blueprint('payment', __name__, url_prefix='/payment')
 @payment_bp.route('/subscribe/<subscription_type>')
 def subscribe(subscription_type):
     """Page de souscription avec choix du type d'abonnement"""
+    current_app.logger.info(f"[SUBSCRIBE_DEBUG] Accès à la route subscribe avec type={subscription_type}")
+    current_app.logger.info(f"[SUBSCRIBE_DEBUG] Utilisateur authentifié: {current_user.is_authenticated}")
+    
     if subscription_type not in ['teacher', 'school']:
+        current_app.logger.warning(f"[SUBSCRIBE_DEBUG] Type d'abonnement invalide: {subscription_type}")
         flash('Type d\'abonnement invalide.', 'error')
         return redirect(url_for('subscription_choice'))
     
     # Vérifier si l'utilisateur est connecté et a déjà un abonnement actif
     if current_user.is_authenticated and current_user.subscription_status == 'approved':
+        current_app.logger.info(f"[SUBSCRIBE_DEBUG] Utilisateur {current_user.email} a déjà un abonnement actif")
         flash('Vous avez déjà un abonnement actif.', 'info')
         return redirect(url_for('index'))
     
     # Si l'utilisateur choisit l'abonnement école et est déjà associé à une école
     if current_user.is_authenticated and subscription_type == 'school' and current_user.school_name:
+        current_app.logger.info(f"[SUBSCRIBE_DEBUG] Utilisateur {current_user.email} est associé à l'école {current_user.school_name}")
         # Rechercher si un autre utilisateur de la même école a déjà un abonnement actif
         from models import User
         school_subscription = User.query.filter(
@@ -33,7 +39,7 @@ def subscribe(subscription_type):
         
         if school_subscription:
             # L'école a déjà un abonnement actif, approuver automatiquement cet utilisateur
-            current_app.logger.info(f"Approbation automatique pour {current_user.email} car l'école {current_user.school_name} a déjà payé")
+            current_app.logger.info(f"[SUBSCRIBE_DEBUG] Approbation automatique pour {current_user.email} car l'école {current_user.school_name} a déjà payé")
             current_user.subscription_status = 'approved'
             current_user.subscription_type = 'school'
             current_user.approval_date = datetime.utcnow()
@@ -45,8 +51,13 @@ def subscribe(subscription_type):
     # Si c'est un abonnement école, rediriger vers la sélection d'école
     # Modification: rediriger vers select_school même si l'utilisateur n'est pas connecté
     if subscription_type == 'school':
-        current_app.logger.info(f"[SUBSCRIBE_DEBUG] Redirection vers select_school pour abonnement école")
-        return redirect(url_for('payment.select_school'))
+        current_app.logger.info(f"[SUBSCRIBE_DEBUG] Condition vérifiée: subscription_type == 'school'")
+        current_app.logger.info(f"[SUBSCRIBE_DEBUG] Tentative de redirection vers {url_for('payment.select_school')}")
+        try:
+            return redirect(url_for('payment.select_school'))
+        except Exception as e:
+            current_app.logger.error(f"[SUBSCRIBE_DEBUG] Erreur lors de la redirection: {str(e)}")
+            return redirect(url_for('index'))
     
     # Déterminer le prix
     if subscription_type == 'teacher':
@@ -179,9 +190,13 @@ def select_school():
     """Page de sélection d'une école déjà abonnée"""
     current_app.logger.info(f"[SELECT_SCHOOL_DEBUG] Accès à la route select_school")
     current_app.logger.info(f"[SELECT_SCHOOL_DEBUG] Utilisateur authentifié: {current_user.is_authenticated}")
+    current_app.logger.info(f"[SELECT_SCHOOL_DEBUG] Méthode HTTP: {request.method}")
+    current_app.logger.info(f"[SELECT_SCHOOL_DEBUG] URL complète: {request.url}")
+    current_app.logger.info(f"[SELECT_SCHOOL_DEBUG] Referrer: {request.referrer}")
     
     # Vérifier que l'utilisateur est un enseignant seulement s'il est connecté
     if current_user.is_authenticated and not current_user.role == 'teacher':
+        current_app.logger.warning(f"[SELECT_SCHOOL_DEBUG] Utilisateur non enseignant: {current_user.role}")
         flash('Cette page est réservée aux enseignants.', 'error')
         return redirect(url_for('index'))
     
@@ -189,18 +204,27 @@ def select_school():
     from models import User
     from sqlalchemy import func
     
-    # Trouver toutes les écoles avec au moins un utilisateur ayant un abonnement actif
+    # Trouver toutes les écoles avec au moins un utilisateur ayant un abonnement actif ou en attente
     schools_with_subscription = db.session.query(User.school_name, func.count(User.id).label('user_count')).\
         filter(User.school_name != None).\
         filter(User.school_name != '').\
         filter(User.subscription_type == 'school').\
-        filter(User.subscription_status == 'approved').\
+        filter(User.subscription_status.in_(['pending', 'paid', 'approved'])).\
         group_by(User.school_name).all()
     
     # Ajouter des logs pour le débogage
     current_app.logger.info(f"[SELECT_SCHOOL_DEBUG] Nombre d'écoles trouvées: {len(schools_with_subscription)}")
     for school, count in schools_with_subscription:
         current_app.logger.info(f"[SELECT_SCHOOL_DEBUG] École: {school}, Utilisateurs: {count}")
+        
+    # Afficher les statuts d'abonnement pour chaque école
+    for school_name, _ in schools_with_subscription:
+        school_statuses = db.session.query(User.subscription_status).\
+            filter(User.school_name == school_name).\
+            filter(User.subscription_type == 'school').\
+            distinct().all()
+        statuses = [status[0] for status in school_statuses]
+        current_app.logger.info(f"[SELECT_SCHOOL_DEBUG] École: {school_name}, Statuts: {statuses}")
     
     # Vérifier toutes les écoles dans la base de données pour le débogage
     all_schools = db.session.query(User.school_name, User.subscription_type, User.subscription_status).\
@@ -209,12 +233,26 @@ def select_school():
         distinct().all()
     current_app.logger.info(f"[SELECT_SCHOOL_DEBUG] Toutes les écoles dans la base: {all_schools}")
     
+    # Vérifier les abonnements actifs
+    active_subscriptions = db.session.query(User.id, User.email, User.school_name, User.subscription_type, User.subscription_status).\
+        filter(User.subscription_type == 'school').\
+        filter(User.subscription_status == 'approved').all()
+    current_app.logger.info(f"[SELECT_SCHOOL_DEBUG] Abonnements actifs: {active_subscriptions}")
+    
     if not schools_with_subscription:
         current_app.logger.warning("[SELECT_SCHOOL_DEBUG] Aucune école avec abonnement actif trouvée")
         flash('Aucune école avec un abonnement actif n\'a été trouvée. Veuillez procéder au paiement pour un abonnement école.', 'info')
-        return redirect(url_for('payment.subscribe', subscription_type='school'))
+        try:
+            return redirect(url_for('payment.subscribe', subscription_type='school'))
+        except Exception as e:
+            current_app.logger.error(f"[SELECT_SCHOOL_DEBUG] Erreur lors de la redirection: {str(e)}")
+            return redirect(url_for('index'))
     
-    return render_template('payment/select_school.html', schools=schools_with_subscription)
+    # Convertir les tuples en dictionnaires pour le template
+    schools_for_template = [{'school_name': school, 'user_count': count} for school, count in schools_with_subscription]
+    current_app.logger.info(f"[SELECT_SCHOOL_DEBUG] Écoles formatées pour le template: {schools_for_template}")
+    
+    return render_template('payment/select_school.html', schools=schools_for_template)
 
 @payment_bp.route('/join_school', methods=['POST'])
 @login_required
