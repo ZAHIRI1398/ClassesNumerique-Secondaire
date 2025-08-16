@@ -17,7 +17,7 @@ def subscribe(subscription_type):
         return redirect(url_for('subscription_choice'))
     
     # Vérifier si l'utilisateur est connecté et a déjà un abonnement actif
-    if current_user.is_authenticated and current_user.subscription_status in ['paid', 'approved']:
+    if current_user.is_authenticated and current_user.subscription_status == 'approved':
         flash('Vous avez déjà un abonnement actif.', 'info')
         return redirect(url_for('index'))
     
@@ -28,7 +28,7 @@ def subscribe(subscription_type):
         school_subscription = User.query.filter(
             User.school_name == current_user.school_name,
             User.subscription_type == 'school',
-            User.subscription_status.in_(['paid', 'approved'])
+            User.subscription_status == 'approved'
         ).first()
         
         if school_subscription:
