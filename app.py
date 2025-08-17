@@ -306,6 +306,12 @@ app.register_blueprint(exercise_bp, url_prefix='/exercise')
 from payment_routes import payment_bp
 app.register_blueprint(payment_bp)
 
+# Import and register diagnostic and fix blueprints
+from diagnostic_school_choice import diagnostic_bp
+from fix_school_choice import fix_bp
+app.register_blueprint(diagnostic_bp)
+app.register_blueprint(fix_bp)
+
 # Ajout du filtre shuffle pour Jinja2
 @app.template_filter('shuffle')
 def shuffle_filter(seq):

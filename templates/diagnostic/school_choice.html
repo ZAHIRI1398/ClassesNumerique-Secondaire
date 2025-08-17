@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+
+{% block title %}Diagnostic Choix d'École{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Diagnostic Choix d'École</h1>
+    
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h2 class="h5 mb-0">Résumé</h2>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="alert alert-info">
+                        <h3 class="h6">Types d'abonnement</h3>
+                        <ul>
+                            {% for type_info in subscription_types %}
+                            <li><strong>{{ type_info.type }}</strong>: {{ type_info.count }} utilisateurs</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="alert alert-info">
+                        <h3 class="h6">Statuts d'abonnement</h3>
+                        <ul>
+                            {% for status_info in subscription_statuses %}
+                            <li><strong>{{ status_info.status }}</strong>: {{ status_info.count }} utilisateurs</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="alert alert-success">
+                <h3 class="h6">Écoles avec abonnement actif</h3>
+                <p><strong>Total:</strong> {{ schools_with_subscription|length }} écoles</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h2 class="h5 mb-0">Détails des écoles avec abonnement</h2>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>École</th>
+                        <th>Nombre d'utilisateurs</th>
+                        <th>Types d'abonnement</th>
+                        <th>Statuts d'abonnement</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for school in schools_with_subscription %}
+                    <tr>
+                        <td>{{ school.school_name }}</td>
+                        <td>{{ school.user_count }}</td>
+                        <td>
+                            <ul class="list-unstyled">
+                                {% for type_info in school.subscription_types %}
+                                <li><span class="badge {% if type_info.type == 'school' %}bg-success{% elif type_info.type in ['Trial', 'trial'] %}bg-warning{% else %}bg-secondary{% endif %}">{{ type_info.type }}</span>: {{ type_info.count }}</li>
+                                {% endfor %}
+                            </ul>
+                        </td>
+                        <td>
+                            <ul class="list-unstyled">
+                                {% for status_info in school.subscription_statuses %}
+                                <li><span class="badge {% if status_info.status == 'approved' %}bg-success{% elif status_info.status in ['pending', 'paid'] %}bg-warning{% else %}bg-secondary{% endif %}">{{ status_info.status }}</span>: {{ status_info.count }}</li>
+                                {% endfor %}
+                            </ul>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header bg-danger text-white">
+            <h2 class="h5 mb-0">Problèmes potentiels</h2>
+        </div>
+        <div class="card-body">
+            <h3 class="h6">Écoles avec types d'abonnement incohérents</h3>
+            <ul>
+                {% for school in schools_with_mixed_types %}
+                <li><strong>{{ school.school_name }}</strong>: {{ school.types|join(', ') }}</li>
+                {% else %}
+                <li>Aucun problème détecté</li>
+                {% endfor %}
+            </ul>
+            
+            <h3 class="h6">Écoles avec statuts d'abonnement incohérents</h3>
+            <ul>
+                {% for school in schools_with_mixed_statuses %}
+                <li><strong>{{ school.school_name }}</strong>: {{ school.statuses|join(', ') }}</li>
+                {% else %}
+                <li>Aucun problème détecté</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h2 class="h5 mb-0">Actions</h2>
+        </div>
+        <div class="card-body">
+            <a href="{{ url_for('fix.fix_school_choice') }}" class="btn btn-primary" onclick="return confirm('Êtes-vous sûr de vouloir corriger les problèmes de choix d\'école?')">
+                Corriger les problèmes de choix d'école
+            </a>
+            <p class="mt-2"><small>Cette action va convertir tous les abonnements 'Trial' et 'trial' en 'school', et tous les statuts 'pending' et 'paid' en 'approved' pour les abonnements de type 'school'.</small></p>
+        </div>
+    </div>
+</div>
+{% endblock %}
