@@ -1,0 +1,12 @@
+2025-08-17 16:01:10,357 - __main__ - INFO - === Vérification du déploiement de la correction ===
+2025-08-17 16:01:10,358 - __main__ - INFO - Attente de 30 secondes pour que le déploiement soit effectif...
+2025-08-17 16:01:40,836 - __main__ - WARNING - L'application retourne un code 404
+2025-08-17 16:01:40,836 - __main__ - INFO - Vérification de la route de diagnostic...
+2025-08-17 16:01:40,988 - __main__ - WARNING - La route de diagnostic retourne un code 404
+2025-08-17 16:01:40,989 - __main__ - INFO - Vérification de la route de sélection d'école...
+2025-08-17 16:01:41,255 - __main__ - WARNING - La route de sélection d'école retourne un code 404
+2025-08-17 16:01:41,255 - __main__ - INFO - === Vérification terminée ===
+2025-08-17 16:01:41,255 - __main__ - INFO - Pour vérifier manuellement:
+2025-08-17 16:01:41,255 - __main__ - INFO - 1. Accédez à https://classesnumeriques.up.railway.app/payment/select-school après vous être connecté en tant qu'enseignant
+2025-08-17 16:01:41,256 - __main__ - INFO - 2. Vérifiez que la page affiche correctement les écoles avec abonnement
+2025-08-17 16:01:41,256 - __main__ - INFO - 3. Vérifiez que vous pouvez sélectionner une école et continuer le processus

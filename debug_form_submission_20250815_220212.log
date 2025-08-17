@@ -1,0 +1,18 @@
+2025-08-15 22:02:12,483 - INFO - === DÉBOGAGE DE LA SOUMISSION DES FORMULAIRES FILL-IN-BLANKS ===
+2025-08-15 22:02:12,484 - INFO - Template de test créé: templates/debug/form_data.html
+2025-08-15 22:02:12,486 - INFO - Démarrage de l'application de débogage sur http://127.0.0.1:5000
+2025-08-15 22:02:12,486 - INFO - Utilisez Ctrl+C pour arrêter l'application
+2025-08-15 22:02:12,508 - WARNING -  * Debugger is active!
+2025-08-15 22:02:12,511 - INFO -  * Debugger PIN: 773-832-873
+2025-08-15 22:06:07,175 - INFO - 127.0.0.1 - - [15/Aug/2025 22:06:07] "GET / HTTP/1.1" 200 -
+2025-08-15 22:08:32,687 - INFO - 127.0.0.1 - - [15/Aug/2025 22:08:32] "[33mGET /exercise/exercise_library HTTP/1.1[0m" 404 -
+2025-08-15 22:13:53,747 - INFO - 127.0.0.1 - - [15/Aug/2025 22:13:53] "GET / HTTP/1.1" 200 -
+2025-08-15 22:26:15,920 - INFO - 127.0.0.1 - - [15/Aug/2025 22:26:15] "[33mGET /exercise/exercise_library HTTP/1.1[0m" 404 -
+2025-08-15 22:27:07,934 - INFO - 127.0.0.1 - - [15/Aug/2025 22:27:07] "GET / HTTP/1.1" 200 -
+2025-08-15 22:28:28,460 - INFO - 127.0.0.1 - - [15/Aug/2025 22:28:28] "GET / HTTP/1.1" 200 -
+2025-08-15 22:30:07,727 - INFO - 127.0.0.1 - - [15/Aug/2025 22:30:07] "[33mGET /login?next=/exercise/exercise_library HTTP/1.1[0m" 404 -
+2025-08-15 22:37:04,940 - INFO - 127.0.0.1 - - [15/Aug/2025 22:37:04] "GET / HTTP/1.1" 200 -
+2025-08-15 22:37:05,627 - INFO - 127.0.0.1 - - [15/Aug/2025 22:37:05] "GET / HTTP/1.1" 200 -
+2025-08-15 22:37:12,967 - INFO - 127.0.0.1 - - [15/Aug/2025 22:37:12] "GET / HTTP/1.1" 200 -
+2025-08-15 22:37:34,975 - INFO - 127.0.0.1 - - [15/Aug/2025 22:37:34] "GET / HTTP/1.1" 200 -
+2025-08-15 22:40:20,063 - INFO -  * Detected change in 'C:\\Users\\JeMat\\OneDrive\\classenumerique20250801\\app.py', reloading

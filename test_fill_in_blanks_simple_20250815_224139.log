@@ -1,0 +1,7 @@
+2025-08-15 22:41:39,937 - INFO - === TEST SIMPLIFIÉ DE LA CORRECTION DU PROBLÈME DE SOUMISSION DES FORMULAIRES FILL-IN-BLANKS ===
+2025-08-15 22:41:39,942 - INFO - Application de test créée avec succès
+2025-08-15 22:41:39,942 - INFO - Démarrage de l'application de test sur http://127.0.0.1:5000/
+2025-08-15 22:41:39,943 - INFO - Utilisez Ctrl+C pour arrêter l'application
+2025-08-15 22:41:39,971 - WARNING -  * Debugger is active!
+2025-08-15 22:41:39,974 - INFO -  * Debugger PIN: 773-832-873
+2025-08-15 22:56:26,073 - INFO -  * Detected change in 'C:\\Users\\JeMat\\OneDrive\\classenumerique20250801\\test_fill_in_blanks_scoring.py', reloading

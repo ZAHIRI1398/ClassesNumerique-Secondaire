@@ -1,0 +1,12 @@
+2025-08-15 22:41:40,011 - INFO - === DÉBOGAGE DE LA SOUMISSION DES FORMULAIRES FILL-IN-BLANKS ===
+2025-08-15 22:41:40,013 - INFO - Template de test créé: templates/debug/form_data.html
+2025-08-15 22:41:40,016 - INFO - Démarrage de l'application de débogage sur http://127.0.0.1:5000
+2025-08-15 22:41:40,016 - INFO - Utilisez Ctrl+C pour arrêter l'application
+2025-08-15 22:41:40,119 - WARNING -  * Debugger is active!
+2025-08-15 22:41:40,122 - INFO -  * Debugger PIN: 773-832-873
+2025-08-15 22:43:03,034 - INFO - 127.0.0.1 - - [15/Aug/2025 22:43:03] "GET / HTTP/1.1" 200 -
+2025-08-15 22:43:26,851 - INFO - 127.0.0.1 - - [15/Aug/2025 22:43:26] "[33mGET /exercise/exercise_library HTTP/1.1[0m" 404 -
+2025-08-15 22:43:27,109 - INFO - 127.0.0.1 - - [15/Aug/2025 22:43:27] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-08-15 22:44:20,702 - INFO - 127.0.0.1 - - [15/Aug/2025 22:44:20] "[33mGET /debug-test HTTP/1.1[0m" 404 -
+2025-08-15 22:44:26,089 - INFO - 127.0.0.1 - - [15/Aug/2025 22:44:26] "GET / HTTP/1.1" 200 -
+2025-08-15 22:56:26,079 - INFO -  * Detected change in 'C:\\Users\\JeMat\\OneDrive\\classenumerique20250801\\modified_submit.py', reloading

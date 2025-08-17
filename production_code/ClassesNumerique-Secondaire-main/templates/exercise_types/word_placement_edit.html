@@ -1,0 +1,413 @@
+{% extends "base.html" %}
+
+{% block title %}Éditer - {{ exercise.title }}{% endblock %}
+
+{% block head %}
+<style>
+    .word-placement-edit-container {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px 15px;
+    }
+    
+    .edit-header {
+        background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 8px 32px rgba(168, 237, 234, 0.3);
+        color: #2d3748;
+        padding: 30px;
+        margin-bottom: 25px;
+    }
+    
+    .edit-content-card {
+        background: linear-gradient(145deg, #ffffff 0%, #f7fafc 100%);
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 6px 25px rgba(0, 0, 0, 0.1);
+        padding: 30px;
+    }
+    
+    .section-header {
+        background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 20px;
+        color: #2d3748;
+        font-weight: 600;
+    }
+    
+    .sentence-item {
+        background: #f7fafc;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 15px;
+        transition: all 0.3s ease;
+    }
+    
+    .sentence-item:hover {
+        border-color: #667eea;
+        box-shadow: 0 2px 10px rgba(102, 126, 234, 0.1);
+    }
+    
+    .word-item {
+        background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
+        color: white;
+        border: none;
+        border-radius: 20px;
+        padding: 8px 15px;
+        margin: 5px;
+        display: inline-block;
+        font-weight: 500;
+    }
+    
+    .btn-add {
+        background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+        border: none;
+        color: white;
+        border-radius: 25px;
+        padding: 10px 20px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-add:hover {
+        background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+        transform: translateY(-2px);
+        color: white;
+    }
+    
+    .btn-remove {
+        background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+        border: none;
+        color: white;
+        border-radius: 20px;
+        padding: 5px 10px;
+        font-size: 0.9rem;
+        margin-left: 10px;
+    }
+    
+    .btn-remove:hover {
+        background: linear-gradient(135deg, #c53030 0%, #9c2626 100%);
+        color: white;
+    }
+    
+    .form-control {
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 12px;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+    }
+    
+    .btn-save {
+        background: linear-gradient(135deg, #ed64a6 0%, #f093fb 100%);
+        border: none;
+        padding: 15px 40px;
+        border-radius: 30px;
+        font-weight: 600;
+        color: white;
+        font-size: 1.1rem;
+        box-shadow: 0 8px 25px rgba(237, 100, 166, 0.4);
+        transition: all 0.3s ease;
+    }
+    
+    .btn-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 35px rgba(237, 100, 166, 0.6);
+        background: linear-gradient(135deg, #f093fb 0%, #ed64a6 100%);
+        color: white;
+    }
+    
+    .help-text {
+        background: linear-gradient(135deg, #e6fffa 0%, #b2f5ea 100%);
+        border: none;
+        border-radius: 8px;
+        padding: 12px;
+        color: #234e52;
+        font-size: 0.9rem;
+        margin-top: 8px;
+    }
+    
+    .preview-section {
+        background: linear-gradient(145deg, #ffffff 0%, #f0f8ff 100%);
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="word-placement-edit-container">
+<div class="container mt-4">
+    <div class="edit-header">
+        <h2><i class="fas fa-edit me-2"></i>Éditer l'exercice "Mots à placer"</h2>
+        <p class="mb-0">Créez un exercice inclusif pour tous les élèves, particulièrement adapté aux élèves dyslexiques.</p>
+    </div>
+
+    <div class="edit-content-card">
+        <form method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            
+            <!-- Informations générales -->
+            <div class="section-header">
+                <i class="fas fa-info-circle me-2"></i>Informations générales
+            </div>
+            
+            <div class="mb-3">
+                <label for="title" class="form-label fw-bold">Titre de l'exercice :</label>
+                <input type="text" class="form-control" id="title" name="title" 
+                       value="{{ exercise.title if exercise else '' }}" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="description" class="form-label fw-bold">Description :</label>
+                <textarea class="form-control" id="description" name="description" rows="3">{{ exercise.description if exercise else '' }}</textarea>
+                <div class="help-text">
+                    <i class="fas fa-lightbulb me-1"></i>
+                    Décrivez brièvement l'objectif de l'exercice pour aider les élèves.
+                </div>
+            </div>
+
+            <!-- Upload d'image -->
+            <div class="mb-3">
+                <label for="image" class="form-label fw-bold">Image (optionnelle) :</label>
+                <input type="file" class="form-control" id="image" name="image" accept="image/*">
+                {% if exercise and exercise.image_path %}
+                    <div class="mt-2">
+                        <small class="text-muted">Image actuelle : {{ exercise.image_path.split('/')[-1] }}</small>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Phrases à compléter -->
+            <div class="section-header">
+                <i class="fas fa-align-left me-2"></i>Phrases à compléter
+            </div>
+            
+            <div id="sentences-container">
+                {% if content and content.sentences %}
+                    {% for sentence in content.sentences %}
+                        <div class="sentence-item">
+                            <label class="form-label fw-bold">Phrase {{ loop.index }} :</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="sentences[]" 
+                                       value="{{ sentence }}" placeholder="Écrivez votre phrase avec ___ pour marquer les espaces à remplir">
+                                <button type="button" class="btn btn-remove" onclick="removeSentence(this)">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                            <div class="help-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Utilisez <strong>___</strong> (trois underscores) pour marquer les endroits où les élèves doivent placer un mot.
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="sentence-item">
+                        <label class="form-label fw-bold">Phrase 1 :</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" name="sentences[]" 
+                                   placeholder="Écrivez votre phrase avec ___ pour marquer les espaces à remplir">
+                            <button type="button" class="btn btn-remove" onclick="removeSentence(this)">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                        <div class="help-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Utilisez <strong>___</strong> (trois underscores) pour marquer les endroits où les élèves doivent placer un mot.
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <button type="button" class="btn btn-add mb-4" onclick="addSentence()">
+                <i class="fas fa-plus me-2"></i>Ajouter une phrase
+            </button>
+
+            <!-- Mots à placer -->
+            <div class="section-header">
+                <i class="fas fa-list-ul me-2"></i>Mots disponibles pour les élèves
+            </div>
+            
+            <div id="words-container">
+                {% if content and content.words %}
+                    {% for word in content.words %}
+                        <div class="word-item-edit mb-2">
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="words[]" 
+                                       value="{{ word }}" placeholder="Mot à placer">
+                                <button type="button" class="btn btn-remove" onclick="removeWord(this)">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="word-item-edit mb-2">
+                        <div class="input-group">
+                            <input type="text" class="form-control" name="words[]" placeholder="Mot à placer">
+                            <button type="button" class="btn btn-remove" onclick="removeWord(this)">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <button type="button" class="btn btn-add mb-4" onclick="addWord()">
+                <i class="fas fa-plus me-2"></i>Ajouter un mot
+            </button>
+
+            <div class="help-text mb-4">
+                <i class="fas fa-heart me-1"></i>
+                <strong>Conseil pour l'inclusion :</strong> Ajoutez quelques mots supplémentaires (distracteurs) pour rendre l'exercice plus stimulant, mais pas trop pour éviter de surcharger les élèves dyslexiques.
+            </div>
+
+            <!-- Aperçu -->
+            <div class="preview-section">
+                <h5><i class="fas fa-eye me-2"></i>Aperçu de l'exercice</h5>
+                <div id="preview-content">
+                    <p class="text-muted">L'aperçu s'affichera ici quand vous ajouterez du contenu.</p>
+                </div>
+            </div>
+
+            <!-- Boutons d'action -->
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-save me-3">
+                    <i class="fas fa-save me-2"></i>Sauvegarder l'exercice
+                </button>
+                <a href="{{ url_for('exercise_library') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Retour à la bibliothèque
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+</div>
+
+<script>
+let sentenceCounter = document.querySelectorAll('.sentence-item').length;
+let wordCounter = document.querySelectorAll('.word-item-edit').length;
+
+function addSentence() {
+    sentenceCounter++;
+    const container = document.getElementById('sentences-container');
+    const newSentence = document.createElement('div');
+    newSentence.className = 'sentence-item';
+    newSentence.innerHTML = `
+        <label class="form-label fw-bold">Phrase ${sentenceCounter} :</label>
+        <div class="input-group">
+            <input type="text" class="form-control" name="sentences[]" 
+                   placeholder="Écrivez votre phrase avec ___ pour marquer les espaces à remplir">
+            <button type="button" class="btn btn-remove" onclick="removeSentence(this)">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+        <div class="help-text">
+            <i class="fas fa-info-circle me-1"></i>
+            Utilisez <strong>___</strong> (trois underscores) pour marquer les endroits où les élèves doivent placer un mot.
+        </div>
+    `;
+    container.appendChild(newSentence);
+    updatePreview();
+}
+
+function removeSentence(button) {
+    if (document.querySelectorAll('.sentence-item').length > 1) {
+        button.closest('.sentence-item').remove();
+        updateSentenceNumbers();
+        updatePreview();
+    } else {
+        alert('Vous devez garder au moins une phrase.');
+    }
+}
+
+function updateSentenceNumbers() {
+    const sentences = document.querySelectorAll('.sentence-item');
+    sentences.forEach((sentence, index) => {
+        const label = sentence.querySelector('label');
+        label.textContent = `Phrase ${index + 1} :`;
+    });
+    sentenceCounter = sentences.length;
+}
+
+function addWord() {
+    wordCounter++;
+    const container = document.getElementById('words-container');
+    const newWord = document.createElement('div');
+    newWord.className = 'word-item-edit mb-2';
+    newWord.innerHTML = `
+        <div class="input-group">
+            <input type="text" class="form-control" name="words[]" placeholder="Mot à placer">
+            <button type="button" class="btn btn-remove" onclick="removeWord(this)">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    `;
+    container.appendChild(newWord);
+    updatePreview();
+}
+
+function removeWord(button) {
+    if (document.querySelectorAll('.word-item-edit').length > 1) {
+        button.closest('.word-item-edit').remove();
+        updatePreview();
+    } else {
+        alert('Vous devez garder au moins un mot.');
+    }
+}
+
+function updatePreview() {
+    const sentences = Array.from(document.querySelectorAll('input[name="sentences[]"]')).map(input => input.value).filter(s => s.trim());
+    const words = Array.from(document.querySelectorAll('input[name="words[]"]')).map(input => input.value).filter(w => w.trim());
+    
+    const previewContent = document.getElementById('preview-content');
+    
+    if (sentences.length === 0 && words.length === 0) {
+        previewContent.innerHTML = '<p class="text-muted">L\'aperçu s\'affichera ici quand vous ajouterez du contenu.</p>';
+        return;
+    }
+    
+    let preview = '';
+    
+    if (words.length > 0) {
+        preview += '<div class="mb-3"><strong>Mots disponibles :</strong><br>';
+        words.forEach(word => {
+            preview += `<span class="word-item">${word}</span>`;
+        });
+        preview += '</div>';
+    }
+    
+    if (sentences.length > 0) {
+        preview += '<div><strong>Phrases à compléter :</strong><br>';
+        sentences.forEach((sentence, index) => {
+            const processedSentence = sentence.replace(/___/g, '<span style="background: #e2e8f0; padding: 4px 12px; border-radius: 15px; margin: 0 3px;">[espace]</span>');
+            preview += `<p>${index + 1}. ${processedSentence}</p>`;
+        });
+        preview += '</div>';
+    }
+    
+    previewContent.innerHTML = preview;
+}
+
+// Mettre à jour l'aperçu quand on tape
+document.addEventListener('input', function(e) {
+    if (e.target.name === 'sentences[]' || e.target.name === 'words[]') {
+        updatePreview();
+    }
+});
+
+// Initialiser l'aperçu
+document.addEventListener('DOMContentLoaded', function() {
+    updatePreview();
+});
+</script>
+{% endblock %}

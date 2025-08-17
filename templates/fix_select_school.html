@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Diagnostic de la route select-school{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary text-white text-center py-4">
+                    <h2 class="mb-0">
+                        <i class="fas fa-stethoscope me-2"></i>
+                        Diagnostic de la route select-school
+                    </h2>
+                </div>
+                <div class="card-body p-4">
+                    {% if error %}
+                        <div class="alert alert-danger" role="alert">
+                            <h4 class="alert-heading">Erreur détectée!</h4>
+                            <p>Une erreur s'est produite lors du diagnostic:</p>
+                            <pre class="mt-3">{{ error }}</pre>
+                        </div>
+                    {% else %}
+                        <h4 class="mb-4">Résultats du diagnostic</h4>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">État du template</h5>
+                            </div>
+                            <div class="card-body">
+                                {% if template_exists %}
+                                    <div class="alert alert-success">
+                                        <i class="fas fa-check-circle me-2"></i>
+                                        Le template <code>payment/select_school.html</code> existe et est accessible.
+                                    </div>
+                                {% else %}
+                                    <div class="alert alert-danger">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        Le template <code>payment/select_school.html</code> n'est pas accessible.
+                                    </div>
+                                    {% if template_error %}
+                                        <div class="mt-3">
+                                            <h6>Erreur:</h6>
+                                            <pre>{{ template_error }}</pre>
+                                        </div>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">Configuration CSRF</h5>
+                            </div>
+                            <div class="card-body">
+                                {% if csrf_enabled %}
+                                    <div class="alert alert-success">
+                                        <i class="fas fa-check-circle me-2"></i>
+                                        La protection CSRF est activée.
+                                    </div>
+                                {% else %}
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        La protection CSRF n'est pas activée.
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">Écoles avec abonnement actif</h5>
+                            </div>
+                            <div class="card-body">
+                                {% if schools %}
+                                    <div class="table-responsive">
+                                        <table class="table table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th>Nom de l'école</th>
+                                                    <th>Nombre d'utilisateurs</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for school in schools %}
+                                                    <tr>
+                                                        <td>{{ school.school_name }}</td>
+                                                        <td>{{ school.user_count }}</td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                {% else %}
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        Aucune école avec abonnement actif n'a été trouvée.
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <form action="{{ url_for('fix_select_school.apply_select_school_fix') }}" method="POST" class="mt-4">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-success btn-lg">
+                                    <i class="fas fa-wrench me-2"></i>
+                                    Appliquer la correction
+                                </button>
+                            </div>
+                        </form>
+                    {% endif %}
+                </div>
+                <div class="card-footer bg-light p-3">
+                    <div class="text-center">
+                        <a href="{{ url_for('index') }}" class="btn btn-link">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Retour à l'accueil
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

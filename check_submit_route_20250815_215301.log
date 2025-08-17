@@ -1,0 +1,189 @@
+2025-08-15 21:53:01,179 - INFO - === VÉRIFICATION DE LA ROUTE DE SOUMISSION DES EXERCICES ===
+2025-08-15 21:53:01,179 - INFO - 
+=== ANALYSE DES ROUTES DE SOUMISSION ===
+2025-08-15 21:53:01,182 - INFO - Recherche de toutes les routes de soumission possibles...
+2025-08-15 21:53:01,186 - INFO - Routes potentielles trouvées: 13
+2025-08-15 21:53:01,186 - INFO - Route 1: URL=URL inconnue, Fonction=shuffle_filter
+2025-08-15 21:53:01,186 - INFO - Route 2: URL=URL inconnue, Fonction=view_student_classes
+2025-08-15 21:53:01,186 - INFO - Route 3: URL=URL inconnue, Fonction=delete_course_file
+2025-08-15 21:53:01,187 - INFO - Route 4: URL=URL inconnue, Fonction=submit_exercise
+2025-08-15 21:53:01,187 - INFO - Route 5: URL=URL inconnue, Fonction=download_course_file
+2025-08-15 21:53:01,187 - INFO - Route 6: URL=URL inconnue, Fonction=submit_answer
+2025-08-15 21:53:01,187 - INFO - Route 7: URL=URL inconnue, Fonction=preview_exercise
+2025-08-15 21:53:01,187 - INFO - Route 8: URL=URL inconnue, Fonction=test_submit
+2025-08-15 21:53:01,187 - INFO - Route 9: URL=URL inconnue, Fonction=handle_exercise_answer
+2025-08-15 21:53:01,187 - INFO - Route 10: URL=URL inconnue, Fonction=debug_edit_exercise
+2025-08-15 21:53:01,187 - INFO - Route 11: URL=URL inconnue, Fonction=teacher_statistics
+2025-08-15 21:53:01,187 - INFO - Route 12: URL=URL inconnue, Fonction=admin_subscriptions
+2025-08-15 21:53:01,187 - INFO - Route 13: URL=URL inconnue, Fonction=debug_form_data
+2025-08-15 21:53:01,187 - INFO - 
+=== ANALYSE DES TEMPLATES AVEC FORMULAIRES ===
+2025-08-15 21:53:01,187 - INFO - Recherche des templates avec des formulaires pour les exercices fill_in_blanks...
+2025-08-15 21:53:01,212 - INFO - Templates avec formulaires pour les exercices fill_in_blanks trouvés: 14
+2025-08-15 21:53:01,212 - INFO - Analyse du template: templates\basic_test.html
+2025-08-15 21:53:01,212 - INFO -   Formulaires trouvés dans templates\basic_test.html: 1
+2025-08-15 21:53:01,212 - INFO -   Formulaire 1:
+2025-08-15 21:53:01,213 - INFO -     Action: /exercise/create
+2025-08-15 21:53:01,213 - INFO -     Méthode: post
+2025-08-15 21:53:01,213 - INFO -     Aucun champ input pour les réponses trouvé dans ce formulaire
+2025-08-15 21:53:01,213 - INFO -     Champs input trouvés: 5
+2025-08-15 21:53:01,213 - INFO -     Noms des champs: exercise_type, title, description, fill_in_blanks_sentences[], fill_in_blanks_words[]
+2025-08-15 21:53:01,213 - INFO - Analyse du template: templates\create_exercise_in_library.html
+2025-08-15 21:53:01,214 - INFO -   Formulaires trouvés dans templates\create_exercise_in_library.html: 1
+2025-08-15 21:53:01,214 - INFO -   Formulaire 1:
+2025-08-15 21:53:01,214 - INFO -     Action: Action non spécifiée
+2025-08-15 21:53:01,214 - INFO -     Méthode: POST
+2025-08-15 21:53:01,214 - INFO -     Aucun champ input pour les réponses trouvé dans ce formulaire
+2025-08-15 21:53:01,214 - INFO -     Champs input trouvés: 7
+2025-08-15 21:53:01,214 - INFO -     Noms des champs: csrf_token, title, choices[], correct_answer, choices[], correct_answer, image
+2025-08-15 21:53:01,214 - INFO - Analyse du template: templates\debug_test.html
+2025-08-15 21:53:01,214 - INFO -   Formulaires trouvés dans templates\debug_test.html: 1
+2025-08-15 21:53:01,214 - INFO -   Formulaire 1:
+2025-08-15 21:53:01,214 - INFO -     Action: /exercise/create
+2025-08-15 21:53:01,214 - INFO -     Méthode: post
+2025-08-15 21:53:01,214 - INFO -     Aucun champ input pour les réponses trouvé dans ce formulaire
+2025-08-15 21:53:01,214 - INFO -     Champs input trouvés: 5
+2025-08-15 21:53:01,214 - INFO -     Noms des champs: exercise_type, title, description, fill_in_blanks_sentences[], fill_in_blanks_words[]
+2025-08-15 21:53:01,215 - INFO - Analyse du template: templates\edit_exercise.html
+2025-08-15 21:53:01,215 - INFO -   Formulaires trouvés dans templates\edit_exercise.html: 1
+2025-08-15 21:53:01,215 - INFO -   Formulaire 1:
+2025-08-15 21:53:01,215 - INFO -     Action: {{ url_for(
+2025-08-15 21:53:01,215 - INFO -     Méthode: POST
+2025-08-15 21:53:01,215 - INFO -     Aucun champ input pour les réponses trouvé dans ce formulaire
+2025-08-15 21:53:01,215 - INFO -     Champs input trouvés: 5
+2025-08-15 21:53:01,215 - INFO -     Noms des champs: csrf_token, title, subject, exercise_image, max_attempts
+2025-08-15 21:53:01,215 - INFO - Analyse du template: templates\exercise_library_backup.html
+2025-08-15 21:53:01,215 - INFO -   Formulaires trouvés dans templates\exercise_library_backup.html: 3
+2025-08-15 21:53:01,215 - INFO -   Formulaire 1:
+2025-08-15 21:53:01,216 - INFO -     Action: {{ url_for(
+2025-08-15 21:53:01,216 - INFO -     Méthode: GET
+2025-08-15 21:53:01,216 - INFO -     Aucun champ input pour les réponses trouvé dans ce formulaire
+2025-08-15 21:53:01,216 - INFO -     Champs input trouvés: 1
+2025-08-15 21:53:01,216 - INFO -     Noms des champs: search
+2025-08-15 21:53:01,216 - INFO -   Formulaire 2:
+2025-08-15 21:53:01,216 - INFO -     Action: {{ url_for(
+2025-08-15 21:53:01,216 - INFO -     Méthode: POST
+2025-08-15 21:53:01,216 - INFO -     Aucun champ input pour les réponses trouvé dans ce formulaire
+2025-08-15 21:53:01,216 - INFO -     Champs input trouvés: 1
+2025-08-15 21:53:01,216 - INFO -     Noms des champs: csrf_token
+2025-08-15 21:53:01,216 - INFO -   Formulaire 3:
+2025-08-15 21:53:01,216 - INFO -     Action: {{ url_for(
+2025-08-15 21:53:01,216 - INFO -     Méthode: POST
+2025-08-15 21:53:01,216 - INFO -     Aucun champ input pour les réponses trouvé dans ce formulaire
+2025-08-15 21:53:01,216 - INFO -     Champs input trouvés: 1
+2025-08-15 21:53:01,216 - INFO -     Noms des champs: csrf_token
+2025-08-15 21:53:01,216 - INFO - Analyse du template: templates\exercise_library_fixed.html
+2025-08-15 21:53:01,217 - INFO -   Formulaires trouvés dans templates\exercise_library_fixed.html: 3
+2025-08-15 21:53:01,217 - INFO -   Formulaire 1:
+2025-08-15 21:53:01,217 - INFO -     Action: {{ url_for(
+2025-08-15 21:53:01,217 - INFO -     Méthode: GET
+2025-08-15 21:53:01,217 - INFO -     Aucun champ input pour les réponses trouvé dans ce formulaire
+2025-08-15 21:53:01,217 - INFO -     Champs input trouvés: 1
+2025-08-15 21:53:01,217 - INFO -     Noms des champs: search
+2025-08-15 21:53:01,217 - INFO -   Formulaire 2:
+2025-08-15 21:53:01,217 - INFO -     Action: {{ url_for(
+2025-08-15 21:53:01,217 - INFO -     Méthode: POST
+2025-08-15 21:53:01,217 - INFO -     Aucun champ input pour les réponses trouvé dans ce formulaire
+2025-08-15 21:53:01,217 - INFO -     Champs input trouvés: 1
+2025-08-15 21:53:01,217 - INFO -     Noms des champs: csrf_token
+2025-08-15 21:53:01,217 - INFO -   Formulaire 3:
+2025-08-15 21:53:01,217 - INFO -     Action: {{ url_for(
+2025-08-15 21:53:01,217 - INFO -     Méthode: POST
+2025-08-15 21:53:01,217 - INFO -     Aucun champ input pour les réponses trouvé dans ce formulaire
+2025-08-15 21:53:01,217 - INFO -     Champs input trouvés: 1
+2025-08-15 21:53:01,217 - INFO -     Noms des champs: csrf_token
+2025-08-15 21:53:01,218 - INFO - Analyse du template: templates\test_form.html
+2025-08-15 21:53:01,218 - INFO -   Formulaires trouvés dans templates\test_form.html: 1
+2025-08-15 21:53:01,218 - INFO -   Formulaire 1:
+2025-08-15 21:53:01,218 - INFO -     Action: {{ url_for(
+2025-08-15 21:53:01,218 - INFO -     Méthode: post
+2025-08-15 21:53:01,218 - INFO -     Aucun champ input pour les réponses trouvé dans ce formulaire
+2025-08-15 21:53:01,218 - INFO -     Champs input trouvés: 5
+2025-08-15 21:53:01,218 - INFO -     Noms des champs: csrf_token, title, description, fill_in_blanks_sentences[], fill_in_blanks_words[]
+2025-08-15 21:53:01,218 - INFO - Analyse du template: templates\view_exercise.html
+2025-08-15 21:53:01,218 - INFO -   Formulaires trouvés dans templates\view_exercise.html: 5
+2025-08-15 21:53:01,218 - INFO -   Formulaire 1:
+2025-08-15 21:53:01,219 - INFO -     Action: {{ url_for(
+2025-08-15 21:53:01,219 - INFO -     Méthode: POST
+2025-08-15 21:53:01,219 - INFO -     Aucun champ input pour les réponses trouvé dans ce formulaire
+2025-08-15 21:53:01,219 - INFO -     Champs input trouvés: 1
+2025-08-15 21:53:01,219 - INFO -     Noms des champs: csrf_token
+2025-08-15 21:53:01,219 - INFO -   Formulaire 2:
+2025-08-15 21:53:01,219 - INFO -     Action: {{ url_for(
+2025-08-15 21:53:01,219 - INFO -     Méthode: POST
+2025-08-15 21:53:01,219 - INFO -     Aucun champ input pour les réponses trouvé dans ce formulaire
+2025-08-15 21:53:01,219 - INFO -     Champs input trouvés: 1
+2025-08-15 21:53:01,219 - INFO -     Noms des champs: csrf_token
+2025-08-15 21:53:01,219 - INFO -   Formulaire 3:
+2025-08-15 21:53:01,219 - INFO -     Action: {{ url_for(
+2025-08-15 21:53:01,219 - INFO -     Méthode: POST
+2025-08-15 21:53:01,219 - INFO -     Aucun champ input pour les réponses trouvé dans ce formulaire
+2025-08-15 21:53:01,219 - INFO -     Champs input trouvés: 1
+2025-08-15 21:53:01,219 - INFO -     Noms des champs: csrf_token
+2025-08-15 21:53:01,219 - INFO -   Formulaire 4:
+2025-08-15 21:53:01,220 - INFO -     Action: {{ url_for(
+2025-08-15 21:53:01,220 - INFO -     Méthode: POST
+2025-08-15 21:53:01,220 - INFO -     Aucun champ input pour les réponses trouvé dans ce formulaire
+2025-08-15 21:53:01,220 - INFO -     Champs input trouvés: 1
+2025-08-15 21:53:01,220 - INFO -     Noms des champs: csrf_token
+2025-08-15 21:53:01,220 - INFO -   Formulaire 5:
+2025-08-15 21:53:01,220 - INFO -     Action: {{ url_for(
+2025-08-15 21:53:01,220 - INFO -     Méthode: POST
+2025-08-15 21:53:01,220 - INFO -     Aucun champ input pour les réponses trouvé dans ce formulaire
+2025-08-15 21:53:01,220 - INFO -     Champs input trouvés: 1
+2025-08-15 21:53:01,220 - INFO -     Noms des champs: csrf_token
+2025-08-15 21:53:01,220 - INFO - Analyse du template: templates\debug\form_data.html
+2025-08-15 21:53:01,220 - INFO -   Formulaires trouvés dans templates\debug\form_data.html: 1
+2025-08-15 21:53:01,220 - INFO -   Formulaire 1:
+2025-08-15 21:53:01,220 - INFO -     Action: {{ url_for(
+2025-08-15 21:53:01,220 - INFO -     Méthode: POST
+2025-08-15 21:53:01,220 - INFO -     Champs input pour les réponses trouvés: 5
+2025-08-15 21:53:01,221 - INFO -     Noms des champs: answer_0, answer_1, answer_2, answer_3, answer_4
+2025-08-15 21:53:01,221 - INFO - Analyse du template: templates\exercise_types\create_exercise.html
+2025-08-15 21:53:01,221 - INFO -   Formulaires trouvés dans templates\exercise_types\create_exercise.html: 1
+2025-08-15 21:53:01,221 - INFO -   Formulaire 1:
+2025-08-15 21:53:01,221 - INFO -     Action: {{ url_for(
+2025-08-15 21:53:01,221 - INFO -     Méthode: post
+2025-08-15 21:53:01,222 - INFO -     Aucun champ input pour les réponses trouvé dans ce formulaire
+2025-08-15 21:53:01,222 - INFO -     Champs input trouvés: 10
+2025-08-15 21:53:01,222 - INFO -     Noms des champs: word_search_words[], grid_width, grid_height, sentences[], words[], fill_in_blanks_sentences[], draggable_items[], drop_zones[], underline_sentences[], underline_words[]
+2025-08-15 21:53:01,222 - INFO - Analyse du template: templates\exercise_types\create_exercise_simple.html
+2025-08-15 21:53:01,224 - INFO -   Formulaires trouvés dans templates\exercise_types\create_exercise_simple.html: 1
+2025-08-15 21:53:01,224 - INFO -   Formulaire 1:
+2025-08-15 21:53:01,224 - INFO -     Action: {{ url_for(
+2025-08-15 21:53:01,224 - INFO -     Méthode: post
+2025-08-15 21:53:01,224 - INFO -     Aucun champ input pour les réponses trouvé dans ce formulaire
+2025-08-15 21:53:01,225 - INFO -     Champs input trouvés: 51
+2025-08-15 21:53:01,225 - INFO -     Noms des champs: qcm_image, qcm_multichoix_image, word_search_words[], fill_in_blanks_image, fill_in_blanks_sentences[], fill_in_blanks_words[], word_placement_image, sentences[], words[], word_search_words[]
+2025-08-15 21:53:01,225 - INFO - Analyse du template: templates\exercise_types\fill_in_blanks.html
+2025-08-15 21:53:01,225 - INFO -   Formulaires trouvés dans templates\exercise_types\fill_in_blanks.html: 1
+2025-08-15 21:53:01,225 - INFO -   Formulaire 1:
+2025-08-15 21:53:01,225 - INFO -     Action: {{ url_for(
+2025-08-15 21:53:01,225 - INFO -     Méthode: POST
+2025-08-15 21:53:01,225 - INFO -     Aucun champ input pour les réponses trouvé dans ce formulaire
+2025-08-15 21:53:01,225 - INFO -     Champs input trouvés: 3
+2025-08-15 21:53:01,225 - INFO -     Noms des champs: csrf_token, answer_{{ blank_counter[0] }}, answer_{{ blank_counter[0] }}
+2025-08-15 21:53:01,226 - INFO - Analyse du template: templates\teacher\edit_exercise.html
+2025-08-15 21:53:01,226 - INFO -   Formulaires trouvés dans templates\teacher\edit_exercise.html: 1
+2025-08-15 21:53:01,226 - INFO -   Formulaire 1:
+2025-08-15 21:53:01,226 - INFO -     Action: {{ url_for(
+2025-08-15 21:53:01,226 - INFO -     Méthode: POST
+2025-08-15 21:53:01,226 - INFO -     Aucun champ input pour les réponses trouvé dans ce formulaire
+2025-08-15 21:53:01,226 - INFO -     Champs input trouvés: 5
+2025-08-15 21:53:01,226 - INFO -     Noms des champs: csrf_token, exercise_type, title, phrases[], answers[]
+2025-08-15 21:53:01,226 - INFO - Analyse du template: templates\teacher\exercise_library.html
+2025-08-15 21:53:01,226 - INFO -   Formulaires trouvés dans templates\teacher\exercise_library.html: 2
+2025-08-15 21:53:01,226 - INFO -   Formulaire 1:
+2025-08-15 21:53:01,226 - INFO -     Action: {{ url_for(
+2025-08-15 21:53:01,227 - INFO -     Méthode: GET
+2025-08-15 21:53:01,227 - INFO -     Aucun champ input pour les réponses trouvé dans ce formulaire
+2025-08-15 21:53:01,227 - INFO -     Champs input trouvés: 1
+2025-08-15 21:53:01,227 - INFO -     Noms des champs: search
+2025-08-15 21:53:01,227 - INFO -   Formulaire 2:
+2025-08-15 21:53:01,227 - INFO -     Action: {{ url_for(
+2025-08-15 21:53:01,227 - INFO -     Méthode: POST
+2025-08-15 21:53:01,227 - INFO -     Aucun champ input pour les réponses trouvé dans ce formulaire
+2025-08-15 21:53:01,227 - INFO -     Champs input trouvés: 1
+2025-08-15 21:53:01,227 - INFO -     Noms des champs: csrf_token
+2025-08-15 21:53:01,227 - INFO - 
+Vérification terminée. Résultats enregistrés dans check_submit_route_20250815_215301.log

@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modifier un exercice de cartes mémoire</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .card-editor {
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+        
+        .card-editor:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.1);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .card-number {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 1.2rem;
+        }
+        
+        .remove-card-btn {
+            background: #dc3545;
+            border: none;
+            color: white;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .remove-card-btn:hover {
+            background: #c82333;
+            transform: scale(1.1);
+        }
+        
+        .image-preview {
+            max-width: 200px;
+            max-height: 150px;
+            object-fit: contain;
+            border-radius: 10px;
+            margin-top: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .add-card-btn {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            border: none;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        
+        .add-card-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(40, 167, 69, 0.3);
+        }
+        
+        .form-control {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 15px;
+            padding: 12px 30px;
+            font-weight: 600;
+        }
+        
+        .btn-secondary {
+            border-radius: 15px;
+            padding: 12px 30px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h3 class="mb-0">
+                            <i class="fas fa-layer-group me-2"></i>
+                            Modifier un exercice de cartes mémoire
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" enctype="multipart/form-data">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            
+                            <!-- Informations générales -->
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <label for="title" class="form-label">Titre</label>
+                                    <input type="text" class="form-control" id="title" name="title" 
+                                           value="{{ exercise.title }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="subject" class="form-label">Matière</label>
+                                    <select class="form-control" id="subject" name="subject" required>
+                                        <option value="">Choisir une matière</option>
+                                        <option value="Français" {% if exercise.subject == 'Français' %}selected{% endif %}>Français</option>
+                                        <option value="Mathématiques" {% if exercise.subject == 'Mathématiques' %}selected{% endif %}>Mathématiques</option>
+                                        <option value="Histoire" {% if exercise.subject == 'Histoire' %}selected{% endif %}>Histoire</option>
+                                        <option value="Géographie" {% if exercise.subject == 'Géographie' %}selected{% endif %}>Géographie</option>
+                                        <option value="Sciences" {% if exercise.subject == 'Sciences' %}selected{% endif %}>Sciences</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="description" class="form-label">Description</label>
+                                <textarea class="form-control" id="description" name="description" rows="3">{{ exercise.description }}</textarea>
+                            </div>
+
+                            <!-- Section des cartes -->
+                            <div class="mb-4">
+                                <h4 class="mb-3">
+                                    <i class="fas fa-layer-group me-2"></i>
+                                    Cartes mémoire
+                                </h4>
+                                
+                                <div id="cards-container">
+                                    {% if content and content.cards %}
+                                        {% for card in content.cards %}
+                                        <div class="card-editor" data-card-index="{{ loop.index0 }}">
+                                            <div class="card-header">
+                                                <span class="card-number">Carte {{ loop.index }}</span>
+                                                <button type="button" class="remove-card-btn" onclick="removeCard(this)">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                            
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Question</label>
+                                                    <textarea class="form-control" name="card_questions[]" rows="3" 
+                                                              placeholder="Entrez la question..." required>{{ card.question }}</textarea>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Réponse correcte</label>
+                                                    <input type="text" class="form-control" name="card_answers[]" 
+                                                           value="{{ card.answer }}" placeholder="Réponse attendue..." required>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="row mt-3">
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Image (optionnelle)</label>
+                                                    <input type="file" class="form-control" name="card_images[]" 
+                                                           accept="image/*" onchange="previewImage(this)">
+                                                    {% if card.image %}
+                                                        <img src="{{ url_for('static', filename=card.image.replace('static/', '')) }}" 
+                                                             alt="Image actuelle" class="image-preview">
+                                                        <input type="hidden" name="existing_card_images[]" value="{{ card.image }}">
+                                                    {% else %}
+                                                        <input type="hidden" name="existing_card_images[]" value="">
+                                                    {% endif %}
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="image-preview-container"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <!-- Carte par défaut si aucune carte existante -->
+                                        <div class="card-editor" data-card-index="0">
+                                            <div class="card-header">
+                                                <span class="card-number">Carte 1</span>
+                                                <button type="button" class="remove-card-btn" onclick="removeCard(this)">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                            
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Question</label>
+                                                    <textarea class="form-control" name="card_questions[]" rows="3" 
+                                                              placeholder="Entrez la question..." required></textarea>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Réponse correcte</label>
+                                                    <input type="text" class="form-control" name="card_answers[]" 
+                                                           placeholder="Réponse attendue..." required>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="row mt-3">
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Image (optionnelle)</label>
+                                                    <input type="file" class="form-control" name="card_images[]" 
+                                                           accept="image/*" onchange="previewImage(this)">
+                                                    <input type="hidden" name="existing_card_images[]" value="">
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="image-preview-container"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <button type="button" class="add-card-btn" onclick="addCard()">
+                                    <i class="fas fa-plus me-2"></i>
+                                    Ajouter une carte
+                                </button>
+                            </div>
+
+                            <!-- Difficulté -->
+                            <div class="mb-4">
+                                <label for="difficulty" class="form-label">Difficulté</label>
+                                <select class="form-control" id="difficulty" name="difficulty">
+                                    <option value="Facile" {% if exercise.difficulty == 'Facile' %}selected{% endif %}>Facile</option>
+                                    <option value="Moyen" {% if exercise.difficulty == 'Moyen' %}selected{% endif %}>Moyen</option>
+                                    <option value="Difficile" {% if exercise.difficulty == 'Difficile' %}selected{% endif %}>Difficile</option>
+                                </select>
+                            </div>
+
+                            <!-- Boutons d'action -->
+                            <div class="text-center">
+                                <button type="submit" class="btn btn-primary me-3">
+                                    <i class="fas fa-save me-2"></i>
+                                    Enregistrer
+                                </button>
+                                <a href="{{ url_for('teacher_dashboard') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times me-2"></i>
+                                    Annuler
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialiser le compteur de cartes
+        let cardCounter = 1;
+        {% if content and content.cards %}
+            cardCounter = {{ content.cards|length }};
+        {% endif %}
+
+        function addCard() {
+            cardCounter++;
+            const container = document.getElementById('cards-container');
+            
+            const cardHtml = `
+                <div class="card-editor" data-card-index="${cardCounter - 1}">
+                    <div class="card-header">
+                        <span class="card-number">Carte ${cardCounter}</span>
+                        <button type="button" class="remove-card-btn" onclick="removeCard(this)">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Question</label>
+                            <textarea class="form-control" name="card_questions[]" rows="3" 
+                                      placeholder="Entrez la question..." required></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Réponse correcte</label>
+                            <input type="text" class="form-control" name="card_answers[]" 
+                                   placeholder="Réponse attendue..." required>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Image (optionnelle)</label>
+                            <input type="file" class="form-control" name="card_images[]" 
+                                   accept="image/*" onchange="previewImage(this)">
+                            <input type="hidden" name="existing_card_images[]" value="">
+                        </div>
+                        <div class="col-md-6">
+                            <div class="image-preview-container"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', cardHtml);
+            updateCardNumbers();
+        }
+
+        function removeCard(button) {
+            const cardEditor = button.closest('.card-editor');
+            const container = document.getElementById('cards-container');
+            
+            // Ne pas supprimer s'il n'y a qu'une seule carte
+            if (container.children.length <= 1) {
+                alert('Vous devez avoir au moins une carte.');
+                return;
+            }
+            
+            cardEditor.remove();
+            updateCardNumbers();
+        }
+
+        function updateCardNumbers() {
+            const cards = document.querySelectorAll('.card-editor');
+            cards.forEach((card, index) => {
+                const cardNumber = card.querySelector('.card-number');
+                cardNumber.textContent = `Carte ${index + 1}`;
+                card.setAttribute('data-card-index', index);
+            });
+        }
+
+        function previewImage(input) {
+            const container = input.closest('.card-editor').querySelector('.image-preview-container');
+            
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    container.innerHTML = `<img src="${e.target.result}" alt="Aperçu" class="image-preview">`;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // Validation du formulaire
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const questions = document.querySelectorAll('textarea[name="card_questions[]"]');
+            const answers = document.querySelectorAll('input[name="card_answers[]"]');
+            
+            let hasError = false;
+            
+            questions.forEach((question, index) => {
+                if (!question.value.trim()) {
+                    alert(`Veuillez remplir la question de la carte ${index + 1}`);
+                    hasError = true;
+                    return;
+                }
+            });
+            
+            if (!hasError) {
+                answers.forEach((answer, index) => {
+                    if (!answer.value.trim()) {
+                        alert(`Veuillez remplir la réponse de la carte ${index + 1}`);
+                        hasError = true;
+                        return;
+                    }
+                });
+            }
+            
+            if (hasError) {
+                e.preventDefault();
+            }
+        });
+    </script>
+</body>
+</html>

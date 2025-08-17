@@ -1,0 +1,394 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    /* Couleurs personnalisées pour QCM Classique */
+    .qcm-classic-container {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px 15px;
+    }
+    
+    .qcm-classic-header {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 8px 32px rgba(79, 172, 254, 0.3);
+        color: white;
+        padding: 30px;
+        margin-bottom: 25px;
+    }
+    
+    .qcm-classic-header h2 {
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+    
+    .qcm-classic-header .lead {
+        opacity: 0.9;
+        font-size: 1.1rem;
+    }
+    
+    .edit-btn {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        border: none;
+        border-radius: 25px;
+        padding: 10px 25px;
+        font-weight: 600;
+        color: white;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(250, 112, 154, 0.3);
+    }
+    
+    .edit-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(250, 112, 154, 0.4);
+        color: white;
+    }
+    
+    .image-display-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 6px 25px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        background: white;
+    }
+    
+    .result-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 6px 25px rgba(0, 0, 0, 0.1);
+        background: linear-gradient(145deg, #ffffff 0%, #f8f9ff 100%);
+    }
+    
+    .question-card-classic {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        background: linear-gradient(145deg, #ffffff 0%, #f0f8ff 100%);
+        transition: all 0.3s ease;
+        margin-bottom: 20px;
+    }
+    
+    .question-card-classic:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    }
+    
+    .question-title-classic {
+        color: #2c5aa0;
+        font-weight: 600;
+        border-bottom: 2px solid #e3f2fd;
+        padding-bottom: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .form-check-input[type="radio"]:checked {
+        background-color: #4facfe;
+        border-color: #4facfe;
+        box-shadow: 0 0 10px rgba(79, 172, 254, 0.3);
+    }
+    
+    .form-check-label {
+        color: #495057;
+        font-weight: 500;
+        cursor: pointer;
+        transition: color 0.2s ease;
+        padding: 10px 15px;
+        border-radius: 8px;
+        margin: 5px 0;
+        display: block;
+        background: rgba(79, 172, 254, 0.05);
+    }
+    
+    .form-check-label:hover {
+        color: #2c5aa0;
+        background: rgba(79, 172, 254, 0.1);
+    }
+    
+    .submit-btn-classic {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        padding: 15px 50px;
+        border-radius: 30px;
+        font-weight: 600;
+        color: white;
+        font-size: 1.1rem;
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+        transition: all 0.3s ease;
+    }
+    
+    .submit-btn-classic:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        background: linear-gradient(135deg, #5a67d8 0%, #667eea 100%);
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="qcm-classic-container">
+<div class="container mt-4">
+    <div class="qcm-classic-header">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <h2><i class="fas fa-list-ul me-2"></i>{{ exercise.title }}</h2>
+                <p class="lead mb-0">{{ exercise.description }}</p>
+            </div>
+            {% if current_user.is_teacher %}
+            <a href="{{ url_for('edit_exercise', exercise_id=exercise.id) }}" class="btn edit-btn">
+                <i class="fas fa-edit me-2"></i> Modifier
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Affichage de l'image optionnelle -->
+    {% if content and content.image %}
+    <div class="mb-4 text-center">
+        <div class="card image-display-card">
+            <div class="card-body p-4">
+                <img src="{{ url_for('uploaded_file', filename=content.image.split('/')[-1]) }}" 
+                     alt="Image d'illustration" 
+                     class="img-fluid rounded shadow" 
+                     style="max-width: 100%; max-height: 400px; object-fit: contain;"
+                     onerror="this.style.display='none';">
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if attempt and attempt.completed %}
+    <div class="alert {{ 'alert-success' if attempt.score >= 50 else 'alert-warning' }} mb-4">
+        <div class="d-flex align-items-center mb-3">
+            <div class="flex-grow-1">
+                <h4 class="alert-heading mb-0">
+                    <i class="fas {{ 'fa-trophy' if attempt.score >= 50 else 'fa-info-circle' }} me-2"></i>
+                    Résultat de votre dernière tentative
+                </h4>
+            </div>
+            <div class="h4 mb-0">
+                <span class="badge {{ 'bg-success' if attempt.score >= 50 else 'bg-warning text-dark' }}">
+                    Score : {{ '%.1f'|format(attempt.score) }}%
+                </span>
+            </div>
+        </div>
+        {% if attempt.feedback %}
+            {% set feedback = attempt.feedback|from_json %}
+            {% if feedback %}
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">Détails des réponses</h5>
+                    </div>
+                    <ul class="list-group list-group-flush">
+                    {% for item in feedback %}
+                        <li class="list-group-item">
+                            <div class="d-flex align-items-center {{ 'text-success' if item.is_correct else 'text-danger' }}">
+                                <i class="fas {{ 'fa-check-circle' if item.is_correct else 'fa-times-circle' }} fa-lg me-2"></i>
+                                <strong>{{ item.question }}</strong>
+                            </div>
+                            <div class="ms-4 mt-2">
+                                <div class="d-flex align-items-center">
+                                    <span class="badge {{ 'bg-success' if item.is_correct else 'bg-danger' }} me-2">Votre réponse</span>
+                                    <span>{{ item.student_answer }}</span>
+                                </div>
+                                {% if not item.is_correct %}
+                                    <div class="d-flex align-items-center mt-1">
+                                        <span class="badge bg-info me-2">Réponse correcte</span>
+                                        <span>{{ item.correct_answer }}</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </li>
+                    {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    {% if not content or not content.questions %}
+    <div class="alert alert-info">
+        <h4 class="alert-heading">Exercice vide</h4>
+        <p>Aucune question n'a été ajoutée à cet exercice.</p>
+        {% if current_user.is_teacher %}
+        <hr>
+        <p class="mb-0">
+            <a href="{{ url_for('edit_exercise', exercise_id=exercise.id) }}" class="btn btn-primary">
+                <i class="fas fa-edit"></i> Ajouter des questions
+            </a>
+        </p>
+        {% endif %}
+    </div>
+    {% else %}
+    {% if not content or not content.questions %}
+        <div class="alert alert-warning">
+            <h4 class="alert-heading">Contenu non disponible</h4>
+            <p>Le contenu de cet exercice n'est pas disponible ou est mal formé.</p>
+            {% if current_user.role == 'teacher' %}
+                <hr>
+                <p class="mb-0">
+                    <a href="{{ url_for('edit_exercise', exercise_id=exercise.id) }}" class="btn btn-warning">
+                        <i class="fas fa-edit"></i> Éditer l'exercice
+                    </a>
+                </p>
+            {% endif %}
+        </div>
+    {% elif attempt and attempt.completed and current_user.role == 'student' %}
+        <div class="alert alert-info mb-4">
+            <h4 class="alert-heading">Exercice terminé</h4>
+            <p class="mb-0">Vous avez déjà complété cet exercice. Pour le refaire, contactez votre enseignant.</p>
+        </div>
+    {% else %}
+    <form method="POST" action="{{ url_for('submit_answer', exercise_id=exercise.id, course_id=0) }}">
+        {% if course %}
+        <input type="hidden" name="course_id" value="{{ course.id }}"/>
+        {% endif %}
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        
+        <!-- Affichage de l'image si elle existe -->
+        {% if exercise.image_path %}
+        <div class="exercise-image" style="text-align: center; margin: 1.5rem 0;">
+            <img src="{{ url_for('uploaded_file', filename=exercise.image_path.split('/')[-1]) }}" 
+                 alt="Image de l'exercice" 
+                 style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        </div>
+        {% endif %}
+        
+        {% for question in content.questions %}
+            {% if question and question.text and question.choices %}
+            {% set question_index = loop.index0 %}
+            <div class="card mb-4 question-card-classic">
+                <div class="card-body p-4">
+                    <h5 class="question-title-classic">
+                        <i class="fas fa-question-circle me-2"></i>
+                        Question {{ loop.index }}
+                    </h5>
+                    {% if not question.text %}
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Question invalide : texte manquant
+                        </div>
+                    {% else %}
+                        <p class="card-text lead">{{ question.text }}</p>
+                        
+                        {% if not question.choices %}
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Question invalide : options manquantes
+                            </div>
+                        {% else %}
+                            <div class="list-group">
+                                {% for option in question.choices %}
+                                    <label class="list-group-item list-group-item-action d-flex align-items-center py-3">
+                                        <input type="radio" name="answer_{{ question_index }}" value="{{ loop.index0 }}" 
+                                               class="form-check-input me-3" required>
+                                        <span>{{ option }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+                <div class="alert alert-danger mb-4">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Question #{{ loop.index }} invalide ou mal formée
+                </div>
+            {% endif %}
+        {% endfor %}
+        
+        <div class="text-center mt-4">
+            <button type="submit" class="btn submit-btn-classic">
+                <i class="fas fa-check me-2"></i> Valider mes réponses
+            </button>
+        </div>
+    </form>
+    {% endif %}
+    {% endif %}
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    
+    if (form) {
+        // Ajouter un indicateur de progression
+        const progressContainer = document.createElement('div');
+        progressContainer.className = 'progress mb-4';
+        progressContainer.style.height = '2px';
+        
+        const progressBar = document.createElement('div');
+        progressBar.className = 'progress-bar';
+        progressBar.setAttribute('role', 'progressbar');
+        progressBar.style.width = '0%';
+        
+        progressContainer.appendChild(progressBar);
+        form.insertBefore(progressContainer, form.firstChild);
+        
+        // Mettre à jour la progression quand une réponse est sélectionnée
+        function updateProgress() {
+            const questions = document.querySelectorAll('.card');
+            let answered = 0;
+            
+            questions.forEach(function(question) {
+                const options = question.querySelectorAll('input[type="radio"]');
+                if (Array.from(options).some(option => option.checked)) {
+                    answered++;
+                    question.classList.remove('border-danger');
+                }
+            });
+            
+            const progress = (answered / questions.length) * 100;
+            progressBar.style.width = progress + '%';
+            progressBar.setAttribute('aria-valuenow', progress);
+        }
+        
+        // Écouter les changements de réponses
+        form.addEventListener('change', updateProgress);
+        
+        // Validation du formulaire
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            // ✅ CORRECTION : Sélectionner uniquement les cartes de questions avec des boutons radio
+            const questions = document.querySelectorAll('.card.mb-4.shadow-sm');
+            let allAnswered = true;
+            let firstUnanswered = null;
+            
+            questions.forEach(function(question, index) {
+                const options = question.querySelectorAll('input[type="radio"]');
+                const answered = Array.from(options).some(option => option.checked);
+                
+                // ✅ CORRECTION : Vérifier seulement si la carte contient des boutons radio
+                if (options.length > 0 && !answered) {
+                    allAnswered = false;
+                    question.classList.add('border-danger');
+                    if (!firstUnanswered) firstUnanswered = question;
+                }
+            });
+            
+            if (!allAnswered) {
+                const toast = document.createElement('div');
+                toast.className = 'alert alert-warning alert-dismissible fade show';
+                toast.innerHTML = `
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Veuillez répondre à toutes les questions.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                
+                form.insertBefore(toast, form.firstChild);
+                firstUnanswered.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                form.submit();
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Test - Bibliothèque d'exercices</h2>
+    
+    {% if exercises %}
+        <div class="row">
+            {% for exercise in exercises %}
+                <div class="col-md-4 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ exercise.title }}</h5>
+                            <p>Type: {{ exercise.exercise_type }}</p>
+                            <p>ID: {{ exercise.id }}</p>
+                            <!-- Test avec URL simple -->
+                            <a href="/exercise/{{ exercise.id }}" class="btn btn-primary">Voir (URL directe)</a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>Aucun exercice trouvé.</p>
+    {% endif %}
+</div>
+{% endblock %}

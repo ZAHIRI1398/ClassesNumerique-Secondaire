@@ -1,0 +1,2 @@
+2025-08-17 01:49:48,050 - check_routes_production - INFO - Pour exécuter ce script, définissez la variable d'environnement avec l'URL de l'application en production
+2025-08-17 01:49:48,052 - check_routes_production - INFO - Exemple: set PRODUCTION_APP_URL=https://votre-application.up.railway.app

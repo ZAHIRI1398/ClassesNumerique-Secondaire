@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h2>{{ exercise.title }}</h2>
+            <p class="lead">{{ exercise.description }}</p>
+        </div>
+        {% if current_user.is_teacher %}
+        <div class="btn-group">
+            <a href="{{ url_for('edit_exercise', exercise_id=exercise.id) }}" class="btn btn-outline-primary">
+                <i class="fas fa-edit"></i> Modifier
+            </a>
+            <form method="POST" action="{{ url_for('exercise.delete_exercise', exercise_id=exercise.id) }}" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet exercice ?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit" class="btn btn-outline-danger">
+                    <i class="fas fa-trash"></i> Supprimer
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+
+    <form method="POST" action="{{ url_for('handle_exercise_answer', exercise_id=exercise.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        {% if course %}
+        <input type="hidden" name="course_id" value="{{ course.id }}"/>
+        {% endif %}
+        
+        <!-- Champs cachés pour les réponses -->
+        {% for i in range(content.draggable_items|length) %}
+        <input type="hidden" name="answer_{{ i }}" id="answer_{{ i }}" value="">
+        {% endfor %}
+        
+        <div class="alert alert-info mb-4">
+            <i class="fas fa-info-circle"></i> <strong>Instructions :</strong> 
+            <ol class="mb-2">
+                <li>Lisez attentivement la consigne de l'exercice ci-dessus</li>
+                <li>Cliquez sur un élément à gauche pour le sélectionner</li>
+                <li>Cliquez sur la zone de dépôt où vous voulez le placer à droite</li>
+                <li>Répétez pour tous les éléments</li>
+            </ol>
+            <div class="alert alert-warning mt-2 mb-0" style="font-size: 0.9em;">
+                <i class="fas fa-exclamation-triangle"></i> <strong>Important :</strong> 
+                Les numéros sur les éléments et zones sont juste des repères. 
+                Placez les éléments selon la consigne (ex: ordre croissant, alphabétique, etc.)
+            </div>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <h4><i class="fas fa-hand-pointer"></i> Éléments à placer</h4>
+                <div class="alert alert-light mb-2" style="font-size: 0.85em; padding: 8px;">
+                    <i class="fas fa-info"></i> Cliquez sur un élément pour le sélectionner
+                </div>
+                <div id="draggable-items" style="min-height: 200px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+                    {% for item in content.draggable_items %}
+                        <div class="draggable-item" data-index="{{ loop.index0 }}" style="background: white; margin: 5px; padding: 10px; border-radius: 5px; cursor: pointer; border: 2px solid #007bff; position: relative; transition: all 0.2s;">
+                            <span class="badge bg-primary" style="position: absolute; top: -8px; left: -8px; font-size: 12px;">{{ loop.index0 }}</span>
+                            <strong>{{ item }}</strong>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <h4><i class="fas fa-bullseye"></i> Zones de dépôt</h4>
+                <div class="alert alert-light mb-2" style="font-size: 0.85em; padding: 8px;">
+                    <i class="fas fa-info"></i> Cliquez sur une zone pour y déposer l'élément sélectionné
+                </div>
+                {% for i in range(content.draggable_items|length) %}
+                    <div class="drop-zone" data-position="{{ i }}" style="min-height: 60px; margin: 5px; padding: 15px; border: 2px dashed #28a745; border-radius: 5px; background: #f8fff9; position: relative; transition: all 0.2s;">
+                        <span class="badge bg-success" style="position: absolute; top: -8px; left: -8px; font-size: 12px;">{{ i }}</span>
+                        <span class="placeholder"><i class="fas fa-arrow-down"></i> Position {{ i + 1 }}</span>
+                        <div class="dropped-item" style="display: none;"></div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-check"></i> Valider mes réponses
+        </button>
+        
+
+    </form>
+</div>
+
+<script>
+let selectedItem = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Template drag_and_drop_simple chargé');
+    
+    // Gestion des éléments glissables
+    document.querySelectorAll('.draggable-item').forEach(item => {
+        item.addEventListener('click', function() {
+            // Désélectionner l'ancien élément
+            if (selectedItem) {
+                selectedItem.style.backgroundColor = 'white';
+                selectedItem.style.color = 'black';
+                selectedItem.style.border = '2px solid #007bff';
+                selectedItem.style.transform = 'scale(1)';
+            }
+            
+            // Sélectionner le nouveau
+            selectedItem = this;
+            this.style.backgroundColor = '#007bff';
+            this.style.color = 'white';
+            this.style.border = '2px solid #0056b3';
+            this.style.transform = 'scale(1.05)';
+            this.style.boxShadow = '0 4px 8px rgba(0,123,255,0.3)';
+            
+            // Mettre à jour les instructions
+            updateInstructions('Élément sélectionné: "' + this.textContent.trim() + '". Cliquez maintenant sur une zone de dépôt.');
+            
+            console.log('Élément sélectionné:', this.textContent.trim(), 'Index:', this.dataset.index);
+        });
+    });
+    
+    // Gestion des zones de dépôt
+    document.querySelectorAll('.drop-zone').forEach(zone => {
+        zone.addEventListener('click', function() {
+            if (!selectedItem) {
+                updateInstructions('⚠️ Veuillez d\'abord sélectionner un élément à placer.', 'warning');
+                return;
+            }
+            
+            const itemIndex = selectedItem.dataset.index;
+            const position = this.dataset.position;
+            const itemText = selectedItem.textContent.trim();
+            
+            console.log('Placement:', itemIndex, 'dans zone', position);
+            
+            // Afficher l'élément dans la zone
+            const droppedDiv = this.querySelector('.dropped-item');
+            const placeholder = this.querySelector('.placeholder');
+            
+            droppedDiv.innerHTML = '<i class="fas fa-check-circle"></i> ' + itemText;
+            droppedDiv.style.display = 'block';
+            droppedDiv.style.background = '#28a745';
+            droppedDiv.style.color = 'white';
+            droppedDiv.style.padding = '8px';
+            droppedDiv.style.borderRadius = '5px';
+            droppedDiv.style.fontWeight = 'bold';
+            droppedDiv.style.textAlign = 'center';
+            
+            placeholder.style.display = 'none';
+            
+            // Mettre à jour le champ caché
+            const hiddenField = document.getElementById('answer_' + position);
+            if (hiddenField) {
+                hiddenField.value = itemIndex;
+                console.log('Champ answer_' + position + ' mis à jour avec:', itemIndex);
+            }
+            
+            // Cacher l'élément original avec animation
+            selectedItem.style.opacity = '0.3';
+            selectedItem.style.transform = 'scale(0.9)';
+            selectedItem.style.pointerEvents = 'none';
+            selectedItem.innerHTML += ' <i class="fas fa-check text-success"></i>';
+            
+            // Mettre à jour les instructions
+            updateInstructions('✅ "' + itemText + '" placé en position ' + (parseInt(position) + 1) + '. Continuez avec les autres éléments.', 'success');
+            
+            selectedItem = null;
+            
+            // Afficher l'état actuel
+            debugFormState();
+        });
+    });
+    
+    const totalItems = {{ content.draggable_items|length|int }};
+    
+    function debugFormState() {
+        console.log('=== État des champs cachés ===');
+        for (let i = 0; i < totalItems; i++) {
+            const field = document.getElementById('answer_' + i);
+            if (field) {
+                console.log('answer_' + i + ':', field.value);
+            }
+        }
+    }
+    
+    window.validateAndSubmit = function() {
+        console.log('=== VALIDATION AVANT SOUMISSION ===');
+        debugFormState();
+        
+        let allFilled = true;
+        for (let i = 0; i < totalItems; i++) {
+            const field = document.getElementById('answer_' + i);
+            if (!field || field.value === '') {
+                allFilled = false;
+                console.warn('Champ answer_' + i + ' vide');
+            }
+        }
+        
+        if (!allFilled) {
+            alert('Veuillez placer tous les éléments dans les zones de dépôt.');
+            return false;
+        }
+        
+        console.log('Validation OK - Soumission du formulaire');
+        return true;
+    };
+    
+    // Fonction pour mettre à jour les instructions dynamiquement
+    function updateInstructions(message, type = 'info') {
+        let instructionsDiv = document.getElementById('dynamic-instructions');
+        if (!instructionsDiv) {
+            // Créer la div d'instructions dynamiques si elle n'existe pas
+            instructionsDiv = document.createElement('div');
+            instructionsDiv.id = 'dynamic-instructions';
+            instructionsDiv.className = 'alert alert-info mt-3';
+            instructionsDiv.style.fontSize = '0.9em';
+            
+            const instructionsContainer = document.querySelector('.alert.alert-info');
+            instructionsContainer.parentNode.insertBefore(instructionsDiv, instructionsContainer.nextSibling);
+        }
+        
+        // Mettre à jour le style selon le type
+        instructionsDiv.className = 'alert alert-' + (type === 'warning' ? 'warning' : type === 'success' ? 'success' : 'info') + ' mt-3';
+        instructionsDiv.innerHTML = '<i class="fas fa-' + (type === 'warning' ? 'exclamation-triangle' : type === 'success' ? 'check-circle' : 'info-circle') + '"></i> ' + message;
+    }
+    
+    // État initial
+    updateInstructions('Commencez par cliquer sur un élément à placer.');
+    debugFormState();
+});
+</script>
+{% endblock %}

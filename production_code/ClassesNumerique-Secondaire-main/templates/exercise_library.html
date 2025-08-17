@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">Bibliothèque d'exercices 🔧 [CORRECT TEMPLATE]</h2>
+
+            <!-- Filtres -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="GET" action="{{ url_for('exercise.exercise_library') }}" class="row g-3">
+                        <div class="col-md-4">
+                            <div class="input-group">
+                                <input type="text" 
+                                       class="form-control" 
+                                       name="search" 
+                                       placeholder="Rechercher un exercice..."
+                                       value="{{ search_query if search_query else '' }}">
+                                <button class="btn btn-outline-secondary" type="submit">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" name="type">
+                                <option value="">Tous les types</option>
+                                {% for type_id, type_name in exercise_types %}
+                                    <option value="{{ type_id }}" {% if type_id == selected_type %}selected{% endif %}>
+                                        {{ type_name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" name="subject">
+                                <option value="">Toutes les matières</option>
+                                <option value="Français" {% if selected_subject == 'Français' %}selected{% endif %}>Français</option>
+                                <option value="Mathématiques" {% if selected_subject == 'Mathématiques' %}selected{% endif %}>Mathématiques</option>
+                                <option value="Histoire" {% if selected_subject == 'Histoire' %}selected{% endif %}>Histoire</option>
+                                <option value="Géographie" {% if selected_subject == 'Géographie' %}selected{% endif %}>Géographie</option>
+                                <option value="Sciences" {% if selected_subject == 'Sciences' %}selected{% endif %}>Sciences</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-filter"></i> Filtrer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            {% if not has_filters %}
+                <!-- Message d'invitation au filtrage -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="text-center py-5">
+                            <div class="mb-4">
+                                <i class="fas fa-search fa-4x text-primary opacity-50"></i>
+                            </div>
+                            <h4 class="text-muted mb-3">Recherchez des exercices</h4>
+                            <p class="text-muted mb-4">
+                                Utilisez les filtres ci-dessus pour rechercher des exercices par :<br>
+                                <strong>Mot-clé</strong>, <strong>Type d'exercice</strong> ou <strong>Matière</strong>
+                            </p>
+                            <div class="d-flex justify-content-center gap-3 flex-wrap">
+                                <span class="badge bg-light text-dark border px-3 py-2">
+                                    <i class="fas fa-search me-1"></i> Recherche par titre
+                                </span>
+                                <span class="badge bg-light text-dark border px-3 py-2">
+                                    <i class="fas fa-filter me-1"></i> Filtrage par type
+                                </span>
+                                <span class="badge bg-light text-dark border px-3 py-2">
+                                    <i class="fas fa-book me-1"></i> Filtrage par matière
+                                </span>
+                            </div>
+                            {% if current_user.is_teacher %}
+                                <div class="mt-4">
+                                    <a href="{{ url_for('exercise.create_exercise') }}" class="btn btn-primary">
+                                        <i class="fas fa-plus"></i> Créer un nouvel exercice
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% elif exercises %}
+                <!-- Affichage des exercices filtrés -->
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <strong>{{ exercises|length }}</strong> exercice(s) trouvé(s)
+                            {% if search_query %}avec le terme "<strong>{{ search_query }}</strong>"{% endif %}
+                            {% if selected_type %}de type "<strong>{{ dict(exercise_types)[selected_type] }}</strong>"{% endif %}
+                            {% if selected_subject %}en "<strong>{{ selected_subject }}</strong>"{% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                    {% for exercise in exercises %}
+                        <div class="col">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ exercise.title }}</h5>
+                                    {% if exercise.description %}
+                                        <p class="card-text">{{ exercise.description }}</p>
+                                    {% endif %}
+                                    <div class="mb-2">
+                                        <span class="badge bg-primary me-2">{{ exercise.get_type_display() }}</span>
+                                        {% if exercise.subject %}
+                                            <span class="badge bg-secondary me-2">{{ exercise.subject }}</span>
+                                        {% endif %}
+                                        {% if exercise.difficulty %}
+                                            <span class="badge bg-info">{{ exercise.difficulty }}</span>
+                                        {% endif %}
+                                    </div>
+                                    {% if exercise.created_by %}
+                                        <small class="text-muted">
+                                            Créé par {{ exercise.created_by.name or exercise.created_by.email }}
+                                            le {{ exercise.created_at.strftime('%d/%m/%Y') }}
+                                        </small>
+                                    {% endif %}
+                                </div>
+                                <div class="card-footer bg-transparent">
+                                    <div class="d-flex gap-2">
+                                        <!-- Utilisation d'URL directe pour éviter les conflits de routage -->
+                                        <a href="/exercise/{{ exercise.id }}" class="btn btn-outline-primary">
+                                            <i class="fas fa-eye"></i> Voir
+                                        </a>
+                                        {% if current_user.is_teacher %}
+                                            <a href="/quick-add-exercise/{{ exercise.id }}" class="btn btn-outline-success">
+                                                <i class="fas fa-plus"></i> Ajouter
+                                            </a>
+                                            {% if current_user.id == exercise.teacher_id %}
+                                                <a href="/exercise/{{ exercise.id }}/edit" class="btn btn-outline-warning">
+                                                    <i class="fas fa-edit"></i> Modifier
+                                                </a>
+                                                <form method="POST" action="{{ url_for('exercise.delete_exercise', exercise_id=exercise.id) }}" style="display: inline;" onsubmit="return confirmDelete('{{ exercise.title }}')">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                                    <button type="submit" class="btn btn-outline-danger">
+                                                        <i class="fas fa-trash"></i> Supprimer
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <!-- Aucun résultat trouvé avec les filtres -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="text-center py-5">
+                            <div class="mb-4">
+                                <i class="fas fa-search-minus fa-4x text-warning opacity-50"></i>
+                            </div>
+                            <h4 class="text-muted mb-3">Aucun exercice trouvé</h4>
+                            <p class="text-muted mb-4">
+                                Aucun exercice ne correspond à vos critères de recherche.<br>
+                                Essayez de modifier vos filtres ou votre terme de recherche.
+                            </p>
+                            <div class="d-flex justify-content-center gap-2">
+                                <a href="{{ url_for('exercise.exercise_library') }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-redo"></i> Réinitialiser les filtres
+                                </a>
+                                {% if current_user.is_teacher %}
+                                    <a href="{{ url_for('exercise.create_exercise') }}" class="btn btn-primary">
+                                        <i class="fas fa-plus"></i> Créer un exercice
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if current_user.is_teacher %}
+                <div class="text-center mt-4">
+                    <a href="{{ url_for('exercise.create_exercise') }}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-plus"></i> Créer un nouvel exercice
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+// Fonction de confirmation pour la suppression d'exercice
+function confirmDelete(exerciseTitle) {
+    return confirm(`Êtes-vous sûr de vouloir supprimer l'exercice "${exerciseTitle}" ?\n\nCette action est irréversible.`);
+}
+</script>
+
+{% endblock %}

@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Abonnement - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-credit-card me-2"></i>
+                        Abonnement {{ 'Enseignant' if subscription_type == 'teacher' else 'École' }}
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h4 class="text-primary">{{ price }}€</h4>
+                            <p class="text-muted">{{ description }}</p>
+                            
+                            <div class="mb-4">
+                                <h5>Inclus dans votre abonnement :</h5>
+                                <ul class="list-unstyled">
+                                    <li><i class="fas fa-check text-success me-2"></i>Accès à tous les exercices</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Création d'exercices personnalisés</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Gestion des classes et élèves</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Suivi des performances</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Support technique</li>
+                                    {% if subscription_type == 'school' %}
+                                    <li><i class="fas fa-check text-success me-2"></i>Accès multi-enseignants</li>
+                                    <li><i class="fas fa-check text-success me-2"></i>Tableau de bord administrateur</li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title">Paiement sécurisé</h5>
+                                    <p class="card-text">
+                                        <i class="fas fa-shield-alt text-success me-2"></i>
+                                        Paiement sécurisé par Stripe
+                                    </p>
+                                    <p class="card-text">
+                                        <i class="fas fa-lock text-success me-2"></i>
+                                        Vos données sont protégées
+                                    </p>
+                                    <p class="card-text">
+                                        <i class="fas fa-credit-card text-success me-2"></i>
+                                        Toutes cartes acceptées
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center mt-4">
+                        <button id="checkout-button" class="btn btn-primary btn-lg">
+                            <i class="fas fa-credit-card me-2"></i>
+                            Procéder au paiement - {{ price }}€
+                        </button>
+                    </div>
+                    
+                    <div class="text-center mt-3">
+                        <small class="text-muted">
+                            En procédant au paiement, vous acceptez nos 
+                            <a href="#" class="text-decoration-none">conditions d'utilisation</a>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('checkout-button').addEventListener('click', function() {
+    const button = this;
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Redirection...';
+    
+    fetch('{{ url_for("payment.create_checkout_session") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: 'subscription_type={{ subscription_type }}'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.checkout_url) {
+            window.location.href = data.checkout_url;
+        } else {
+            alert('Erreur lors de la création de la session de paiement');
+            button.disabled = false;
+            button.innerHTML = '<i class="fas fa-credit-card me-2"></i>Procéder au paiement - {{ price }}€';
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert('Erreur lors de la création de la session de paiement');
+        button.disabled = false;
+        button.innerHTML = '<i class="fas fa-credit-card me-2"></i>Procéder au paiement - {{ price }}€';
+    });
+});
+</script>
+{% endblock %}

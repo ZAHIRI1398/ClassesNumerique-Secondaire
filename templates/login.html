@@ -474,6 +474,7 @@
         }
         
         function showRegisterChoice() {
+            hideLogin();
             document.getElementById('registerChoiceModal').style.display = 'flex';
         }
         
@@ -481,7 +482,7 @@
             document.getElementById('registerChoiceModal').style.display = 'none';
         }
         
-        // Fermer la modal en cliquant à l'extérieur
+        // Fermer le modal de connexion en cliquant à l'extérieur
         document.getElementById('loginModal').addEventListener('click', function(e) {
             if (e.target === this) {
                 hideLogin();
@@ -492,6 +493,24 @@
         document.getElementById('registerChoiceModal').addEventListener('click', function(e) {
             if (e.target === this) {
                 hideRegisterChoice();
+            }
+        });
+        
+        // S'assurer que le formulaire de login est correctement soumis
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginForm = document.querySelector('form[action="{{ url_for("login") }}"]');
+            if (loginForm) {
+                console.log('Formulaire de login trouvé');
+                loginForm.addEventListener('submit', function(e) {
+                    console.log('Soumission du formulaire de login');
+                    console.log('Email:', this.querySelector('#email').value);
+                    console.log('Password:', this.querySelector('#password').value ? '(rempli)' : '(vide)');
+                    console.log('CSRF Token:', this.querySelector('input[name="csrf_token"]').value);
+                    console.log('Remember me:', this.querySelector('#remember_me').checked);
+                    // Ne pas bloquer la soumission normale du formulaire
+                });
+            } else {
+                console.error('Formulaire de login non trouvé');
             }
         });
         

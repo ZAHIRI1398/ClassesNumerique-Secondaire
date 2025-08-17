@@ -1,0 +1,397 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier un exercice d'étiquetage d'image{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Modifier un exercice d'étiquetage d'image</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        <!-- Titre -->
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Titre</label>
+                            <input type="text" class="form-control" id="title" name="title" value="{{ exercise.title }}" required>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3">{{ exercise.description }}</textarea>
+                        </div>
+
+                        <!-- Image de l'exercice (optionnelle) -->
+                        <div class="mb-4">
+                            <label for="exercise_image" class="form-label">Image de l'exercice (optionnelle)</label>
+                            {% if exercise.image_path %}
+                            <div class="mb-2">
+                                <img src="{{ url_for('uploaded_file', filename=exercise.image_path.split('/')[-1]) }}" 
+                                     alt="Image actuelle" class="img-thumbnail" style="max-height: 150px;">
+                                <p class="text-muted small">Image actuelle</p>
+                            </div>
+                            {% endif %}
+                            <input type="file" class="form-control" id="exercise_image" name="exercise_image" 
+                                   accept="image/jpeg,image/jpg,image/png,image/gif" onchange="previewImage(this)">
+                            <div class="form-text">Formats acceptés : JPG, PNG, GIF (max 5MB)</div>
+                            <div id="image-preview" class="mt-2"></div>
+                        </div>
+
+                        <!-- INTERFACES ANCIENNES SUPPRIMÉES - Seule l'interface moderne ci-dessous est conservée -->
+
+                        <!-- ===== INTERFACE INTERACTIVE MODERNE ===== -->
+                        
+                        <!-- Image principale pour l'étiquetage -->
+                        <div class="mb-4">
+                            <h5 class="text-primary">
+                                <i class="fas fa-image"></i> Image principale à étiqueter
+                            </h5>
+                            {% if content and content.main_image %}
+                            <div class="mb-3">
+                                <img src="{{ url_for('uploaded_file', filename=content.main_image.split('/')[-1]) }}" 
+                                     alt="Image principale actuelle" class="img-thumbnail" style="max-height: 200px;">
+                                <p class="text-muted small">Image principale actuelle</p>
+                            </div>
+                            {% endif %}
+                            <input type="file" class="form-control" id="main_image" name="main_image" 
+                                   accept="image/jpeg,image/jpg,image/png,image/gif" onchange="previewMainImage(this)">
+                            <div class="form-text">Image sur laquelle les étiquettes seront placées (laissez vide pour conserver l'actuelle)</div>
+                            <div id="main-image-preview" class="mt-2"></div>
+                        </div>
+                        
+                        <!-- Étiquettes disponibles -->
+                        <div class="mb-4">
+                            <h5 class="text-primary">
+                                <i class="fas fa-tags"></i> Étiquettes disponibles
+                            </h5>
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i>
+                                <strong>Instructions :</strong> Ajoutez les étiquettes que les élèves devront placer sur l'image.
+                            </div>
+                            
+                            <div id="labels-list" class="mb-3">
+                                <!-- Les étiquettes existantes seront chargées ici -->
+                            </div>
+                            
+                            <button type="button" id="add-label-btn" class="btn btn-success">
+                                <i class="fas fa-plus"></i> Ajouter une étiquette
+                            </button>
+                        </div>
+
+                        <!-- Zones de placement -->
+                        <div class="mb-4">
+                            <h5 class="text-primary">
+                                <i class="fas fa-crosshairs"></i> Zones de placement
+                            </h5>
+                            <div class="alert alert-warning">
+                                <i class="fas fa-mouse-pointer"></i>
+                                <strong>Instructions :</strong> Cliquez sur l'image ci-dessous pour définir où placer chaque étiquette.
+                            </div>
+                            
+                            <!-- Image interactive -->
+                            <div id="interactive-zone" class="border rounded p-3 mb-3" style="background-color: #f8f9fa;">
+                                {% if content and content.main_image %}
+                                <div class="position-relative d-inline-block">
+                                    <img id="main-image" 
+                                         src="{{ url_for('static', filename='uploads/' + content.main_image.split('/')[-1]) }}" 
+                                         alt="Image à légender" 
+                                         class="img-fluid border rounded"
+                                         style="max-width: 100%; cursor: crosshair;">
+                                    
+                                    <!-- Les zones seront ajoutées ici dynamiquement -->
+                                    <div id="zones-overlay"></div>
+                                </div>
+                                {% else %}
+                                <div class="text-center text-muted p-5">
+                                    <i class="fas fa-image fa-3x mb-3"></i>
+                                    <p>L'image principale sera affichée ici pour définir les zones</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Résumé des zones -->
+                            <div id="zones-summary" class="mt-3">
+                                <h6>Zones définies :</h6>
+                                <div id="zones-list-display">
+                                    <!-- Les zones seront listées ici -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Champs cachés pour la soumission -->
+                        <div id="hidden-fields">
+                            <!-- Les champs cachés seront générés ici par JavaScript -->
+                        </div>
+
+                        <!-- Boutons -->
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-success btn-lg me-3">
+                                <i class="fas fa-save"></i> Sauvegarder
+                            </button>
+                            <a href="{{ url_for('exercise_library') }}" class="btn btn-secondary btn-lg">
+                                <i class="fas fa-arrow-left"></i> Annuler
+                            </a>
+                        </div>
+                        <script>
+// Variables globales pour l'interface interactive
+let labels = [];
+let zones = [];
+let selectedLabelIndex = -1;
+
+// Initialisation au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('[IMAGE_LABELING_EDIT] Initialisation de l\'interface');
+    
+    // Charger les étiquettes existantes
+    {% if content and content.labels %}
+        {% for label in content.labels %}
+        labels.push("{{ label }}");
+        {% endfor %}
+    {% endif %}
+    
+    // Charger les zones existantes
+    {% if content and content.zones %}
+        {% for zone in content.zones %}
+        zones.push({
+            x: {{ zone.x }},
+            y: {{ zone.y }},
+            label: "{{ zone.label }}"
+        });
+        {% endfor %}
+    {% endif %}
+    
+    console.log('[IMAGE_LABELING_EDIT] Étiquettes chargées:', labels);
+    console.log('[IMAGE_LABELING_EDIT] Zones chargées:', zones);
+    
+    // Initialiser l'interface
+    updateLabelsDisplay();
+    updateZonesDisplay();
+    updateHiddenFields();
+    
+    // Ajouter les événements
+    setupEventListeners();
+});
+
+// Configuration des événements
+function setupEventListeners() {
+    // Bouton d'ajout d'étiquette
+    document.getElementById('add-label-btn').addEventListener('click', function() {
+        const labelText = prompt('Entrez le nom de l\'étiquette :');
+        if (labelText && labelText.trim()) {
+            labels.push(labelText.trim());
+            updateLabelsDisplay();
+            updateHiddenFields();
+            console.log('[IMAGE_LABELING_EDIT] Étiquette ajoutée:', labelText);
+        }
+    });
+    
+    // Clic sur l'image pour placer des zones
+    const mainImage = document.getElementById('main-image');
+    if (mainImage) {
+        mainImage.addEventListener('click', function(e) {
+            if (selectedLabelIndex === -1) {
+                alert('Veuillez d\'abord sélectionner une étiquette à placer.');
+                return;
+            }
+            
+            const rect = this.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // Ajouter la zone
+            zones.push({
+                x: Math.round(x),
+                y: Math.round(y),
+                label: labels[selectedLabelIndex]
+            });
+            
+            updateZonesDisplay();
+            updateHiddenFields();
+            selectedLabelIndex = -1; // Désélectionner
+            updateLabelsDisplay(); // Rafraîchir l'affichage
+            
+            console.log('[IMAGE_LABELING_EDIT] Zone ajoutée:', { x: Math.round(x), y: Math.round(y), label: labels[selectedLabelIndex] });
+        });
+    }
+}
+
+// Mise à jour de l'affichage des étiquettes
+function updateLabelsDisplay() {
+    const container = document.getElementById('labels-list');
+    container.innerHTML = '';
+    
+    labels.forEach((label, index) => {
+        const labelDiv = document.createElement('div');
+        labelDiv.className = `badge me-2 mb-2 p-2 ${selectedLabelIndex === index ? 'bg-primary' : 'bg-secondary'}`;
+        labelDiv.style.cursor = 'pointer';
+        labelDiv.innerHTML = `
+            ${label}
+            <button type="button" class="btn-close btn-close-white ms-2" style="font-size: 0.7em;" onclick="removeLabel(${index})"></button>
+        `;
+        
+        // Clic pour sélectionner l'étiquette
+        labelDiv.addEventListener('click', function(e) {
+            if (e.target.classList.contains('btn-close')) return; // Éviter la sélection lors de la suppression
+            
+            selectedLabelIndex = selectedLabelIndex === index ? -1 : index;
+            updateLabelsDisplay();
+            console.log('[IMAGE_LABELING_EDIT] Étiquette sélectionnée:', selectedLabelIndex);
+        });
+        
+        container.appendChild(labelDiv);
+    });
+}
+
+// Suppression d'étiquette
+function removeLabel(index) {
+    labels.splice(index, 1);
+    // Supprimer aussi les zones associées à cette étiquette
+    zones = zones.filter(zone => zone.label !== labels[index]);
+    updateLabelsDisplay();
+    updateZonesDisplay();
+    updateHiddenFields();
+    console.log('[IMAGE_LABELING_EDIT] Étiquette supprimée:', index);
+}
+
+// Mise à jour de l'affichage des zones
+function updateZonesDisplay() {
+    const overlay = document.getElementById('zones-overlay');
+    const listDisplay = document.getElementById('zones-list-display');
+    
+    if (overlay) {
+        overlay.innerHTML = '';
+        
+        zones.forEach((zone, index) => {
+            // Marqueur visuel sur l'image
+            const marker = document.createElement('div');
+            marker.style.cssText = `
+                position: absolute;
+                left: ${zone.x}px;
+                top: ${zone.y}px;
+                width: 20px;
+                height: 20px;
+                background-color: #dc3545;
+                border: 2px solid white;
+                border-radius: 50%;
+                cursor: pointer;
+                z-index: 1000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-size: 10px;
+                font-weight: bold;
+            `;
+            marker.textContent = index + 1;
+            marker.title = `${zone.label} - Cliquez pour supprimer`;
+            marker.addEventListener('click', function() {
+                removeZone(index);
+            });
+            
+            overlay.appendChild(marker);
+        });
+    }
+    
+    // Liste des zones
+    if (listDisplay) {
+        listDisplay.innerHTML = '';
+        
+        if (zones.length === 0) {
+            listDisplay.innerHTML = '<p class="text-muted">Aucune zone définie</p>';
+        } else {
+            zones.forEach((zone, index) => {
+                const zoneDiv = document.createElement('div');
+                zoneDiv.className = 'badge bg-info me-2 mb-2';
+                zoneDiv.innerHTML = `
+                    ${zone.label} (${zone.x}, ${zone.y})
+                    <button type="button" class="btn-close btn-close-white ms-2" style="font-size: 0.7em;" onclick="removeZone(${index})"></button>
+                `;
+                listDisplay.appendChild(zoneDiv);
+            });
+        }
+    }
+}
+
+// Suppression d'une zone
+function removeZone(index) {
+    zones.splice(index, 1);
+    updateZonesDisplay();
+    updateHiddenFields();
+    console.log('[IMAGE_LABELING_EDIT] Zone supprimée:', index);
+}
+
+// Mise à jour des champs cachés pour la soumission
+function updateHiddenFields() {
+    const container = document.getElementById('hidden-fields');
+    container.innerHTML = '';
+    
+    // Étiquettes
+    labels.forEach(label => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'image_labels[]';
+        input.value = label;
+        container.appendChild(input);
+    });
+    
+    // Zones
+    zones.forEach(zone => {
+        const inputX = document.createElement('input');
+        inputX.type = 'hidden';
+        inputX.name = 'zone_x[]';
+        inputX.value = zone.x;
+        container.appendChild(inputX);
+        
+        const inputY = document.createElement('input');
+        inputY.type = 'hidden';
+        inputY.name = 'zone_y[]';
+        inputY.value = zone.y;
+        container.appendChild(inputY);
+        
+        const inputLabel = document.createElement('input');
+        inputLabel.type = 'hidden';
+        inputLabel.name = 'zone_label[]';
+        inputLabel.value = zone.label;
+        container.appendChild(inputLabel);
+    });
+    
+    console.log('[IMAGE_LABELING_EDIT] Champs cachés mis à jour - Étiquettes:', labels.length, 'Zones:', zones.length);
+}
+
+// Prévisualisation image d'exercice (fonction existante conservée)
+function previewImage(input) {
+    const preview = document.getElementById('image-preview');
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.innerHTML = `<img src="${e.target.result}" class="img-thumbnail mt-2" style="max-height: 150px;">`;
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+// Prévisualisation image principale
+function previewMainImage(input) {
+    const preview = document.getElementById('main-image-preview');
+    const mainImage = document.getElementById('main-image');
+    
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.innerHTML = `<img src="${e.target.result}" class="img-thumbnail mt-2" style="max-height: 200px;">`;
+            
+            // Mettre à jour aussi l'image interactive si elle existe
+            if (mainImage) {
+                mainImage.src = e.target.result;
+            }
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+</script>
+{% endblock %}

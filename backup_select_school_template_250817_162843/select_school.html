@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Sélectionner une école{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary text-white text-center py-4">
+                    <h2 class="mb-0">
+                        <i class="fas fa-school me-2"></i>
+                        Sélectionner votre école
+                    </h2>
+                </div>
+                <div class="card-body p-4">
+                    <div class="alert alert-info mb-4" role="alert">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Information :</strong> Sélectionnez votre école dans la liste ci-dessous. Si votre école a déjà un abonnement actif, vous serez automatiquement approuvé sans paiement supplémentaire.
+                    </div>
+
+                    {% if schools %}
+                        <form action="{{ url_for('payment.join_school') }}" method="POST" class="mb-4">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <div class="form-group mb-4">
+                                <label for="school_select" class="form-label fw-bold">Écoles avec abonnement actif :</label>
+                                <select id="school_select" name="school_name" class="form-select form-select-lg mb-3" required>
+                                    <option value="" selected disabled>-- Choisir une école --</option>
+                                    {% for school in schools %}
+                                        <option value="{{ school.school_name }}">{{ school.school_name }} ({{ school.user_count }} utilisateur{% if school.user_count > 1 %}s{% endif %})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-success btn-lg">
+                                    <i class="fas fa-check-circle me-2"></i>
+                                    Rejoindre cette école
+                                </button>
+                            </div>
+                        </form>
+                        
+                        <div class="text-center mt-4">
+                            <p>Votre école n'est pas dans la liste ?</p>
+                            <a href="{{ url_for('payment.subscribe', subscription_type='school') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-plus-circle me-2"></i>
+                                Souscrire un nouvel abonnement école
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning" role="alert">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Aucune école avec un abonnement actif n'a été trouvée.
+                        </div>
+                        <div class="text-center mt-4">
+                            <a href="{{ url_for('payment.subscribe', subscription_type='school') }}" class="btn btn-primary btn-lg">
+                                <i class="fas fa-plus-circle me-2"></i>
+                                Souscrire un abonnement école
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer bg-light p-3">
+                    <div class="text-center">
+                        <a href="/subscription-choice" class="btn btn-link">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Retour aux options d'abonnement
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

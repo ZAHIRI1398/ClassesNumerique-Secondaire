@@ -1,0 +1,7 @@
+2025-08-15 22:41:39,281 - INFO - === TEST D'AFFICHAGE DES MOTS DANS LES EXERCICES FILL_IN_BLANKS ===
+2025-08-15 22:41:39,285 - INFO - Application de test créée avec succès
+2025-08-15 22:41:39,285 - INFO - Démarrage de l'application de test sur http://127.0.0.1:5002/
+2025-08-15 22:41:39,286 - INFO - Utilisez Ctrl+C pour arrêter l'application
+2025-08-15 22:41:39,318 - WARNING -  * Debugger is active!
+2025-08-15 22:41:39,322 - INFO -  * Debugger PIN: 773-832-873
+2025-08-15 22:56:26,076 - INFO -  * Detected change in 'C:\\Users\\JeMat\\OneDrive\\classenumerique20250801\\modified_submit.py', reloading

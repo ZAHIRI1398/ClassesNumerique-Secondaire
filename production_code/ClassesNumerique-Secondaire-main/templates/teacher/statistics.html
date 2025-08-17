@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}Statistiques{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Statistiques des élèves</h1>
+        <div>
+            <i class="fas fa-chart-bar text-primary me-2"></i>
+            <span class="text-muted">Suivi des performances par classe</span>
+        </div>
+    </div>
+
+    <!-- Filtrage par classe -->
+    {% if classes_stats %}
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h5 class="mb-0">
+                        <i class="fas fa-filter text-primary me-2"></i>Filtrer par classe
+                    </h5>
+                </div>
+                <div class="col-md-6">
+                    <select id="classFilter" class="form-select">
+                        <option value="all">📊 Toutes les classes ({{ classes_stats|length }})</option>
+                        {% for class_data in classes_stats %}
+                        <option value="class-{{ class_data.class.id }}">
+                            🎓 {{ class_data.class.name }} ({{ class_data.students|length }} élèves)
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if not classes_stats %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            Vous n'avez pas encore de classes créées. <a href="{{ url_for('create_class') }}" class="alert-link">Créer une classe</a>
+        </div>
+    {% endif %}
+
+    {% for class_data in classes_stats %}
+    <div class="card mb-4 shadow-sm class-card" data-class-id="class-{{ class_data.class.id }}">
+        <div class="card-header bg-primary text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="h5 mb-0">
+                    <i class="fas fa-users me-2"></i>{{ class_data.class.name }}
+                </h2>
+                <div class="btn-group">
+                    <a href="{{ url_for('export_class_pdf', class_id=class_data.class.id) }}" 
+                       class="btn btn-light btn-sm" title="Exporter en PDF">
+                        <i class="fas fa-file-pdf text-danger"></i> PDF
+                    </a>
+                    <a href="{{ url_for('export_class_excel', class_id=class_data.class.id) }}" 
+                       class="btn btn-light btn-sm" title="Exporter en Excel">
+                        <i class="fas fa-file-excel text-success"></i> Excel
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">
+                                <i class="fas fa-info-circle text-info me-2"></i>Informations générales
+                            </h5>
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="border-end">
+                                        <h3 class="text-primary mb-0">{{ class_data.students|length }}</h3>
+                                        <small class="text-muted">Élèves</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <h3 class="text-success mb-0">{{ class_data.total_exercises }}</h3>
+                                    <small class="text-muted">Exercices</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-8">
+                    <h3 class="h5 mb-3">
+                        <i class="fas fa-chart-line text-success me-2"></i>Résultats par élève
+                    </h3>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th><i class="fas fa-user me-1"></i>Élève</th>
+                                    <th><i class="fas fa-tasks me-1"></i>Exercices complétés</th>
+                                    <th><i class="fas fa-percentage me-1"></i>Score moyen</th>
+                                    <th><i class="fas fa-chart-bar me-1"></i>Progression</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student_data in class_data.students %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ student_data.student.name or student_data.student.username }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ student_data.completed_exercises }}</span>
+                                        <span class="text-muted">/ {{ student_data.total_exercises }}</span>
+                                    </td>
+                                    <td>
+                                        {% if student_data.average_score is not none %}
+                                            {% set score = student_data.average_score %}
+                                            {% if score >= 80 %}
+                                                <span class="badge bg-success">{{ "%.1f"|format(score) }}%</span>
+                                            {% elif score >= 60 %}
+                                                <span class="badge bg-warning">{{ "%.1f"|format(score) }}%</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">{{ "%.1f"|format(score) }}%</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="badge bg-secondary">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% set progress_percent = (student_data.completed_exercises / student_data.total_exercises * 100) if student_data.total_exercises > 0 else 0 %}
+                                        <div class="progress" style="width: 100px;">
+                                            <div class="progress-bar 
+                                                {% if progress_percent >= 80 %}bg-success
+                                                {% elif progress_percent >= 60 %}bg-warning
+                                                {% else %}bg-danger{% endif %}" 
+                                                role="progressbar" 
+                                                style="width: {{ progress_percent }}%"
+                                                aria-valuenow="{{ progress_percent }}" 
+                                                aria-valuemin="0" 
+                                                aria-valuemax="100">
+                                                {{ "%.0f"|format(progress_percent) }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <p>Vous n'avez pas encore de classe.</p>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const classFilter = document.getElementById('classFilter');
+    const classCards = document.querySelectorAll('.class-card');
+    
+    // Fonction de filtrage
+    function filterClasses() {
+        const selectedValue = classFilter.value;
+        
+        classCards.forEach(card => {
+            if (selectedValue === 'all') {
+                // Afficher toutes les classes
+                card.style.display = 'block';
+                card.style.animation = 'fadeIn 0.3s ease-in';
+            } else if (card.dataset.classId === selectedValue) {
+                // Afficher seulement la classe sélectionnée
+                card.style.display = 'block';
+                card.style.animation = 'fadeIn 0.3s ease-in';
+            } else {
+                // Masquer les autres classes
+                card.style.display = 'none';
+            }
+        });
+        
+        // Sauvegarder le choix dans localStorage
+        localStorage.setItem('selectedClassFilter', selectedValue);
+        
+        // Mettre à jour le compteur
+        updateClassCounter();
+    }
+    
+    // Fonction pour mettre à jour le compteur de classes visibles
+    function updateClassCounter() {
+        const visibleCards = document.querySelectorAll('.class-card[style*="block"], .class-card:not([style*="none"])');
+        const totalCards = classCards.length;
+        
+        if (classFilter.value === 'all') {
+            document.title = `Statistiques (${totalCards} classes) - Classe Numérique`;
+        } else {
+            const selectedOption = classFilter.options[classFilter.selectedIndex];
+            document.title = `Statistiques - ${selectedOption.text} - Classe Numérique`;
+        }
+    }
+    
+    // Restaurer le dernier filtre choisi
+    const savedFilter = localStorage.getItem('selectedClassFilter');
+    if (savedFilter && document.querySelector(`option[value="${savedFilter}"]`)) {
+        classFilter.value = savedFilter;
+        filterClasses();
+    }
+    
+    // Écouter les changements de filtre
+    classFilter.addEventListener('change', filterClasses);
+    
+    // Animation CSS pour les transitions
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .class-card {
+            transition: all 0.3s ease;
+        }
+    `;
+    document.head.appendChild(style);
+});
+</script>
+
+{% endblock %}

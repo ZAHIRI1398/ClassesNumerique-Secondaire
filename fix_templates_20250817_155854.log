@@ -1,0 +1,14 @@
+2025-08-17 15:58:54,048 - __main__ - INFO - === Correction des permissions des templates ===
+2025-08-17 15:58:54,049 - __main__ - INFO - Création d'une sauvegarde du template à C:\Users\JeMat\OneDrive\classenumerique20250801\production_code\ClassesNumerique-Secondaire-main\templates\payment\select_school.html.bak.20250817_155854
+2025-08-17 15:58:54,074 - __main__ - INFO - Copie du fichier local C:\Users\JeMat\OneDrive\classenumerique20250801\templates\payment\select_school.html vers C:\Users\JeMat\OneDrive\classenumerique20250801\production_code\ClassesNumerique-Secondaire-main\templates\payment\select_school.html
+2025-08-17 15:58:54,076 - __main__ - INFO - Template copié avec succès
+2025-08-17 15:58:54,076 - __main__ - INFO - Permissions du fichier C:\Users\JeMat\OneDrive\classenumerique20250801\production_code\ClassesNumerique-Secondaire-main\templates\payment\select_school.html mises à jour (644)
+2025-08-17 15:58:54,078 - __main__ - INFO - Le fichier C:\Users\JeMat\OneDrive\classenumerique20250801\production_code\ClassesNumerique-Secondaire-main\templates\payment\select_school.html est lisible
+2025-08-17 15:58:54,078 - __main__ - INFO - Taille du fichier: 4051 caractères
+2025-08-17 15:58:54,079 - __main__ - INFO - Fichier .gitkeep créé à C:\Users\JeMat\OneDrive\classenumerique20250801\production_code\ClassesNumerique-Secondaire-main\templates\payment\.gitkeep
+2025-08-17 15:58:54,079 - __main__ - INFO - === Correction terminée ===
+2025-08-17 15:58:54,079 - __main__ - INFO - Pour déployer la correction:
+2025-08-17 15:58:54,079 - __main__ - INFO - 1. Exécutez: git add production_code/ClassesNumerique-Secondaire-main/templates/payment/
+2025-08-17 15:58:54,079 - __main__ - INFO - 2. Exécutez: git commit -m "Fix: Correction des permissions du template select_school.html"
+2025-08-17 15:58:54,079 - __main__ - INFO - 3. Exécutez: git push
+2025-08-17 15:58:54,079 - __main__ - INFO - 4. Vérifiez le déploiement sur Railway

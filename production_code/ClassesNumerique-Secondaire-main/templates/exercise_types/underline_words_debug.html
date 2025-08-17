@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DEBUG - Underline Words</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .debug { background: #f0f0f0; padding: 10px; margin: 10px 0; border: 1px solid #ccc; }
+        .word { padding: 2px 4px; margin: 2px; border: 1px solid #ddd; cursor: pointer; }
+        .word:hover { background: #e0e0e0; }
+        .word.selected { background: #ffff00; }
+    </style>
+</head>
+<body>
+    <h1>DEBUG - Test Souligner les mots</h1>
+    
+    <div class="debug">
+        <h3>DEBUG INFO:</h3>
+        <p><strong>Exercise Title:</strong> {{ exercise.title if exercise else 'NO EXERCISE' }}</p>
+        <p><strong>Exercise Type:</strong> {{ exercise.exercise_type if exercise else 'NO TYPE' }}</p>
+        <p><strong>Content Keys:</strong> {{ content.keys() | list if content else 'NO CONTENT' }}</p>
+        <p><strong>Words Data:</strong> {{ content.words if content and content.words else 'NO WORDS DATA' }}</p>
+    </div>
+    
+    {% if content and content.words %}
+    <div class="debug">
+        <h3>SENTENCES FOUND: {{ content.words | length }}</h3>
+        {% for sentence_data in content.words %}
+        <div style="border: 2px solid green; margin: 10px; padding: 10px;">
+            <h4>Sentence {{ loop.index }}:</h4>
+            <p><strong>Raw Text:</strong> "{{ sentence_data.text }}"</p>
+            <p><strong>Words to underline:</strong> {{ sentence_data.words_to_underline }}</p>
+            
+            <div style="border: 1px solid blue; padding: 5px; margin: 5px;">
+                <strong>Split Words:</strong>
+                {% set words = sentence_data.text.split(' ') %}
+                {% for word in words %}
+                <span class="word" onclick="this.classList.toggle('selected')">{{ word }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="debug" style="background: #ffcccc;">
+        <h3>ERROR: NO WORDS DATA FOUND!</h3>
+        <p>Content: {{ content }}</p>
+    </div>
+    {% endif %}
+    
+    <div class="debug">
+        <h3>FULL CONTENT DUMP:</h3>
+        <pre>{{ content | tojson(indent=2) if content else 'NO CONTENT' }}</pre>
+    </div>
+</body>
+</html>

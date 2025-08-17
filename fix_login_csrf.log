@@ -1,0 +1,49 @@
+2025-08-16 22:57:00,439 - fix_login_csrf - INFO - Démarrage du script de diagnostic et correction...
+2025-08-16 22:57:00,439 - fix_login_csrf - INFO - Vérification de l'ordre d'initialisation dans app.py...
+2025-08-16 22:57:00,488 - fix_login_csrf - INFO - Ordre d'initialisation correct: True
+2025-08-16 22:57:00,488 - fix_login_csrf - INFO - Chargement multiple de la configuration: True
+2025-08-16 22:57:00,488 - fix_login_csrf - INFO - Initialisation multiple des extensions: False
+2025-08-16 22:57:00,488 - fix_login_csrf - WARNING - Problèmes détectés dans l'ordre d'initialisation!
+2025-08-16 22:57:00,489 - fix_login_csrf - INFO - Correction de l'ordre d'initialisation dans app.py...
+2025-08-16 22:57:00,489 - fix_login_csrf - INFO - Vérification de l'ordre d'initialisation dans app.py...
+2025-08-16 22:57:00,491 - fix_login_csrf - INFO - Ordre d'initialisation correct: True
+2025-08-16 22:57:00,491 - fix_login_csrf - INFO - Chargement multiple de la configuration: True
+2025-08-16 22:57:00,491 - fix_login_csrf - INFO - Initialisation multiple des extensions: False
+2025-08-16 22:57:00,518 - fix_login_csrf - INFO - Sauvegarde de app.py dans app.py.bak.fix_login_csrf
+2025-08-16 22:57:00,542 - fix_login_csrf - INFO - Correction des initialisations multiples effectuée!
+2025-08-16 22:57:00,542 - fix_login_csrf - INFO - Vérification de la configuration des cookies de session...
+2025-08-16 22:57:00,543 - fix_login_csrf - INFO - Développement - SESSION_COOKIE_SECURE = False: True
+2025-08-16 22:57:00,543 - fix_login_csrf - INFO - Développement - SESSION_COOKIE_HTTPONLY = True: True
+2025-08-16 22:57:00,543 - fix_login_csrf - INFO - Développement - SESSION_COOKIE_SAMESITE = 'Lax': True
+2025-08-16 22:57:00,543 - fix_login_csrf - INFO - Production - SESSION_COOKIE_SECURE = True: True
+2025-08-16 22:57:00,543 - fix_login_csrf - INFO - Production - SESSION_COOKIE_HTTPONLY = True: True
+2025-08-16 22:57:00,544 - fix_login_csrf - INFO - Production - SESSION_COOKIE_SAMESITE = 'Lax': True
+2025-08-16 22:57:00,544 - fix_login_csrf - INFO - La configuration des cookies de session est correcte.
+2025-08-16 22:57:00,544 - fix_login_csrf - INFO - Test de la protection CSRF...
+2025-08-16 22:57:02,587 - urllib3.connectionpool - DEBUG - Starting new HTTP connection (1): localhost:5001
+2025-08-16 22:57:04,658 - urllib3.connectionpool - DEBUG - http://localhost:5001 "GET / HTTP/1.1" 200 2537
+2025-08-16 22:57:04,661 - urllib3.connectionpool - DEBUG - Starting new HTTP connection (1): localhost:5001
+2025-08-16 22:57:06,711 - urllib3.connectionpool - DEBUG - http://localhost:5001 "POST /test-csrf HTTP/1.1" 400 117
+2025-08-16 22:57:06,712 - urllib3.connectionpool - DEBUG - Starting new HTTP connection (1): localhost:5001
+2025-08-16 22:57:08,744 - urllib3.connectionpool - DEBUG - http://localhost:5001 "POST /test-csrf-no-token HTTP/1.1" 400 117
+2025-08-16 22:57:08,745 - fix_login_csrf - INFO - Test avec token CSRF: 400
+2025-08-16 22:57:08,745 - fix_login_csrf - INFO - Test sans token CSRF: 400
+2025-08-16 22:57:08,745 - fix_login_csrf - INFO - Protection CSRF fonctionne: False
+2025-08-16 22:57:08,745 - fix_login_csrf - WARNING - La protection CSRF ne fonctionne pas correctement!
+2025-08-16 22:57:08,745 - fix_login_csrf - INFO - Test de la soumission du formulaire de connexion...
+2025-08-16 22:57:10,755 - urllib3.connectionpool - DEBUG - Starting new HTTP connection (1): localhost:5002
+2025-08-16 22:57:12,792 - urllib3.connectionpool - DEBUG - http://localhost:5002 "GET / HTTP/1.1" 200 3687
+2025-08-16 22:57:12,794 - urllib3.connectionpool - DEBUG - Starting new HTTP connection (1): localhost:5002
+2025-08-16 22:57:14,829 - urllib3.connectionpool - DEBUG - http://localhost:5002 "POST /test-login HTTP/1.1" 400 117
+2025-08-16 22:57:14,830 - fix_login_csrf - INFO - Soumission du formulaire: 400
+2025-08-16 22:57:14,830 - fix_login_csrf - INFO - Soumission du formulaire fonctionne: False
+2025-08-16 22:57:14,830 - fix_login_csrf - WARNING - La soumission du formulaire ne fonctionne pas correctement!
+2025-08-16 22:57:14,830 - fix_login_csrf - INFO - === RÉSUMÉ DES RÉSULTATS ===
+2025-08-16 22:57:14,831 - fix_login_csrf - INFO - Ordre d'initialisation correct: True
+2025-08-16 22:57:14,831 - fix_login_csrf - INFO - Configuration des cookies de session correcte: True
+2025-08-16 22:57:14,831 - fix_login_csrf - INFO - Protection CSRF fonctionnelle: False
+2025-08-16 22:57:14,831 - fix_login_csrf - INFO - Soumission du formulaire fonctionnelle: False
+2025-08-16 22:57:14,831 - fix_login_csrf - INFO - === RECOMMANDATIONS ===
+2025-08-16 22:57:14,831 - fix_login_csrf - INFO - 1. Corriger l'ordre d'initialisation dans app.py
+2025-08-16 22:57:14,831 - fix_login_csrf - INFO - 3. Vérifier l'initialisation de la protection CSRF
+2025-08-16 22:57:14,831 - fix_login_csrf - INFO - 4. Vérifier la soumission du formulaire de connexion

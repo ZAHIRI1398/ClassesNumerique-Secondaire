@@ -1,0 +1,49 @@
+2025-08-15 21:47:10,434 - INFO - === VÉRIFICATION DES FORMULAIRES FILL_IN_BLANKS ===
+2025-08-15 21:47:10,436 - INFO - Sauvegarde créée: app.py.bak.20250815_214710
+2025-08-15 21:47:10,436 - INFO - 
+=== VÉRIFICATION DU CODE DE SOUMISSION DES FORMULAIRES ===
+2025-08-15 21:47:10,439 - INFO - Recherche du code de soumission des formulaires fill_in_blanks...
+2025-08-15 21:47:10,439 - ERROR - Route de soumission des exercices non trouvée.
+2025-08-15 21:47:10,439 - INFO - 
+=== VÉRIFICATION DES TEMPLATES ===
+2025-08-15 21:47:12,533 - INFO - Templates pour les exercices fill_in_blanks trouvés: 17
+2025-08-15 21:47:12,534 - INFO - Analyse du template: templates\basic_test.html
+2025-08-15 21:47:12,535 - WARNING - Aucun champ input pour les réponses trouvé dans templates\basic_test.html.
+2025-08-15 21:47:12,535 - INFO - Analyse du template: templates\create_exercise_in_library.html
+2025-08-15 21:47:12,535 - WARNING - Aucun champ input pour les réponses trouvé dans templates\create_exercise_in_library.html.
+2025-08-15 21:47:12,535 - INFO - Analyse du template: templates\debug_test.html
+2025-08-15 21:47:12,536 - WARNING - Aucun champ input pour les réponses trouvé dans templates\debug_test.html.
+2025-08-15 21:47:12,536 - INFO - Analyse du template: templates\edit_exercise.html
+2025-08-15 21:47:12,536 - WARNING - Aucun champ input pour les réponses trouvé dans templates\edit_exercise.html.
+2025-08-15 21:47:12,536 - INFO - Analyse du template: templates\exercise_library_backup.html
+2025-08-15 21:47:12,536 - WARNING - Aucun champ input pour les réponses trouvé dans templates\exercise_library_backup.html.
+2025-08-15 21:47:12,537 - INFO - Analyse du template: templates\exercise_library_fixed.html
+2025-08-15 21:47:12,537 - WARNING - Aucun champ input pour les réponses trouvé dans templates\exercise_library_fixed.html.
+2025-08-15 21:47:12,537 - INFO - Analyse du template: templates\feedback.html
+2025-08-15 21:47:12,537 - WARNING - Aucun champ input pour les réponses trouvé dans templates\feedback.html.
+2025-08-15 21:47:12,537 - INFO - Analyse du template: templates\test_form.html
+2025-08-15 21:47:12,537 - WARNING - Aucun champ input pour les réponses trouvé dans templates\test_form.html.
+2025-08-15 21:47:12,538 - INFO - Analyse du template: templates\view_exercise.html
+2025-08-15 21:47:12,538 - WARNING - Aucun champ input pour les réponses trouvé dans templates\view_exercise.html.
+2025-08-15 21:47:12,538 - INFO - Analyse du template: templates\debug\form_data.html
+2025-08-15 21:47:12,538 - INFO - Champs input pour les réponses trouvés dans templates\debug\form_data.html: 5
+2025-08-15 21:47:12,538 - INFO - Champ input 1: <input type="text" class="form-control" id="answer_0" name="answer_0" value="test1">
+2025-08-15 21:47:12,538 - INFO - Champ input 2: <input type="text" class="form-control" id="answer_1" name="answer_1" value="test2">
+2025-08-15 21:47:12,538 - INFO - Champ input 3: <input type="text" class="form-control" id="answer_2" name="answer_2" value="test3">
+2025-08-15 21:47:12,538 - INFO - Champ input 4: <input type="text" class="form-control" id="answer_3" name="answer_3" value="test4">
+2025-08-15 21:47:12,538 - INFO - Champ input 5: <input type="text" class="form-control" id="answer_4" name="answer_4" value="test5">
+2025-08-15 21:47:12,539 - WARNING - Formulaire de soumission non trouvé dans templates\debug\form_data.html.
+2025-08-15 21:47:12,539 - INFO - Analyse du template: templates\exercise_types\create_exercise.html
+2025-08-15 21:47:12,539 - WARNING - Aucun champ input pour les réponses trouvé dans templates\exercise_types\create_exercise.html.
+2025-08-15 21:47:12,540 - INFO - Analyse du template: templates\exercise_types\create_exercise_simple.html
+2025-08-15 21:47:12,541 - WARNING - Aucun champ input pour les réponses trouvé dans templates\exercise_types\create_exercise_simple.html.
+2025-08-15 21:47:12,541 - INFO - Analyse du template: templates\exercise_types\fill_in_blanks.html
+2025-08-15 21:47:12,541 - WARNING - Aucun champ input pour les réponses trouvé dans templates\exercise_types\fill_in_blanks.html.
+2025-08-15 21:47:12,542 - INFO - Analyse du template: templates\exercise_types\fill_in_blanks_edit.html
+2025-08-15 21:47:12,542 - WARNING - Aucun champ input pour les réponses trouvé dans templates\exercise_types\fill_in_blanks_edit.html.
+2025-08-15 21:47:12,542 - INFO - Analyse du template: templates\teacher\edit_exercise.html
+2025-08-15 21:47:12,542 - WARNING - Aucun champ input pour les réponses trouvé dans templates\teacher\edit_exercise.html.
+2025-08-15 21:47:12,542 - INFO - Analyse du template: templates\teacher\exercise_library.html
+2025-08-15 21:47:12,543 - WARNING - Aucun champ input pour les réponses trouvé dans templates\teacher\exercise_library.html.
+2025-08-15 21:47:12,543 - INFO - Analyse du template: templates\teacher\preview_exercise.html
+2025-08-15 21:47:12,543 - WARNING - Aucun champ input pour les réponses trouvé dans templates\teacher\preview_exercise.html.

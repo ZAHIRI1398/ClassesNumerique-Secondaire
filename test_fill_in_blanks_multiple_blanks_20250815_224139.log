@@ -1,0 +1,7 @@
+2025-08-15 22:41:39,118 - INFO - === TEST DE LA CORRECTION POUR LES EXERCICES AVEC MULTIPLES BLANCS PAR LIGNE ===
+2025-08-15 22:41:39,121 - INFO - Application de test créée avec succès
+2025-08-15 22:41:39,121 - INFO - Démarrage de l'application de test sur http://127.0.0.1:5001/
+2025-08-15 22:41:39,122 - INFO - Utilisez Ctrl+C pour arrêter l'application
+2025-08-15 22:41:39,157 - WARNING -  * Debugger is active!
+2025-08-15 22:41:39,162 - INFO -  * Debugger PIN: 773-832-873
+2025-08-15 22:56:26,065 - INFO -  * Detected change in 'C:\\Users\\JeMat\\OneDrive\\classenumerique20250801\\modified_submit.py', reloading

@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Diagnostic des exercices "Mots à placer"</h1>
+    <p>Nombre d'exercices trouvés: {{ results|length }}</p>
+    
+    <div class="alert alert-info">
+        <h4>Comment interpréter les résultats</h4>
+        <p>Cette page analyse tous les exercices de type "Mots à placer" et vérifie la cohérence entre:</p>
+        <ul>
+            <li>Le nombre de blancs (___) dans les phrases</li>
+            <li>Le nombre de réponses attendues</li>
+            <li>Le nombre de mots disponibles</li>
+        </ul>
+        <p>Un exercice est considéré comme <strong>cohérent</strong> si le nombre de blancs est égal au nombre de réponses attendues.</p>
+    </div>
+    
+    <div class="mb-4">
+        <h2>Résumé</h2>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Exercices cohérents</h5>
+                        <p class="card-text display-4">{{ results|selectattr('is_consistent')|list|length }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Exercices incohérents</h5>
+                        <p class="card-text display-4">{{ results|rejectattr('is_consistent')|list|length }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Total</h5>
+                        <p class="card-text display-4">{{ results|length }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <h2>Détails des exercices</h2>
+    <div class="accordion" id="exerciseAccordion">
+        {% for result in results %}
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="heading{{ result.id }}">
+                <button class="accordion-button {{ 'collapsed' if result.is_consistent else '' }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ result.id }}" aria-expanded="{{ 'false' if result.is_consistent else 'true' }}" aria-controls="collapse{{ result.id }}">
+                    #{{ result.id }} - {{ result.title }}
+                    {% if result.is_consistent %}
+                    <span class="badge bg-success ms-2">Cohérent</span>
+                    {% else %}
+                    <span class="badge bg-danger ms-2">Incohérent</span>
+                    {% endif %}
+                </button>
+            </h2>
+            <div id="collapse{{ result.id }}" class="accordion-collapse collapse {{ 'show' if not result.is_consistent else '' }}" aria-labelledby="heading{{ result.id }}" data-bs-parent="#exerciseAccordion">
+                <div class="accordion-body">
+                    {% if result.error is defined %}
+                    <div class="alert alert-danger">
+                        Erreur: {{ result.error }}
+                    </div>
+                    {% else %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h4>Structure</h4>
+                            <table class="table table-bordered">
+                                <tr>
+                                    <th>Phrases</th>
+                                    <td>{{ 'Oui' if result.has_sentences else 'Non' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Mots</th>
+                                    <td>{{ 'Oui' if result.has_words else 'Non' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Réponses</th>
+                                    <td>{{ 'Oui' if result.has_answers else 'Non' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Blancs dans phrases</th>
+                                    <td>{{ result.blanks_in_sentences }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Nombre de réponses</th>
+                                    <td>{{ result.answers_count }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Nombre de mots</th>
+                                    <td>{{ result.words_count }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Score simulé (toutes réponses correctes)</th>
+                                    <td>{{ result.simulated_score|round(1) if result.simulated_score is not none else 'N/A' }}%</td>
+                                </tr>
+                            </table>
+                            
+                            <h4>Actions</h4>
+                            <a href="{{ url_for('test_word_placement_scoring', exercise_id=result.id) }}" class="btn btn-primary">Tester le scoring</a>
+                            <a href="{{ url_for('edit_exercise', exercise_id=result.id) }}" class="btn btn-secondary">Modifier l'exercice</a>
+                        </div>
+                        <div class="col-md-6">
+                            <h4>Contenu</h4>
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5>Phrases</h5>
+                                    {% if result.has_sentences %}
+                                    <ol>
+                                        {% for sentence in result.content.sentences %}
+                                        <li>{{ sentence }}</li>
+                                        {% endfor %}
+                                    </ol>
+                                    {% else %}
+                                    <p>Aucune phrase trouvée</p>
+                                    {% endif %}
+                                    
+                                    <h5>Mots</h5>
+                                    {% if result.has_words %}
+                                    <ul>
+                                        {% for word in result.content.words %}
+                                        <li>{{ word }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                    {% else %}
+                                    <p>Aucun mot trouvé</p>
+                                    {% endif %}
+                                    
+                                    <h5>Réponses</h5>
+                                    {% if result.has_answers %}
+                                    <ol>
+                                        {% for answer in result.content.answers %}
+                                        <li>{{ answer }}</li>
+                                        {% endfor %}
+                                    </ol>
+                                    {% else %}
+                                    <p>Aucune réponse trouvée</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if result.attempts %}
+                    <h4 class="mt-4">Dernières tentatives</h4>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Étudiant</th>
+                                <th>Score</th>
+                                <th>Réponses correctes</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for attempt in result.attempts %}
+                            <tr>
+                                <td>{{ attempt.id }}</td>
+                                <td>{{ attempt.student_id }}</td>
+                                <td>{{ attempt.score|round(1) }}%</td>
+                                <td>{{ attempt.correct_count }}/{{ attempt.total_answers }}</td>
+                                <td>{{ attempt.created_at }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p class="mt-4">Aucune tentative trouvée pour cet exercice.</p>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <h2 class="mt-4">Logique de scoring actuelle</h2>
+    <div class="card">
+        <div class="card-body">
+            <pre><code>
+# Code actuel de scoring pour word_placement:
+elif exercise.exercise_type == 'word_placement':
+    # ...
+    sentences = content['sentences']
+    correct_answers = content['answers']
+    
+    # CORRECTION: Compter le nombre réel de blancs dans les phrases
+    total_blanks_in_sentences = sum(s.count('___') for s in sentences)
+    total_blanks = max(total_blanks_in_sentences, len(correct_answers))
+    
+    # ...
+    score = (correct_count / total_blanks) * 100 if total_blanks > 0 else 0
+            </code></pre>
+        </div>
+    </div>
+</div>
+{% endblock %}

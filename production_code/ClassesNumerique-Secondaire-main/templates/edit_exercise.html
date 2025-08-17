@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier l'exercice{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('exercise.exercise_library') }}">Bibliothèque d'exercices</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('view_exercise', exercise_id=exercise.id) }}">{{ exercise.title }}</a></li>
+                    <li class="breadcrumb-item active">Modifier</li>
+                </ol>
+            </nav>
+
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="h4 mb-0">Modifier l'exercice</h2>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('edit_exercise', exercise_id=exercise.id) }}" enctype="multipart/form-data">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Titre *</label>
+                            <input type="text" class="form-control" id="title" name="title" value="{{ exercise.title }}" required>
+                            <div class="form-text">Le titre doit être clair et concis.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="subject" class="form-label">Matière *</label>
+                            <input type="text" class="form-control" id="subject" name="subject" value="{{ exercise.subject }}" required>
+                            <div class="form-text">La matière de l'exercice.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3">{{ exercise.description }}</textarea>
+                            <div class="form-text">Une description détaillée aide les élèves à mieux comprendre l'exercice.</div>
+                        </div>
+                        
+                        <!-- Section d'upload d'image -->
+                        <div class="mb-3">
+                            <label for="exercise_image" class="form-label">Image de l'exercice (optionnelle)</label>
+                            
+                            <!-- Affichage de l'image actuelle si elle existe -->
+                            {% if exercise.image_path %}
+                            <div class="current-image mb-3">
+                                <p class="text-muted mb-2">Image actuelle :</p>
+                                <img src="{{ url_for('static', filename='uploads/' + exercise.image_path) }}" 
+                                     alt="Image actuelle" 
+                                     style="max-width: 300px; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                <div class="mt-2">
+                                    <small class="text-muted">Fichier : {{ exercise.image_path }}</small>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <input type="file" class="form-control" id="exercise_image" name="exercise_image" accept="image/*">
+                            <div class="form-text">
+                                {% if exercise.image_path %}
+                                    Sélectionnez une nouvelle image pour remplacer l'image actuelle, ou laissez vide pour conserver l'image existante.
+                                {% else %}
+                                    Ajoutez une image pour illustrer votre exercice (formats acceptés : JPG, PNG, GIF).
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        {% block exercise_content %}{% endblock %}
+                        
+                        <div class="mb-3">
+                            <label for="max_attempts" class="form-label">Nombre maximum de tentatives</label>
+                            <input type="number" class="form-control" id="max_attempts" name="max_attempts" min="1" value="{{ exercise.max_attempts or 1 }}">
+                            <div class="form-text">Laissez vide pour permettre des tentatives illimitées. Par défaut : 1 tentative.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="exercise_type" class="form-label">Type d'exercice *</label>
+                            <select class="form-select" id="exercise_type" name="exercise_type" required>
+                                <option value="" selected disabled>Choisir un type d'exercice</option>
+                                <option value="file_upload" {% if exercise.exercise_type == 'file_upload' %}selected{% endif %}>Dépôt de fichier</option>
+                                <option value="pairs" {% if exercise.exercise_type == 'pairs' %}selected{% endif %}>Association de paires</option>
+                                <option value="word_search" {% if exercise.exercise_type == 'word_search' %}selected{% endif %}>Mots mêlés</option>
+                                <option value="qcm" {% if exercise.exercise_type == 'qcm' %}selected{% endif %}>QCM</option>
+                                <option value="fill_in_blanks" {% if exercise.exercise_type == 'fill_in_blanks' %}selected{% endif %}>Texte à trous</option>
+                                <option value="drag_and_drop" {% if exercise.exercise_type == 'drag_and_drop' %}selected{% endif %}>Glisser-déposer</option>
+                                <option value="underline_words" {% if exercise.exercise_type == 'underline_words' %}selected{% endif %}>Souligner les mots</option>
+                                <option value="image_labeling" {% if exercise.exercise_type == 'image_labeling' %}selected{% endif %}>Légender une image</option>
+                            </select>
+                        </div>
+                        
+
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('exercise.exercise_library') }}" class="btn btn-secondary">Annuler</a>
+                            <button type="submit" class="btn btn-primary">Enregistrer</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateCorrectOptions(questionBlock) {
+    const options = Array.from(questionBlock.querySelectorAll('.options-container input')).map(input => input.value);
+    const correctSelect = questionBlock.querySelector('select[name^="correct_answers"]');
+    const currentValue = correctSelect.value;
+    
+    correctSelect.innerHTML = options.map((option, index) => 
+        `<option value="${index}" ${index.toString() === currentValue ? 'selected' : ''}>${option}</option>`
+    ).join('');
+}
+
+function addQuestion() {
+    const container = document.getElementById('questionsContainer');
+    const questionBlocks = container.querySelectorAll('.question-block');
+    const newIndex = questionBlocks.length;
+    
+    const newQuestionBlock = document.createElement('div');
+    newQuestionBlock.className = 'card mb-3 question-block';
+    newQuestionBlock.dataset.questionIndex = newIndex;
+    
+    newQuestionBlock.innerHTML = `
+        <div class="card-body">
+            <h5 class="card-title">Question ${newIndex + 1}</h5>
+            <div class="mb-3">
+                <label class="form-label">Question</label>
+                <input type="text" class="form-control" name="questions[]" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Options</label>
+                <div class="options-container">
+                    <div class="input-group mb-2">
+                        <input type="text" class="form-control" name="options_${newIndex}[]" required>
+                        <button type="button" class="btn btn-outline-danger" onclick="removeOption(this)">×</button>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-outline-secondary btn-sm mt-2" onclick="addOption(this)">+ Ajouter une option</button>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Réponse correcte</label>
+                <select class="form-control" name="correct_${newIndex}" required></select>
+            </div>
+            <button type="button" class="btn btn-outline-danger" onclick="removeQuestion(this)">Supprimer la question</button>
+        </div>
+    `;
+    
+    container.appendChild(newQuestionBlock);
+    updateCorrectOptions(newQuestionBlock);
+}
+
+function removeQuestion(btn) {
+    const questionBlock = btn.closest('.question-block');
+    questionBlock.remove();
+    
+    // Mettre à jour les indices
+    const allQuestions = document.querySelectorAll('.question-block');
+    allQuestions.forEach((block, index) => {
+        block.dataset.questionIndex = index;
+        block.querySelector('.card-title').textContent = `Question ${index + 1}`;
+        
+        // Mettre à jour les noms des champs
+        block.querySelectorAll('.options-container input').forEach(input => {
+            input.name = `options_${index}[]`;
+        });
+        block.querySelector('select').name = `correct_${index}`;
+    });
+}
+
+document.getElementById('exercise_type').addEventListener('change', function() {
+    const qcmContent = document.getElementById('qcmContent');
+    const fillInBlanksContent = document.getElementById('fillInBlanksContent');
+    qcmContent.style.display = this.value === 'qcm' ? 'block' : 'none';
+    fillInBlanksContent.style.display = this.value === 'fill_in_blanks' ? 'block' : 'none';
+});
+
+// Mettre à jour les options correctes au chargement
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.question-block').forEach(block => {
+        const inputs = block.querySelectorAll('.options-container input');
+        inputs.forEach(input => {
+            input.addEventListener('input', () => updateCorrectOptions(block));
+        });
+    });
+});
+</script>
+{% endblock %}

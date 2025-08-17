@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+
+{% block title %}{{ exercise.title }}{% endblock %}
+
+{% block head %}
+<style>
+    /* Couleurs personnalisées pour Texte à trous */
+    .fill-blanks-container {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px 15px;
+    }
+    
+    .fill-blanks-header {
+        background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 8px 32px rgba(168, 237, 234, 0.3);
+        color: #2d3748;
+        padding: 30px;
+        margin-bottom: 25px;
+    }
+    
+    .fill-blanks-header h2 {
+        font-weight: 700;
+        margin-bottom: 10px;
+        color: #2d3748;
+    }
+    
+    .fill-blanks-header p {
+        opacity: 0.8;
+        font-size: 1.1rem;
+        color: #4a5568;
+    }
+    
+    .exercise-content-card {
+        background: linear-gradient(145deg, #ffffff 0%, #f7fafc 100%);
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 6px 25px rgba(0, 0, 0, 0.1);
+        padding: 30px;
+    }
+    
+    .word-bank {
+        background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+        border: none !important;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(252, 182, 159, 0.3);
+        padding: 20px;
+    }
+    
+    .draggable-word {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 20px;
+        padding: 8px 16px;
+        font-weight: 600;
+        color: white;
+        box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
+        transition: all 0.3s ease;
+        cursor: grab;
+    }
+    
+    .draggable-word:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        background: linear-gradient(135deg, #5a67d8 0%, #667eea 100%);
+    }
+    
+    .draggable-word:active {
+        cursor: grabbing;
+    }
+    
+    .sentence-container {
+        background: linear-gradient(145deg, #ffffff 0%, #f0f8ff 100%);
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+    }
+    
+    .sentence-container:hover {
+        border-color: #667eea;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.1);
+    }
+    
+    .blank-input {
+        border: 2px dashed #cbd5e0;
+        border-radius: 8px;
+        background: rgba(102, 126, 234, 0.05);
+        padding: 8px 12px;
+        min-width: 100px;
+        text-align: center;
+        font-weight: 600;
+        color: #2d3748;
+        transition: all 0.3s ease;
+    }
+    
+    .blank-input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+        outline: none;
+        background: rgba(102, 126, 234, 0.1);
+    }
+    
+    .blank-filled {
+        border-color: #48bb78;
+        background: rgba(72, 187, 120, 0.1);
+        color: #2f855a;
+    }
+    
+    .submit-btn-fill {
+        background: linear-gradient(135deg, #ed64a6 0%, #f093fb 100%);
+        border: none;
+        padding: 15px 50px;
+        border-radius: 30px;
+        font-weight: 600;
+        color: white;
+        font-size: 1.1rem;
+        box-shadow: 0 6px 20px rgba(237, 100, 166, 0.3);
+        transition: all 0.3s ease;
+    }
+    
+    .submit-btn-fill:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(237, 100, 166, 0.4);
+        background: linear-gradient(135deg, #d53f8c 0%, #ed64a6 100%);
+        color: white;
+    }
+    
+    .image-display-fill {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 6px 25px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        background: white;
+        margin-bottom: 25px;
+    }
+    
+    .alert-warning-custom {
+        background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%);
+        border: none;
+        border-radius: 12px;
+        color: #92400e;
+        box-shadow: 0 4px 15px rgba(253, 186, 116, 0.3);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="fill-blanks-container">
+<div class="container mt-4">
+    <div class="fill-blanks-header">
+        <h2><i class="fas fa-edit me-2"></i>{{ exercise.title }}</h2>
+        <p class="mb-0">{{ exercise.description or 'Complétez les phrases en utilisant les mots appropriés.' }}</p>
+    </div>
+
+    <div class="exercise-content-card">
+        {% if not content or not content.sentences or (not content.words and not content.available_words) %}
+            <div class="alert alert-warning-custom">
+                <h4 class="alert-heading">Contenu non disponible</h4>
+                <p>Le contenu de cet exercice n'est pas disponible ou est mal formé.</p>
+                {% if current_user.role == 'teacher' %}
+                    <hr>
+                    <p class="mb-0">
+                        <a href="{{ url_for('edit_exercise', exercise_id=exercise.id) }}" class="btn btn-warning">
+                            <i class="fas fa-edit"></i> Éditer l'exercice
+                        </a>
+                    </p>
+                {% endif %}
+            </div>
+        {% else %}
+            <!-- Affichage de l'image si elle existe -->
+            {% if exercise.image_path %}
+            <div class="card image-display-fill mb-4">
+                <div class="card-body text-center p-4">
+                    <img src="{{ url_for('uploaded_file', filename=exercise.image_path.split('/')[-1]) }}" 
+                         alt="Image de l'exercice" 
+                         class="img-fluid rounded shadow" 
+                         style="max-height: 400px;">
+                </div>
+            </div>
+            {% endif %}
+            <form method="POST" action="{{ url_for('exercise.submit_answer', exercise_id=exercise.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                
+                {% if current_user.role == 'teacher' %}
+                <div class="mb-4">
+                    <h4>Mots disponibles :</h4>
+                    <div class="word-bank p-3 border rounded bg-light" id="word-bank">
+                        {% for word in (content.words or content.available_words) %}
+                            <button type="button" 
+                                    class="btn btn-primary btn-sm me-2 mb-2 draggable-word" 
+                                    draggable="true" 
+                                    data-word="{{ word }}">{{ word }}</button>
+                        {% endfor %}
+                    </div>
+                    <p class="text-muted small"><i class="fas fa-info-circle"></i> Les mots disponibles ne sont visibles que pour les enseignants.</p>
+                </div>
+                {% endif %}
+
+                {% set blank_counter = [0] %}
+                
+                {# Support pour les deux formats : 'sentences' (nouveau) et 'text' (ancien) #}
+                {% if content.sentences %}
+                    {# Format nouveau : sentences (liste de phrases) #}
+                    {% for sentence in content.sentences %}
+                        <div class="mb-4 sentence-container">
+                            <div class="sentence-text">
+                                {% set parts = sentence.split('___') %}
+                                {% for part in parts %}
+                                    {{ part }}
+                                    {% if not loop.last %}
+                                        <input type="text" 
+                                               class="blank-input d-inline-block mx-1" 
+                                               name="answer_{{ blank_counter[0] }}" 
+                                               required 
+                                               placeholder="____"
+                                               style="width: auto; min-width: 80px; max-width: 150px;">
+                                        {% if blank_counter.append(blank_counter.pop() + 1) %}{% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% elif content.text %}
+                    {# Format ancien : text (une seule chaîne avec multiples blancs) #}
+                    <div class="mb-4 sentence-container">
+                        <div class="sentence-text">
+                            {% set parts = content.text.split('___') %}
+                            {% for part in parts %}
+                                {{ part }}
+                                {% if not loop.last %}
+                                    <input type="text" 
+                                           class="blank-input d-inline-block mx-1" 
+                                           name="answer_{{ blank_counter[0] }}" 
+                                           required 
+                                           placeholder="____"
+                                           style="width: auto; min-width: 80px; max-width: 150px;">
+                                    {% if blank_counter.append(blank_counter.pop() + 1) %}{% endif %}
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+                
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn submit-btn-fill">
+                        <i class="fas fa-paper-plane me-2"></i>Soumettre mes réponses
+                    </button>
+                </div>
+            </form>
+
+            <style>
+                .word-bank {
+                    min-height: 60px;
+                }
+                .draggable-word {
+                    cursor: pointer;
+                }
+                .draggable-word:hover {
+                    opacity: 0.8;
+                }
+                .blank-space {
+                    display: inline-block;
+                    min-width: 80px;
+                }
+                .sentence-text {
+                    font-size: 1.1em;
+                    line-height: 1.8;
+                }
+            </style>
+            
+            <script>
+            // Mélanger aléatoirement les mots disponibles
+            document.addEventListener('DOMContentLoaded', function() {
+                const wordBank = document.querySelector('.word-bank');
+                if (wordBank) {
+                    const words = Array.from(wordBank.querySelectorAll('.draggable-word'));
+                    
+                    // Fonction de mélange Fisher-Yates
+                    function shuffleArray(array) {
+                        const shuffled = [...array];
+                        for (let i = shuffled.length - 1; i > 0; i--) {
+                            const j = Math.floor(Math.random() * (i + 1));
+                            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                        }
+                        return shuffled;
+                    }
+                    
+                    // Mélanger les mots
+                    const shuffledWords = shuffleArray(words);
+                    
+                    // Vider la banque de mots et réinsérer dans l'ordre mélangé
+                    wordBank.innerHTML = '';
+                    shuffledWords.forEach(word => {
+                        const button = document.createElement('button');
+                        button.type = 'button';
+                        button.className = 'btn btn-primary btn-sm me-2 mb-2 draggable-word';
+                        button.textContent = word.textContent;
+                        button.draggable = true;
+                        button.setAttribute('data-word', word.textContent);
+                        wordBank.appendChild(button);
+                    });
+                    
+                    console.log('Mots mélangés avec succès!');
+                }
+            });
+            </script>
+        {% endif %}
+    </div>
+</div>
+</div>
+{% endblock %}

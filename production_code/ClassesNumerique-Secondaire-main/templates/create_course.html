@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Créer un cours{% endblock %}
+
+{% block head %}
+<!-- CKEditor 5 CSS -->
+<style>
+    .ck-editor__editable {
+        min-height: 300px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Créer un nouveau cours</h2>
+    <form method="POST" enctype="multipart/form-data" id="courseForm">
+        {{ form.csrf_token }}
+        
+        <div class="form-group mb-3">
+            <label for="title">{{ form.title.label }}</label>
+            {{ form.title(class="form-control", id="title") }}
+            {% if form.title.errors %}
+            <div class="text-danger">
+                {% for error in form.title.errors %}
+                    {{ error }}
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group mb-3">
+            <label>Contenu du cours</label>
+            <textarea name="content" id="content" class="form-control"></textarea>
+        </div>
+        
+        <div class="form-group mb-3">
+            <label for="files">{{ form.files.label }}</label>
+            {{ form.files(class="form-control", id="files") }}
+            <small class="form-text text-muted">Vous pouvez sélectionner plusieurs fichiers</small>
+            <div id="fileList" class="mt-2"></div>
+            {% if form.files.errors %}
+            <div class="text-danger">
+                {% for error in form.files.errors %}
+                    {{ error }}
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Créer le cours</button>
+        <a href="{{ url_for('view_class', class_id=class_id) }}" class="btn btn-secondary">Annuler</a>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- CKEditor 5 JS -->
+<script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
+<script>
+    let editor;
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Initializing CKEditor 5 for course creation...');
+        
+        const contentElement = document.querySelector('#content');
+        if (!contentElement) {
+            console.error('Element #content not found!');
+            return;
+        }
+        
+        ClassicEditor
+            .create(contentElement, {
+                toolbar: {
+                    items: [
+                        'heading', '|',
+                        'bold', 'italic', 'underline', '|',
+                        'fontSize', 'fontColor', 'fontBackgroundColor', '|',
+                        'bulletedList', 'numberedList', '|',
+                        'outdent', 'indent', '|',
+                        'link', 'insertImage', 'insertTable', '|',
+                        'blockQuote', '|',
+                        'undo', 'redo'
+                    ]
+                },
+                image: {
+                    toolbar: [
+                        'imageTextAlternative',
+                        'imageStyle:inline',
+                        'imageStyle:block',
+                        'imageStyle:side'
+                    ]
+                },
+                table: {
+                    contentToolbar: [
+                        'tableColumn',
+                        'tableRow',
+                        'mergeTableCells'
+                    ]
+                },
+                language: 'fr'
+            })
+            .then(newEditor => {
+                editor = newEditor;
+                console.log('CKEditor 5 initialized successfully for course creation!');
+                
+                // Synchroniser avec le textarea pour la soumission
+                editor.model.document.on('change:data', () => {
+                    contentElement.value = editor.getData();
+                });
+            })
+            .catch(error => {
+                console.error('Error initializing CKEditor 5:', error);
+            });
+    });
+
+    document.getElementById('files').addEventListener('change', function(e) {
+        const fileList = document.getElementById('fileList');
+        fileList.innerHTML = '';
+        
+        Array.from(this.files).forEach(file => {
+            const fileDiv = document.createElement('div');
+            fileDiv.className = 'alert alert-info d-flex justify-content-between align-items-center';
+            
+            const fileName = document.createElement('span');
+            fileName.textContent = file.name;
+            
+            const fileSize = document.createElement('small');
+            fileSize.className = 'text-muted ms-2';
+            fileSize.textContent = formatFileSize(file.size);
+            
+            fileDiv.appendChild(fileName);
+            fileDiv.appendChild(fileSize);
+            fileList.appendChild(fileDiv);
+        });
+    });
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+</script>
+{% endblock %}

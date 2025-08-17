@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="padding: 20px;">
+    <h2>{{ exercise.title }} - DEBUG</h2>
+    <p>{{ exercise.description }}</p>
+    
+    <h3>DEBUG INFO:</h3>
+    <p><strong>Content keys:</strong> {{ content.keys() | list }}</p>
+    <p><strong>Has left_items:</strong> {{ 'left_items' in content }}</p>
+    <p><strong>Has pairs:</strong> {{ 'pairs' in content }}</p>
+    
+    {% if content.left_items %}
+        <h3>LEFT ITEMS ({{ content.left_items | length }}):</h3>
+        {% for item in content.left_items %}
+            <div style="border: 1px solid #ccc; margin: 10px; padding: 10px;">
+                <p><strong>Item {{ loop.index0 }}:</strong></p>
+                <p>Type: {{ item.type }}</p>
+                <p>Content: {{ item.content }}</p>
+                {% if item.type == 'image' %}
+                    <img src="{{ item.content }}" alt="Image" style="max-width: 150px; border: 2px solid red;">
+                {% else %}
+                    <span style="background: yellow;">{{ item.content }}</span>
+                {% endif %}
+            </div>
+        {% endfor %}
+    {% else %}
+        <p style="color: red;">NO LEFT_ITEMS FOUND!</p>
+    {% endif %}
+    
+    {% if content.shuffled_right_items %}
+        <h3>RIGHT ITEMS ({{ content.shuffled_right_items | length }}):</h3>
+        {% for item in content.shuffled_right_items %}
+            <div style="border: 1px solid #ccc; margin: 10px; padding: 10px;">
+                <p><strong>Item {{ loop.index0 }}:</strong></p>
+                <p>Type: {{ item.type }}</p>
+                <p>Content: {{ item.content }}</p>
+                {% if item.type == 'image' %}
+                    <img src="{{ item.content }}" alt="Image" style="max-width: 150px; border: 2px solid blue;">
+                {% else %}
+                    <span style="background: lightblue;">{{ item.content }}</span>
+                {% endif %}
+            </div>
+        {% endfor %}
+    {% else %}
+        <p style="color: red;">NO SHUFFLED_RIGHT_ITEMS FOUND!</p>
+    {% endif %}
+    
+    {% if content.pairs %}
+        <h3>ORIGINAL PAIRS ({{ content.pairs | length }}):</h3>
+        {% for pair in content.pairs %}
+            <div style="border: 1px solid green; margin: 10px; padding: 10px;">
+                <p><strong>Pair {{ loop.index0 }}:</strong></p>
+                <p>Left: {{ pair.left.type }} - {{ pair.left.content }}</p>
+                <p>Right: {{ pair.right.type }} - {{ pair.right.content }}</p>
+            </div>
+        {% endfor %}
+    {% endif %}
+</div>
+{% endblock %}

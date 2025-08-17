@@ -21,12 +21,12 @@ def create_admin_user():
             admin_user = User.query.filter_by(email=admin_email).first()
             
             if admin_user:
-                print(f"✅ Compte admin existe déjà: {admin_email}")
+                print(f"[OK] Compte admin existe déjà: {admin_email}")
                 # S'assurer qu'il est approuvé
                 admin_user.subscription_status = 'approved'
                 admin_user.role = 'admin'
                 db.session.commit()
-                print("✅ Statut admin mis à jour")
+                print("[OK] Statut admin mis à jour")
             else:
                 # Créer le compte admin
                 admin_user = User(
@@ -41,7 +41,7 @@ def create_admin_user():
                 )
                 db.session.add(admin_user)
                 db.session.commit()
-                print(f"✅ Compte administrateur créé: {admin_email}")
+                print(f"[OK] Compte administrateur créé: {admin_email}")
             
             # Approuver mr.zahiri@gmail.com s'il existe
             zahiri_user = User.query.filter_by(email='mr.zahiri@gmail.com').first()
@@ -50,17 +50,17 @@ def create_admin_user():
                 zahiri_user.subscription_type = 'teacher'
                 zahiri_user.approved_by = 'admin'
                 db.session.commit()
-                print("✅ Compte mr.zahiri@gmail.com approuvé")
+                print("[OK] Compte mr.zahiri@gmail.com approuvé")
             else:
-                print("ℹ️  Compte mr.zahiri@gmail.com non trouvé")
+                print("[INFO] Compte mr.zahiri@gmail.com non trouvé")
             
-            print("\n🎉 Configuration terminée !")
-            print("🔑 Connexion admin:")
+            print("\n[SUCCES] Configuration terminée !")
+            print("[IDENTIFIANTS] Connexion admin:")
             print(f"   Email: {admin_email}")
             print("   Mot de passe: AdminSecure2024!")
             
         except Exception as e:
-            print(f"❌ Erreur: {e}")
+            print(f"[ERREUR] Erreur: {e}")
 
 if __name__ == '__main__':
     create_admin_user()

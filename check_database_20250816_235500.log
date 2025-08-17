@@ -1,0 +1,80 @@
+2025-08-16 23:55:00,902 - INFO - === DÉBUT DE L'EXAMEN DES BASES DE DONNÉES ===
+2025-08-16 23:55:00,924 - INFO - Examen de la base de données: app.db
+2025-08-16 23:55:00,925 - INFO - Tables dans app.db:
+2025-08-16 23:55:00,926 - INFO - Examen de la base de données: instance/app.db
+2025-08-16 23:55:00,985 - INFO - Tables dans instance/app.db:
+2025-08-16 23:55:00,985 - INFO - - alembic_version
+2025-08-16 23:55:00,986 - INFO - - user
+2025-08-16 23:55:00,986 - INFO -   Colonnes de la table user:
+2025-08-16 23:55:00,986 - INFO -   - id (INTEGER)
+2025-08-16 23:55:00,986 - INFO -   - username (VARCHAR(80))
+2025-08-16 23:55:00,987 - INFO -   - email (VARCHAR(120))
+2025-08-16 23:55:00,987 - INFO -   - name (VARCHAR(120))
+2025-08-16 23:55:00,987 - INFO -   - password_hash (VARCHAR(128))
+2025-08-16 23:55:00,987 - INFO -   - role (VARCHAR(20))
+2025-08-16 23:55:00,987 - INFO -   - school_name (VARCHAR(200))
+2025-08-16 23:55:00,987 - INFO -   - created_at (DATETIME)
+2025-08-16 23:55:00,987 - INFO -   - subscription_status (VARCHAR(20))
+2025-08-16 23:55:00,987 - INFO -   - subscription_type (VARCHAR(20))
+2025-08-16 23:55:00,987 - INFO -   - subscription_amount (FLOAT)
+2025-08-16 23:55:00,987 - INFO -   - payment_date (DATETIME)
+2025-08-16 23:55:00,987 - INFO -   - payment_reference (VARCHAR(100))
+2025-08-16 23:55:00,987 - INFO -   - payment_session_id (VARCHAR(200))
+2025-08-16 23:55:00,987 - INFO -   - payment_amount (FLOAT)
+2025-08-16 23:55:00,987 - INFO -   - approval_date (DATETIME)
+2025-08-16 23:55:00,987 - INFO -   - approved_by (INTEGER)
+2025-08-16 23:55:00,987 - INFO -   - subscription_expires (DATETIME)
+2025-08-16 23:55:00,987 - INFO -   - rejection_reason (TEXT)
+2025-08-16 23:55:00,988 - INFO -   - notes (TEXT)
+2025-08-16 23:55:00,988 - INFO -   La table user contient des informations sur les écoles
+2025-08-16 23:55:01,023 - INFO -   Écoles trouvées dans la table user:
+2025-08-16 23:55:01,023 - INFO -   - École Bruxelles II
+2025-08-16 23:55:01,024 - INFO -     Utilisateurs de l'école 'École Bruxelles II': 1
+2025-08-16 23:55:01,024 - INFO -     - ID: 6, Email: responsable@example.com, Rôle: teacher, Type: school, Statut: approved
+2025-08-16 23:55:01,024 - INFO - - class
+2025-08-16 23:55:01,024 - INFO - - exercise
+2025-08-16 23:55:01,024 - INFO - - course
+2025-08-16 23:55:01,024 - INFO - - student_class
+2025-08-16 23:55:01,024 - INFO - - course_exercise
+2025-08-16 23:55:01,024 - INFO - - course_file
+2025-08-16 23:55:01,024 - INFO - - exercise_attempt
+2025-08-16 23:55:01,024 - INFO - - class_exercise
+2025-08-16 23:55:01,024 - INFO - Examen de la base de données: instance/classe_numerique.db
+2025-08-16 23:55:01,025 - INFO - Tables dans instance/classe_numerique.db:
+2025-08-16 23:55:01,026 - INFO - - user
+2025-08-16 23:55:01,026 - INFO -   Colonnes de la table user:
+2025-08-16 23:55:01,026 - INFO -   - id (INTEGER)
+2025-08-16 23:55:01,026 - INFO -   - username (VARCHAR(80))
+2025-08-16 23:55:01,026 - INFO -   - email (VARCHAR(120))
+2025-08-16 23:55:01,026 - INFO -   - name (VARCHAR(120))
+2025-08-16 23:55:01,026 - INFO -   - password_hash (VARCHAR(128))
+2025-08-16 23:55:01,026 - INFO -   - role (VARCHAR(20))
+2025-08-16 23:55:01,026 - INFO -   - school_name (VARCHAR(200))
+2025-08-16 23:55:01,026 - INFO -   - created_at (DATETIME)
+2025-08-16 23:55:01,026 - INFO -   - subscription_status (VARCHAR(20))
+2025-08-16 23:55:01,026 - INFO -   - subscription_type (VARCHAR(20))
+2025-08-16 23:55:01,026 - INFO -   - subscription_amount (FLOAT)
+2025-08-16 23:55:01,026 - INFO -   - payment_date (DATETIME)
+2025-08-16 23:55:01,026 - INFO -   - payment_reference (VARCHAR(100))
+2025-08-16 23:55:01,027 - INFO -   - payment_session_id (VARCHAR(200))
+2025-08-16 23:55:01,027 - INFO -   - payment_amount (FLOAT)
+2025-08-16 23:55:01,027 - INFO -   - approval_date (DATETIME)
+2025-08-16 23:55:01,027 - INFO -   - approved_by (INTEGER)
+2025-08-16 23:55:01,027 - INFO -   - subscription_expires (DATETIME)
+2025-08-16 23:55:01,027 - INFO -   - rejection_reason (TEXT)
+2025-08-16 23:55:01,027 - INFO -   - notes (TEXT)
+2025-08-16 23:55:01,027 - INFO -   La table user contient des informations sur les écoles
+2025-08-16 23:55:01,027 - INFO -   Écoles trouvées dans la table user:
+2025-08-16 23:55:01,027 - INFO -   - Ecole Bruxelles ll
+2025-08-16 23:55:01,027 - INFO -     Utilisateurs de l'école 'Ecole Bruxelles ll': 1
+2025-08-16 23:55:01,027 - INFO -     - ID: 3, Email: responsable@example.com, Rôle: teacher, Type: trial, Statut: approved
+2025-08-16 23:55:01,028 - INFO - - class
+2025-08-16 23:55:01,028 - INFO - - exercise
+2025-08-16 23:55:01,028 - INFO - - student_class
+2025-08-16 23:55:01,028 - INFO - - course
+2025-08-16 23:55:01,028 - INFO - - course_exercise
+2025-08-16 23:55:01,028 - INFO - - exercise_attempt
+2025-08-16 23:55:01,028 - INFO - - course_file
+2025-08-16 23:55:01,028 - INFO - Examen de la base de données: instance/site.db
+2025-08-16 23:55:01,029 - INFO - Tables dans instance/site.db:
+2025-08-16 23:55:01,029 - INFO - === FIN DE L'EXAMEN DES BASES DE DONNÉES ===

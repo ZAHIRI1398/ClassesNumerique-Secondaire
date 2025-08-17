@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h2>{{ exercise.title }}</h2>
+            <p class="lead">{{ exercise.description }}</p>
+        </div>
+        {% if current_user.is_teacher %}
+        <div class="btn-group">
+            <a href="{{ url_for('edit_exercise', exercise_id=exercise.id) }}" class="btn btn-outline-primary">
+                <i class="fas fa-edit"></i> Modifier
+            </a>
+            <form method="POST" action="{{ url_for('exercise.delete_exercise', exercise_id=exercise.id) }}" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet exercice ?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit" class="btn btn-outline-danger">
+                    <i class="fas fa-trash"></i> Supprimer
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+
+    <form method="POST" action="{{ url_for('handle_exercise_answer', exercise_id=exercise.id) }}" onsubmit="return validateAndSubmit()">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        {% if course %}
+        <input type="hidden" name="course_id" value="{{ course.id }}"/>
+        {% endif %}
+        
+        <!-- Champs cachés pour les réponses -->
+        {% for i in range(content.draggable_items|length) %}
+        <input type="hidden" name="answer_{{ i }}" id="answer_{{ i }}" value="">
+        {% endfor %}
+        
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <h4>Éléments à placer</h4>
+                <div id="draggable-items" style="min-height: 200px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+                    {% for item in content.draggable_items %}
+                        <div class="draggable-item" data-index="{{ loop.index0 }}" style="background: white; margin: 5px; padding: 10px; border-radius: 5px; cursor: pointer; border: 2px solid #ddd;">
+                            {{ item }}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <h4>Zones de dépôt</h4>
+                {% for i in range(content.draggable_items|length) %}
+                    <div class="drop-zone" data-position="{{ i }}" style="min-height: 50px; margin: 5px; padding: 10px; border: 2px dashed #ccc; border-radius: 5px; background: #fff;">
+                        <span class="placeholder">Zone {{ i + 1 }} - Cliquez sur un élément puis ici</span>
+                        <div class="dropped-item" style="display: none;"></div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-check"></i> Valider mes réponses
+        </button>
+    </form>
+</div>
+
+<script>
+let selectedItem = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Template drag_and_drop_simple chargé');
+    
+    // Gestion des éléments glissables
+    document.querySelectorAll('.draggable-item').forEach(item => {
+        item.addEventListener('click', function() {
+            // Désélectionner l'ancien élément
+            if (selectedItem) {
+                selectedItem.style.backgroundColor = 'white';
+                selectedItem.style.border = '2px solid #ddd';
+            }
+            
+            // Sélectionner le nouveau
+            selectedItem = this;
+            this.style.backgroundColor = '#007bff';
+            this.style.border = '2px solid #0056b3';
+            this.style.color = 'white';
+            
+            console.log('Élément sélectionné:', this.textContent.trim(), 'Index:', this.dataset.index);
+        });
+    });
+    
+    // Gestion des zones de dépôt
+    document.querySelectorAll('.drop-zone').forEach(zone => {
+        zone.addEventListener('click', function() {
+            if (!selectedItem) {
+                alert('Veuillez d\'abord sélectionner un élément à placer.');
+                return;
+            }
+            
+            const position = this.dataset.position;
+            const itemIndex = selectedItem.dataset.index;
+            const itemText = selectedItem.textContent.trim();
+            
+            console.log('Placer élément', itemIndex, 'dans zone', position);
+            
+            // Mettre à jour l'affichage de la zone
+            const placeholder = this.querySelector('.placeholder');
+            const droppedItem = this.querySelector('.dropped-item');
+            
+            placeholder.style.display = 'none';
+            droppedItem.style.display = 'block';
+            droppedItem.textContent = itemText;
+            droppedItem.style.background = '#28a745';
+            droppedItem.style.color = 'white';
+            droppedItem.style.padding = '5px';
+            droppedItem.style.borderRadius = '3px';
+            
+            // Mettre à jour le champ caché
+            const hiddenField = document.getElementById('answer_' + position);
+            if (hiddenField) {
+                hiddenField.value = itemIndex;
+                console.log('Champ answer_' + position + ' mis à jour avec:', itemIndex);
+            }
+            
+            // Cacher l'élément original
+            selectedItem.style.display = 'none';
+            selectedItem = null;
+            
+            // Afficher l'état actuel
+            debugFormState();
+        });
+    });
+    
+    function debugFormState() {
+        console.log('=== État des champs cachés ===');
+        {% for i in range(content.draggable_items|length) %}
+        const field{{ i }} = document.getElementById('answer_{{ i }}');
+        if (field{{ i }}) {
+            console.log('answer_{{ i }}:', field{{ i }}.value);
+        }
+        {% endfor %}
+    }
+    
+    window.validateAndSubmit = function() {
+        console.log('=== VALIDATION AVANT SOUMISSION ===');
+        debugFormState();
+        
+        let allFilled = true;
+        {% for i in range(content.draggable_items|length) %}
+        const field{{ i }} = document.getElementById('answer_{{ i }}');
+        if (!field{{ i }} || field{{ i }}.value === '') {
+            allFilled = false;
+            console.warn('Champ answer_{{ i }} vide');
+        }
+        {% endfor %}
+        
+        if (!allFilled) {
+            alert('Veuillez placer tous les éléments dans les zones de dépôt.');
+            return false;
+        }
+        
+        console.log('Validation OK - Soumission du formulaire');
+        return true;
+    };
+    
+    // État initial
+    debugFormState();
+});
+</script>
+{% endblock %}

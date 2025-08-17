@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+
+{% block title %}Statut de votre Abonnement{% endblock %}
+
+{% block head %}
+<style>
+    .subscription-status {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 40px 0;
+    }
+    
+    .status-card {
+        background: white;
+        border-radius: 20px;
+        padding: 40px;
+        margin-bottom: 30px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+    
+    .status-icon {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 30px;
+        font-size: 3rem;
+        color: white;
+    }
+    
+    .status-pending { background: linear-gradient(135deg, #ffc107 0%, #ff8c00 100%); }
+    .status-paid { background: linear-gradient(135deg, #17a2b8 0%, #007bff 100%); }
+    .status-approved { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); }
+    .status-rejected { background: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%); }
+    .status-suspended { background: linear-gradient(135deg, #6c757d 0%, #495057 100%); }
+    
+    .status-title {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 15px;
+        color: #2c3e50;
+    }
+    
+    .status-description {
+        font-size: 1.2rem;
+        color: #6c757d;
+        margin-bottom: 30px;
+        line-height: 1.6;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .btn-action {
+        border-radius: 25px;
+        padding: 12px 30px;
+        font-weight: 600;
+        font-size: 1.1rem;
+        transition: all 0.3s ease;
+        text-decoration: none;
+    }
+    
+    .btn-action:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    }
+    
+    .info-section {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    }
+    
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .info-row:last-child {
+        border-bottom: none;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #495057;
+        display: flex;
+        align-items: center;
+    }
+    
+    .info-value {
+        color: #6c757d;
+        font-weight: 500;
+    }
+    
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+    
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 15px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #dee2e6;
+    }
+    
+    .timeline-item {
+        position: relative;
+        margin-bottom: 25px;
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -37px;
+        top: 25px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #6c757d;
+    }
+    
+    .timeline-item.completed::before { background: #28a745; }
+    .timeline-item.current::before { background: #007bff; }
+    .timeline-item.rejected::before { background: #dc3545; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="subscription-status">
+    <div class="container">
+        <!-- Statut principal -->
+        <div class="status-card">
+            <div class="status-icon status-{{ user.subscription_status }}">
+                {% if user.subscription_status == 'pending' %}
+                <i class="fas fa-clock"></i>
+                {% elif user.subscription_status == 'paid' %}
+                <i class="fas fa-credit-card"></i>
+                {% elif user.subscription_status == 'approved' %}
+                <i class="fas fa-check-circle"></i>
+                {% elif user.subscription_status == 'rejected' %}
+                <i class="fas fa-times-circle"></i>
+                {% elif user.subscription_status == 'suspended' %}
+                <i class="fas fa-pause-circle"></i>
+                {% endif %}
+            </div>
+            
+            <h1 class="status-title">{{ user.get_subscription_status_display() }}</h1>
+            
+            <div class="status-description">
+                {% if user.subscription_status == 'pending' %}
+                Votre inscription est en attente. Vous devez effectuer le paiement de votre cotisation pour continuer.
+                {% elif user.subscription_status == 'paid' %}
+                Votre paiement a été reçu et est en cours de validation par notre équipe administrative.
+                {% elif user.subscription_status == 'approved' %}
+                Félicitations ! Votre abonnement est actif. Vous avez accès à toutes les fonctionnalités de la plateforme.
+                {% elif user.subscription_status == 'rejected' %}
+                Votre demande d'abonnement a été rejetée. Contactez l'administration pour plus d'informations.
+                {% elif user.subscription_status == 'suspended' %}
+                Votre abonnement a été temporairement suspendu. Contactez l'administration.
+                {% endif %}
+            </div>
+            
+            <div class="action-buttons">
+                {% if user.subscription_status == 'pending' %}
+                <a href="{{ url_for('subscription_payment') }}" class="btn btn-primary btn-action">
+                    <i class="fas fa-credit-card me-2"></i>Effectuer le paiement
+                </a>
+                {% elif user.subscription_status == 'rejected' %}
+                <a href="{{ url_for('subscription_payment') }}" class="btn btn-warning btn-action">
+                    <i class="fas fa-redo me-2"></i>Renouveler la demande
+                </a>
+                {% elif user.subscription_status == 'approved' %}
+                <a href="{{ url_for('teacher_dashboard') }}" class="btn btn-success btn-action">
+                    <i class="fas fa-tachometer-alt me-2"></i>Accéder au tableau de bord
+                </a>
+                {% endif %}
+                
+                <a href="{{ url_for('index') }}" class="btn btn-outline-secondary btn-action">
+                    <i class="fas fa-home me-2"></i>Retour à l'accueil
+                </a>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Informations détaillées -->
+            <div class="col-md-6">
+                <div class="info-section">
+                    <h4><i class="fas fa-info-circle me-2"></i>Détails de votre abonnement</h4>
+                    
+                    <div class="info-row">
+                        <div class="info-label">
+                            <i class="fas fa-user me-2"></i>Type d'abonnement
+                        </div>
+                        <div class="info-value">
+                            {% if user.role == 'teacher' %}
+                            Enseignant (40€)
+                            {% else %}
+                            École (80€)
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="info-row">
+                        <div class="info-label">
+                            <i class="fas fa-calendar-plus me-2"></i>Date d'inscription
+                        </div>
+                        <div class="info-value">{{ user.created_at.strftime('%d/%m/%Y') }}</div>
+                    </div>
+                    
+                    {% if user.payment_date %}
+                    <div class="info-row">
+                        <div class="info-label">
+                            <i class="fas fa-credit-card me-2"></i>Date de paiement
+                        </div>
+                        <div class="info-value">{{ user.payment_date.strftime('%d/%m/%Y') }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if user.payment_reference %}
+                    <div class="info-row">
+                        <div class="info-label">
+                            <i class="fas fa-receipt me-2"></i>Référence de paiement
+                        </div>
+                        <div class="info-value">{{ user.payment_reference }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if user.approval_date %}
+                    <div class="info-row">
+                        <div class="info-label">
+                            <i class="fas fa-check-circle me-2"></i>Date d'approbation
+                        </div>
+                        <div class="info-value">{{ user.approval_date.strftime('%d/%m/%Y') }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if user.subscription_expires %}
+                    <div class="info-row">
+                        <div class="info-label">
+                            <i class="fas fa-calendar-times me-2"></i>Expiration
+                        </div>
+                        <div class="info-value">{{ user.subscription_expires.strftime('%d/%m/%Y') }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if user.rejection_reason %}
+                    <div class="info-row">
+                        <div class="info-label">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Raison du rejet
+                        </div>
+                        <div class="info-value">{{ user.rejection_reason }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Processus d'abonnement -->
+            <div class="col-md-6">
+                <div class="info-section">
+                    <h4><i class="fas fa-list-ol me-2"></i>Processus d'abonnement</h4>
+                    
+                    <div class="timeline">
+                        <div class="timeline-item completed">
+                            <h6><i class="fas fa-user-plus me-2"></i>Inscription</h6>
+                            <p class="mb-1">{{ user.created_at.strftime('%d/%m/%Y à %H:%M') }}</p>
+                            <small class="text-muted">Votre compte a été créé avec succès</small>
+                        </div>
+                        
+                        <div class="timeline-item {% if user.payment_date %}completed{% elif user.subscription_status == 'pending' %}current{% endif %}">
+                            <h6><i class="fas fa-credit-card me-2"></i>Paiement</h6>
+                            {% if user.payment_date %}
+                            <p class="mb-1">{{ user.payment_date.strftime('%d/%m/%Y à %H:%M') }}</p>
+                            <small class="text-success">Paiement reçu ({{ user.subscription_amount }}€)</small>
+                            {% else %}
+                            <p class="mb-1">En attente</p>
+                            <small class="text-muted">Effectuez le paiement de votre cotisation</small>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="timeline-item {% if user.subscription_status == 'approved' %}completed{% elif user.subscription_status == 'rejected' %}rejected{% elif user.payment_date %}current{% endif %}">
+                            <h6><i class="fas fa-user-shield me-2"></i>Validation administrative</h6>
+                            {% if user.approval_date %}
+                                {% if user.subscription_status == 'approved' %}
+                                <p class="mb-1">{{ user.approval_date.strftime('%d/%m/%Y à %H:%M') }}</p>
+                                <small class="text-success">Abonnement approuvé</small>
+                                {% elif user.subscription_status == 'rejected' %}
+                                <p class="mb-1">{{ user.approval_date.strftime('%d/%m/%Y à %H:%M') }}</p>
+                                <small class="text-danger">Demande rejetée</small>
+                                {% endif %}
+                            {% else %}
+                            <p class="mb-1">En attente</p>
+                            <small class="text-muted">Notre équipe examine votre dossier</small>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="timeline-item {% if user.subscription_status == 'approved' %}completed{% endif %}">
+                            <h6><i class="fas fa-check-circle me-2"></i>Accès complet</h6>
+                            {% if user.subscription_status == 'approved' %}
+                            <p class="mb-1">Actif</p>
+                            <small class="text-success">Accès à toutes les fonctionnalités</small>
+                            {% else %}
+                            <p class="mb-1">En attente</p>
+                            <small class="text-muted">Après validation de votre abonnement</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

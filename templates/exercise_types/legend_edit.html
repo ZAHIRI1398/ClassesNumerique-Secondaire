@@ -1,0 +1,563 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier l'exercice de légende - {{ exercise.title }}{% endblock %}
+
+{% block head %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<style>
+    .legend-zone {
+        position: relative;
+        margin-bottom: 15px;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+    }
+    
+    .legend-image-container {
+        position: relative;
+        max-width: 100%;
+        margin-bottom: 20px;
+        overflow: auto;
+    }
+    
+    .legend-image {
+        max-width: 100%;
+        cursor: crosshair;
+    }
+    
+    .legend-point {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        background-color: rgba(255, 0, 0, 0.5);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 12px;
+    }
+    
+    .legend-grid-container {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-top: 20px;
+    }
+    
+    .legend-grid-item {
+        border: 1px solid #ddd;
+        padding: 10px;
+        text-align: center;
+    }
+    
+    .legend-mode-selector {
+        margin-bottom: 20px;
+    }
+    
+    .spatial-zone {
+        border: 1px dashed #007bff;
+        background-color: rgba(0, 123, 255, 0.1);
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Accueil</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('view_exercise', exercise_id=exercise.id) }}">{{ exercise.title }}</a></li>
+            <li class="breadcrumb-item active">Modifier</li>
+        </ol>
+    </nav>
+
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h2 class="card-title mb-0">Modifier l'exercice de légende</h2>
+        </div>
+        <div class="card-body">
+            <form method="POST" enctype="multipart/form-data">
+                <!-- Informations de base de l'exercice -->
+                <div class="mb-3">
+                    <label for="title" class="form-label">Titre de l'exercice</label>
+                    <input type="text" class="form-control" id="title" name="title" value="{{ exercise.title }}" required>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="description" class="form-label">Description</label>
+                    <textarea class="form-control" id="description" name="description" rows="3">{{ exercise.description }}</textarea>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="subject" class="form-label">Matière</label>
+                    <input type="text" class="form-control" id="subject" name="subject" value="{{ exercise.subject }}">
+                </div>
+                
+                <!-- Mode de légende -->
+                <div class="mb-4 legend-mode-selector">
+                    <label class="form-label">Mode de légende</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="legend_mode" id="mode_classic" value="classic" checked>
+                        <label class="form-check-label" for="mode_classic">
+                            Classique (points sur image)
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="legend_mode" id="mode_grid" value="grid">
+                        <label class="form-check-label" for="mode_grid">
+                            Quadrillage (grille)
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="legend_mode" id="mode_spatial" value="spatial">
+                        <label class="form-check-label" for="mode_spatial">
+                            Spatial (zones définies)
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Instructions -->
+                <div class="mb-3">
+                    <label for="legend_instructions" class="form-label">Instructions</label>
+                    <textarea class="form-control" id="legend_instructions" name="legend_instructions" rows="2">{{ exercise.get_content().get('instructions', '') }}</textarea>
+                    <small class="form-text text-muted">Instructions pour l'élève. Si vide, des instructions par défaut seront utilisées.</small>
+                </div>
+                
+                <!-- Image principale -->
+                <div class="mb-4">
+                    <label for="legend_main_image" class="form-label">Image principale</label>
+                    <input type="file" class="form-control" id="legend_main_image" name="legend_main_image" accept="image/*">
+                    {% if exercise.get_content().get('main_image') %}
+                    <div class="mt-2">
+                        <p>Image actuelle: {{ exercise.get_content().get('main_image') }}</p>
+                        <img src="{{ url_for('static', filename='uploads/' + exercise.get_content().get('main_image')) }}" alt="Image actuelle" style="max-width: 200px; max-height: 200px;">
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Section pour le mode classique -->
+                <div id="classic_section" class="mb-4">
+                    <h4>Points et légendes</h4>
+                    <p class="text-muted">Cliquez sur l'image pour ajouter des points. Ajoutez ensuite une légende pour chaque point.</p>
+                    
+                    <div class="legend-image-container" id="image_container">
+                        {% if exercise.get_content().get('main_image') %}
+                        <img src="{{ url_for('static', filename='uploads/' + exercise.get_content().get('main_image')) }}" alt="Image à légender" class="legend-image" id="legend_image">
+                        {% else %}
+                        <div class="alert alert-warning">Veuillez d'abord télécharger une image.</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div id="zones_container">
+                        <!-- Les zones seront ajoutées ici dynamiquement -->
+                        {% if exercise.get_content().get('zones') %}
+                        {% for zone in exercise.get_content().get('zones') %}
+                        <div class="legend-zone" id="zone_{{ loop.index0 }}">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label class="form-label">Coordonnées</label>
+                                    <div class="input-group mb-3">
+                                        <span class="input-group-text">X</span>
+                                        <input type="number" step="0.01" class="form-control" name="zone_{{ loop.index0 }}_x" value="{{ zone.x }}" required>
+                                        <span class="input-group-text">Y</span>
+                                        <input type="number" step="0.01" class="form-control" name="zone_{{ loop.index0 }}_y" value="{{ zone.y }}" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Légende</label>
+                                    <input type="text" class="form-control" name="zone_{{ loop.index0 }}_legend" value="{{ zone.legend }}" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">&nbsp;</label>
+                                    <button type="button" class="btn btn-danger form-control" onclick="removeZone('zone_{{ loop.index0 }}')">Supprimer</button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+                    
+                    <button type="button" class="btn btn-secondary mt-2" id="add_zone_btn">Ajouter une zone manuellement</button>
+                </div>
+                
+                <!-- Section pour le mode quadrillage -->
+                <div id="grid_section" class="mb-4" style="display: none;">
+                    <h4>Configuration du quadrillage</h4>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="grid_rows" class="form-label">Nombre de lignes</label>
+                            <input type="number" class="form-control" id="grid_rows" name="grid_rows" min="1" max="10" value="{{ exercise.get_content().get('grid_rows', 3) }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="grid_cols" class="form-label">Nombre de colonnes</label>
+                            <input type="number" class="form-control" id="grid_cols" name="grid_cols" min="1" max="10" value="{{ exercise.get_content().get('grid_cols', 3) }}">
+                        </div>
+                    </div>
+                    
+                    <button type="button" class="btn btn-secondary" id="generate_grid_btn">Générer la grille</button>
+                    
+                    <div id="grid_elements_container" class="mt-3">
+                        <!-- Les éléments de grille seront ajoutés ici dynamiquement -->
+                        {% if exercise.get_content().get('grid_elements') %}
+                        {% for element in exercise.get_content().get('grid_elements') %}
+                        <div class="legend-zone" id="grid_element_{{ loop.index0 }}">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label class="form-label">Position</label>
+                                    <div class="input-group mb-3">
+                                        <span class="input-group-text">Ligne</span>
+                                        <input type="number" class="form-control" name="grid_element_{{ loop.index0 }}_row" value="{{ element.row }}" min="0" required>
+                                        <span class="input-group-text">Col</span>
+                                        <input type="number" class="form-control" name="grid_element_{{ loop.index0 }}_col" value="{{ element.col }}" min="0" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Contenu</label>
+                                    <input type="text" class="form-control" name="grid_element_{{ loop.index0 }}_content" value="{{ element.content }}" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">&nbsp;</label>
+                                    <button type="button" class="btn btn-danger form-control" onclick="removeGridElement('grid_element_{{ loop.index0 }}')">Supprimer</button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Section pour le mode spatial -->
+                <div id="spatial_section" class="mb-4" style="display: none;">
+                    <h4>Configuration des zones spatiales</h4>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label class="form-label">Éléments à placer</label>
+                            <div id="spatial_elements_container">
+                                <!-- Les éléments spatiaux seront ajoutés ici dynamiquement -->
+                                {% if exercise.get_content().get('elements') %}
+                                {% for element in exercise.get_content().get('elements') %}
+                                <div class="input-group mb-2" id="spatial_element_{{ loop.index0 }}">
+                                    <input type="text" class="form-control" name="spatial_element_{{ loop.index0 }}" value="{{ element }}" required>
+                                    <button type="button" class="btn btn-danger" onclick="removeSpatialElement('spatial_element_{{ loop.index0 }}')">Supprimer</button>
+                                </div>
+                                {% endfor %}
+                                {% endif %}
+                            </div>
+                            <button type="button" class="btn btn-secondary mt-2" id="add_spatial_element_btn">Ajouter un élément</button>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-12">
+                            <label class="form-label">Zones spatiales</label>
+                            <div id="spatial_zones_container">
+                                <!-- Les zones spatiales seront ajoutées ici dynamiquement -->
+                                {% if exercise.get_content().get('zones') %}
+                                {% for zone in exercise.get_content().get('zones') %}
+                                <div class="spatial-zone" id="spatial_zone_{{ loop.index0 }}">
+                                    <div class="row">
+                                        <div class="col-md-5">
+                                            <label class="form-label">Nom de la zone</label>
+                                            <input type="text" class="form-control" name="spatial_zone_{{ loop.index0 }}_name" value="{{ zone.name }}" required>
+                                        </div>
+                                        <div class="col-md-5">
+                                            <label class="form-label">Élément correct</label>
+                                            <input type="text" class="form-control" name="spatial_zone_{{ loop.index0 }}_correct" value="{{ zone.correct_element }}" required>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label">&nbsp;</label>
+                                            <button type="button" class="btn btn-danger form-control" onclick="removeSpatialZone('spatial_zone_{{ loop.index0 }}')">Supprimer</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                                {% endif %}
+                            </div>
+                            <button type="button" class="btn btn-secondary mt-2" id="add_spatial_zone_btn">Ajouter une zone</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Boutons d'action -->
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{{ url_for('view_exercise', exercise_id=exercise.id) }}" class="btn btn-secondary">Annuler</a>
+                    <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    // Variables globales
+    let zoneCounter = {{ (exercise.get_content().get('zones', [])|length) or 0 }};
+    let gridElementCounter = {{ (exercise.get_content().get('grid_elements', [])|length) or 0 }};
+    let spatialElementCounter = {{ (exercise.get_content().get('elements', [])|length) or 0 }};
+    let spatialZoneCounter = {{ (exercise.get_content().get('zones', [])|length) or 0 }};
+    
+    // Fonction pour ajouter un point sur l'image
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialiser le mode actif
+        const initialMode = document.querySelector('input[name="legend_mode"]:checked').value;
+        updateModeVisibility(initialMode);
+        
+        // Gestion du changement de mode
+        document.querySelectorAll('input[name="legend_mode"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                updateModeVisibility(this.value);
+            });
+        });
+        
+        // Ajouter un point en cliquant sur l'image
+        const legendImage = document.getElementById('legend_image');
+        if (legendImage) {
+            legendImage.addEventListener('click', function(e) {
+                const rect = this.getBoundingClientRect();
+                const x = (e.clientX - rect.left) / rect.width;
+                const y = (e.clientY - rect.top) / rect.height;
+                
+                addZone(x.toFixed(4), y.toFixed(4));
+            });
+        }
+        
+        // Boutons pour ajouter des éléments
+        document.getElementById('add_zone_btn').addEventListener('click', function() {
+            addZone(0.5, 0.5);
+        });
+        
+        document.getElementById('generate_grid_btn').addEventListener('click', function() {
+            generateGrid();
+        });
+        
+        document.getElementById('add_spatial_element_btn').addEventListener('click', function() {
+            addSpatialElement();
+        });
+        
+        document.getElementById('add_spatial_zone_btn').addEventListener('click', function() {
+            addSpatialZone();
+        });
+        
+        // Afficher les points existants sur l'image
+        displayExistingPoints();
+    });
+    
+    // Fonction pour mettre à jour la visibilité des sections selon le mode
+    function updateModeVisibility(mode) {
+        document.getElementById('classic_section').style.display = mode === 'classic' ? 'block' : 'none';
+        document.getElementById('grid_section').style.display = mode === 'grid' ? 'block' : 'none';
+        document.getElementById('spatial_section').style.display = mode === 'spatial' ? 'block' : 'none';
+    }
+    
+    // Fonction pour ajouter une zone
+    function addZone(x, y) {
+        const zonesContainer = document.getElementById('zones_container');
+        const zoneId = `zone_${zoneCounter}`;
+        
+        const zoneDiv = document.createElement('div');
+        zoneDiv.className = 'legend-zone';
+        zoneDiv.id = zoneId;
+        
+        zoneDiv.innerHTML = `
+            <div class="row">
+                <div class="col-md-4">
+                    <label class="form-label">Coordonnées</label>
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">X</span>
+                        <input type="number" step="0.01" class="form-control" name="zone_${zoneCounter}_x" value="${x}" required>
+                        <span class="input-group-text">Y</span>
+                        <input type="number" step="0.01" class="form-control" name="zone_${zoneCounter}_y" value="${y}" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Légende</label>
+                    <input type="text" class="form-control" name="zone_${zoneCounter}_legend" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="button" class="btn btn-danger form-control" onclick="removeZone('${zoneId}')">Supprimer</button>
+                </div>
+            </div>
+        `;
+        
+        zonesContainer.appendChild(zoneDiv);
+        
+        // Ajouter le point sur l'image
+        addPointToImage(zoneCounter, x, y);
+        
+        zoneCounter++;
+    }
+    
+    // Fonction pour supprimer une zone
+    function removeZone(zoneId) {
+        const zone = document.getElementById(zoneId);
+        if (zone) {
+            zone.remove();
+        }
+        
+        // Supprimer le point correspondant
+        const pointId = `point_${zoneId.split('_')[1]}`;
+        const point = document.getElementById(pointId);
+        if (point) {
+            point.remove();
+        }
+    }
+    
+    // Fonction pour ajouter un point sur l'image
+    function addPointToImage(index, x, y) {
+        const imageContainer = document.getElementById('image_container');
+        const image = document.getElementById('legend_image');
+        
+        if (!image) return;
+        
+        const point = document.createElement('div');
+        point.className = 'legend-point';
+        point.id = `point_${index}`;
+        point.style.left = `${x * 100}%`;
+        point.style.top = `${y * 100}%`;
+        point.textContent = index + 1;
+        
+        imageContainer.appendChild(point);
+    }
+    
+    // Fonction pour afficher les points existants
+    function displayExistingPoints() {
+        {% if exercise.get_content().get('zones') %}
+        {% for zone in exercise.get_content().get('zones') %}
+        addPointToImage({{ loop.index0 }}, {{ zone.x }}, {{ zone.y }});
+        {% endfor %}
+        {% endif %}
+    }
+    
+    // Fonction pour générer la grille
+    function generateGrid() {
+        const rows = parseInt(document.getElementById('grid_rows').value) || 3;
+        const cols = parseInt(document.getElementById('grid_cols').value) || 3;
+        const container = document.getElementById('grid_elements_container');
+        
+        // Vider le conteneur
+        container.innerHTML = '';
+        gridElementCounter = 0;
+        
+        // Créer les éléments de grille
+        for (let row = 0; row < rows; row++) {
+            for (let col = 0; col < cols; col++) {
+                const elementId = `grid_element_${gridElementCounter}`;
+                
+                const elementDiv = document.createElement('div');
+                elementDiv.className = 'legend-zone';
+                elementDiv.id = elementId;
+                
+                elementDiv.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label class="form-label">Position</label>
+                            <div class="input-group mb-3">
+                                <span class="input-group-text">Ligne</span>
+                                <input type="number" class="form-control" name="grid_element_${gridElementCounter}_row" value="${row}" min="0" required>
+                                <span class="input-group-text">Col</span>
+                                <input type="number" class="form-control" name="grid_element_${gridElementCounter}_col" value="${col}" min="0" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Contenu</label>
+                            <input type="text" class="form-control" name="grid_element_${gridElementCounter}_content" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">&nbsp;</label>
+                            <button type="button" class="btn btn-danger form-control" onclick="removeGridElement('${elementId}')">Supprimer</button>
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(elementDiv);
+                gridElementCounter++;
+            }
+        }
+    }
+    
+    // Fonction pour supprimer un élément de grille
+    function removeGridElement(elementId) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.remove();
+        }
+    }
+    
+    // Fonction pour ajouter un élément spatial
+    function addSpatialElement() {
+        const container = document.getElementById('spatial_elements_container');
+        const elementId = `spatial_element_${spatialElementCounter}`;
+        
+        const elementDiv = document.createElement('div');
+        elementDiv.className = 'input-group mb-2';
+        elementDiv.id = elementId;
+        
+        elementDiv.innerHTML = `
+            <input type="text" class="form-control" name="spatial_element_${spatialElementCounter}" required>
+            <button type="button" class="btn btn-danger" onclick="removeSpatialElement('${elementId}')">Supprimer</button>
+        `;
+        
+        container.appendChild(elementDiv);
+        spatialElementCounter++;
+    }
+    
+    // Fonction pour supprimer un élément spatial
+    function removeSpatialElement(elementId) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.remove();
+        }
+    }
+    
+    // Fonction pour ajouter une zone spatiale
+    function addSpatialZone() {
+        const container = document.getElementById('spatial_zones_container');
+        const zoneId = `spatial_zone_${spatialZoneCounter}`;
+        
+        const zoneDiv = document.createElement('div');
+        zoneDiv.className = 'spatial-zone';
+        zoneDiv.id = zoneId;
+        
+        zoneDiv.innerHTML = `
+            <div class="row">
+                <div class="col-md-5">
+                    <label class="form-label">Nom de la zone</label>
+                    <input type="text" class="form-control" name="spatial_zone_${spatialZoneCounter}_name" required>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label">Élément correct</label>
+                    <input type="text" class="form-control" name="spatial_zone_${spatialZoneCounter}_correct" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="button" class="btn btn-danger form-control" onclick="removeSpatialZone('${zoneId}')">Supprimer</button>
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(zoneDiv);
+        spatialZoneCounter++;
+    }
+    
+    // Fonction pour supprimer une zone spatiale
+    function removeSpatialZone(zoneId) {
+        const zone = document.getElementById(zoneId);
+        if (zone) {
+            zone.remove();
+        }
+    }
+</script>
+{% endblock %}

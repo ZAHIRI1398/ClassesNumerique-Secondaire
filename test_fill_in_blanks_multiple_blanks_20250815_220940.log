@@ -1,0 +1,38 @@
+2025-08-15 22:09:40,507 - INFO - === TEST DE LA CORRECTION POUR LES EXERCICES AVEC MULTIPLES BLANCS PAR LIGNE ===
+2025-08-15 22:09:40,510 - INFO - Application de test créée avec succès
+2025-08-15 22:09:40,510 - INFO - Démarrage de l'application de test sur http://127.0.0.1:5001/
+2025-08-15 22:09:40,510 - INFO - Utilisez Ctrl+C pour arrêter l'application
+2025-08-15 22:09:40,550 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5001
+2025-08-15 22:09:40,551 - INFO - [33mPress CTRL+C to quit[0m
+2025-08-15 22:09:40,553 - INFO -  * Restarting with stat
+2025-08-15 22:09:40,909 - INFO - === TEST DE LA CORRECTION POUR LES EXERCICES AVEC MULTIPLES BLANCS PAR LIGNE ===
+2025-08-15 22:09:40,912 - INFO - Application de test créée avec succès
+2025-08-15 22:09:40,912 - INFO - Démarrage de l'application de test sur http://127.0.0.1:5001/
+2025-08-15 22:09:40,912 - INFO - Utilisez Ctrl+C pour arrêter l'application
+2025-08-15 22:09:40,933 - WARNING -  * Debugger is active!
+2025-08-15 22:09:40,936 - INFO -  * Debugger PIN: 773-832-873
+2025-08-15 22:10:08,862 - INFO - 127.0.0.1 - - [15/Aug/2025 22:10:08] "GET / HTTP/1.1" 200 -
+2025-08-15 22:10:14,300 - INFO - 127.0.0.1 - - [15/Aug/2025 22:10:14] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-08-15 22:11:23,339 - INFO - === TRAITEMENT DU FORMULAIRE DE TEST AVEC MULTIPLES BLANCS ===
+2025-08-15 22:11:23,392 - INFO - Données du formulaire: {'answer_0': 'chat', 'answer_1': 'animal', 'answer_2': 'pomme', 'answer_3': 'fruit', 'answer_4': 'mars', 'answer_5': 'planète'}
+2025-08-15 22:11:23,392 - INFO - Format 'sentences' détecté: 6 blancs dans sentences
+2025-08-15 22:11:23,392 - INFO - Total blancs trouvés dans le contenu: 6
+2025-08-15 22:11:23,393 - INFO - Réponses correctes: ['chat', 'animal', 'pomme', 'fruit', 'mars', 'planète']
+2025-08-15 22:11:23,393 - INFO - Nombre total de blancs: 6
+2025-08-15 22:11:23,393 - INFO - [FILL_IN_BLANKS_DEBUG] Toutes les données du formulaire: {'answer_0': 'chat', 'answer_1': 'animal', 'answer_2': 'pomme', 'answer_3': 'fruit', 'answer_4': 'mars', 'answer_5': 'planète'}
+2025-08-15 22:11:23,393 - INFO - [FILL_IN_BLANKS_DEBUG] Champs de réponse trouvés: {0: 'chat', 1: 'animal', 2: 'pomme', 3: 'fruit', 4: 'mars', 5: 'planète'}
+2025-08-15 22:11:23,394 - INFO - [FILL_IN_BLANKS_DEBUG] Indices triés: [0, 1, 2, 3, 4, 5]
+2025-08-15 22:11:23,394 - INFO - Réponses utilisateur: ['chat', 'animal', 'pomme', 'fruit', 'mars', 'planète']
+2025-08-15 22:11:23,394 - INFO - Réponse correcte trouvée: 'chat' correspond à 'chat'
+2025-08-15 22:11:23,394 - INFO - Réponse correcte trouvée: 'animal' correspond à 'animal'
+2025-08-15 22:11:23,394 - INFO - Réponse correcte trouvée: 'pomme' correspond à 'pomme'
+2025-08-15 22:11:23,395 - INFO - Réponse correcte trouvée: 'fruit' correspond à 'fruit'
+2025-08-15 22:11:23,395 - INFO - Réponse correcte trouvée: 'mars' correspond à 'mars'
+2025-08-15 22:11:23,395 - INFO - Réponse correcte trouvée: 'planète' correspond à 'planète'
+2025-08-15 22:11:23,395 - INFO - Score final: 100.0% (6/6)
+2025-08-15 22:11:23,439 - INFO - 127.0.0.1 - - [15/Aug/2025 22:11:23] "POST /submit HTTP/1.1" 200 -
+2025-08-15 22:40:22,862 - INFO -  * Detected change in 'C:\\Users\\JeMat\\OneDrive\\classenumerique20250801\\app.py', reloading
+2025-08-15 22:40:32,661 - INFO -  * Restarting with stat
+2025-08-15 22:41:38,502 - INFO -  * Restarting with stat
+2025-08-15 22:56:26,210 - INFO -  * Restarting with stat

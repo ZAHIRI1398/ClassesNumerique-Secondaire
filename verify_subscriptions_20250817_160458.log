@@ -1,0 +1,2 @@
+2025-08-17 16:04:58,452 - __main__ - ERROR - La variable d'environnement PRODUCTION_DATABASE_URL n'est pas définie.
+2025-08-17 16:04:58,452 - __main__ - ERROR - Veuillez définir cette variable dans le fichier .env ou en ligne de commande.

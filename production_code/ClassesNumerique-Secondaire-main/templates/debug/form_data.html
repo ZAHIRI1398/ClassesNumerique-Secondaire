@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Débogage des données de formulaire{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h2>Débogage des données de formulaire</h2>
+        </div>
+        <div class="card-body">
+            <h3>Formulaire de test pour fill_in_blanks</h3>
+            <form method="POST" action="{{ url_for('debug_form_data') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                
+                <div class="mb-3">
+                    <label for="answer_0" class="form-label">Réponse 1 (answer_0)</label>
+                    <input type="text" class="form-control" id="answer_0" name="answer_0" value="test1">
+                </div>
+                
+                <div class="mb-3">
+                    <label for="answer_1" class="form-label">Réponse 2 (answer_1)</label>
+                    <input type="text" class="form-control" id="answer_1" name="answer_1" value="test2">
+                </div>
+                
+                <div class="mb-3">
+                    <label for="answer_2" class="form-label">Réponse 3 (answer_2)</label>
+                    <input type="text" class="form-control" id="answer_2" name="answer_2" value="test3">
+                </div>
+                
+                <div class="mb-3">
+                    <label for="answer_3" class="form-label">Réponse 4 (answer_3)</label>
+                    <input type="text" class="form-control" id="answer_3" name="answer_3" value="test4">
+                </div>
+                
+                <div class="mb-3">
+                    <label for="answer_4" class="form-label">Réponse 5 (answer_4)</label>
+                    <input type="text" class="form-control" id="answer_4" name="answer_4" value="test5">
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Soumettre</button>
+            </form>
+            
+            <hr>
+            
+            <h3>Instructions</h3>
+            <p>Cette page permet de tester la soumission de formulaire et d'analyser les données POST reçues par le serveur.</p>
+            <p>Utilisez ce formulaire pour simuler une soumission d'exercice fill_in_blanks et vérifier que tous les champs sont correctement transmis.</p>
+            <p>Les résultats seront affichés en format JSON après la soumission.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

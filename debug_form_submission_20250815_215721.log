@@ -1,0 +1,36 @@
+2025-08-15 21:57:21,202 - INFO - === DÉBOGAGE DE LA SOUMISSION DES FORMULAIRES FILL-IN-BLANKS ===
+2025-08-15 21:57:21,244 - INFO - Template de test créé: templates/debug/form_data.html
+2025-08-15 21:57:21,246 - INFO - Démarrage de l'application de débogage sur http://127.0.0.1:5000
+2025-08-15 21:57:21,246 - INFO - Utilisez Ctrl+C pour arrêter l'application
+2025-08-15 21:57:21,275 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2025-08-15 21:57:21,276 - INFO - [33mPress CTRL+C to quit[0m
+2025-08-15 21:57:21,277 - INFO -  * Restarting with stat
+2025-08-15 21:57:21,586 - INFO - === DÉBOGAGE DE LA SOUMISSION DES FORMULAIRES FILL-IN-BLANKS ===
+2025-08-15 21:57:21,586 - INFO - Template de test créé: templates/debug/form_data.html
+2025-08-15 21:57:21,588 - INFO - Démarrage de l'application de débogage sur http://127.0.0.1:5000
+2025-08-15 21:57:21,588 - INFO - Utilisez Ctrl+C pour arrêter l'application
+2025-08-15 21:57:21,603 - WARNING -  * Debugger is active!
+2025-08-15 21:57:21,605 - INFO -  * Debugger PIN: 773-832-873
+2025-08-15 21:58:00,503 - INFO - 127.0.0.1 - - [15/Aug/2025 21:58:00] "GET / HTTP/1.1" 200 -
+2025-08-15 21:58:01,025 - INFO - 127.0.0.1 - - [15/Aug/2025 21:58:01] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-08-15 21:58:48,728 - INFO - === DONNÉES DU FORMULAIRE REÇUES ===
+2025-08-15 21:58:48,730 - INFO - Données brutes du formulaire: {'answer_0': 'mot1', 'answer_1': 'mot2', 'answer_2': 'mot3', 'answer_3': 'mot4', 'answer_4': 'mot5'}
+2025-08-15 21:58:48,731 - INFO - Champs de réponse trouvés: {0: 'mot1', 1: 'mot2', 2: 'mot3', 3: 'mot4', 4: 'mot5'}
+2025-08-15 21:58:48,731 - INFO - Indices triés: [0, 1, 2, 3, 4]
+2025-08-15 21:58:48,731 - INFO - Liste des réponses utilisateur: ['mot1', 'mot2', 'mot3', 'mot4', 'mot5']
+2025-08-15 21:58:48,731 - INFO - Dictionnaire des réponses utilisateur: {'answer_0': 'mot1', 'answer_1': 'mot2', 'answer_2': 'mot3', 'answer_3': 'mot4', 'answer_4': 'mot5'}
+2025-08-15 21:58:48,731 - INFO - Réponses correctes (simulation): ['mot1', 'mot2', 'mot3', 'mot4', 'mot5']
+2025-08-15 21:58:48,732 - INFO - Réponse correcte trouvée: 'mot1' correspond à 'mot1'
+2025-08-15 21:58:48,732 - INFO - Réponse correcte trouvée: 'mot2' correspond à 'mot2'
+2025-08-15 21:58:48,732 - INFO - Réponse correcte trouvée: 'mot3' correspond à 'mot3'
+2025-08-15 21:58:48,732 - INFO - Réponse correcte trouvée: 'mot4' correspond à 'mot4'
+2025-08-15 21:58:48,732 - INFO - Réponse correcte trouvée: 'mot5' correspond à 'mot5'
+2025-08-15 21:58:48,732 - INFO - Score final: 100.0% (5/5)
+2025-08-15 21:58:48,733 - INFO - Détails du feedback: [{'user_answer': 'mot1', 'is_correct': True, 'correct_answer': 'mot1'}, {'user_answer': 'mot2', 'is_correct': True, 'correct_answer': 'mot2'}, {'user_answer': 'mot3', 'is_correct': True, 'correct_answer': 'mot3'}, {'user_answer': 'mot4', 'is_correct': True, 'correct_answer': 'mot4'}, {'user_answer': 'mot5', 'is_correct': True, 'correct_answer': 'mot5'}]
+2025-08-15 21:58:48,733 - INFO - 127.0.0.1 - - [15/Aug/2025 21:58:48] "POST /debug-form HTTP/1.1" 200 -
+2025-08-15 22:02:11,966 - INFO -  * Detected change in 'C:\\Users\\JeMat\\OneDrive\\classenumerique20250801\\app.py', reloading
+2025-08-15 22:02:12,055 - INFO -  * Restarting with stat
+2025-08-15 22:40:29,319 - INFO -  * Restarting with stat
+2025-08-15 22:41:39,273 - INFO -  * Restarting with stat
+2025-08-15 22:56:26,223 - INFO -  * Restarting with stat

@@ -1,0 +1,11 @@
+2025-08-15 22:05:40,666 - INFO - === TEST SIMPLIFIÉ DE LA CORRECTION DU PROBLÈME DE SOUMISSION DES FORMULAIRES FILL-IN-BLANKS ===
+2025-08-15 22:05:40,671 - INFO - Application de test créée avec succès
+2025-08-15 22:05:40,671 - INFO - Démarrage de l'application de test sur http://127.0.0.1:5000/
+2025-08-15 22:05:40,671 - INFO - Utilisez Ctrl+C pour arrêter l'application
+2025-08-15 22:05:40,742 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2025-08-15 22:05:40,743 - INFO - [33mPress CTRL+C to quit[0m
+2025-08-15 22:05:40,745 - INFO -  * Restarting with stat
+2025-08-15 22:40:28,416 - INFO -  * Restarting with stat
+2025-08-15 22:41:39,290 - INFO -  * Restarting with stat
+2025-08-15 22:56:26,226 - INFO -  * Restarting with stat

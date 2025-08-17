@@ -1,0 +1,14 @@
+Fix: Amélioration de l'affichage du feedback pour les exercices fill_in_blanks
+
+Cette correction améliore l'affichage du feedback pour les exercices de type "Texte à trous" (fill_in_blanks) 
+qui contiennent plusieurs blancs par ligne.
+
+Modifications:
+1. Ajout d'informations sur la phrase à laquelle appartient chaque blanc dans app.py
+2. Modification du template feedback.html pour regrouper les blancs par phrase
+3. Amélioration de l'expérience utilisateur pour les exercices avec plusieurs blancs par ligne
+
+Cette correction complète les précédentes corrections du problème de double comptage des blancs
+et de conflit entre les deux implémentations de scoring.
+
+Documentation: DOCUMENTATION_FILL_IN_BLANKS_FIX_FINAL_UPDATE.md

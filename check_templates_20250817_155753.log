@@ -1,0 +1,19 @@
+2025-08-17 15:57:53,889 - __main__ - INFO - === Correction de la structure des templates ===
+2025-08-17 15:57:53,889 - __main__ - INFO - === Vérification de la structure des templates ===
+2025-08-17 15:57:53,889 - __main__ - INFO - Le fichier select_school.html existe à C:\Users\JeMat\OneDrive\classenumerique20250801\production_code\ClassesNumerique-Secondaire-main\templates\payment\select_school.html
+2025-08-17 15:57:53,889 - __main__ - INFO - Le fichier C:\Users\JeMat\OneDrive\classenumerique20250801\production_code\ClassesNumerique-Secondaire-main\templates\payment\select_school.html est lisible
+2025-08-17 15:57:53,890 - __main__ - INFO - Taille du fichier: 3956 caractères
+2025-08-17 15:57:53,890 - __main__ - INFO - === Vérification terminée ===
+2025-08-17 15:57:53,890 - __main__ - INFO - La structure des templates semble correcte
+2025-08-17 15:57:53,890 - __main__ - INFO - Le fichier fix_payment_select_school.html existe à C:\Users\JeMat\OneDrive\classenumerique20250801\production_code\ClassesNumerique-Secondaire-main\templates\payment\fix_payment_select_school.html
+2025-08-17 15:57:53,890 - __main__ - INFO - === Vérification de la structure des templates ===
+2025-08-17 15:57:53,890 - __main__ - INFO - Le fichier select_school.html existe à C:\Users\JeMat\OneDrive\classenumerique20250801\production_code\ClassesNumerique-Secondaire-main\templates\payment\select_school.html
+2025-08-17 15:57:53,891 - __main__ - INFO - Le fichier C:\Users\JeMat\OneDrive\classenumerique20250801\production_code\ClassesNumerique-Secondaire-main\templates\payment\select_school.html est lisible
+2025-08-17 15:57:53,891 - __main__ - INFO - Taille du fichier: 3956 caractères
+2025-08-17 15:57:53,891 - __main__ - INFO - === Vérification terminée ===
+2025-08-17 15:57:53,891 - __main__ - INFO - === Correction terminée ===
+2025-08-17 15:57:53,891 - __main__ - INFO - Pour déployer la correction:
+2025-08-17 15:57:53,891 - __main__ - INFO - 1. Exécutez: git add production_code/ClassesNumerique-Secondaire-main/templates/payment/
+2025-08-17 15:57:53,891 - __main__ - INFO - 2. Exécutez: git commit -m "Fix: Ajout du template select_school.html manquant"
+2025-08-17 15:57:53,891 - __main__ - INFO - 3. Exécutez: git push
+2025-08-17 15:57:53,891 - __main__ - INFO - 4. Vérifiez le déploiement sur Railway

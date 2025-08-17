@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Administrateur - Gestion des Inscriptions{% endblock %}
+
+{% block head %}
+<style>
+    .admin-dashboard {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px 0;
+    }
+    
+    .stats-card {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        transition: transform 0.3s ease;
+        border-left: 5px solid;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .stats-card.pending { border-left-color: #ffc107; }
+    .stats-card.paid { border-left-color: #17a2b8; }
+    .stats-card.approved { border-left-color: #28a745; }
+    .stats-card.rejected { border-left-color: #dc3545; }
+    .stats-card.total { border-left-color: #6f42c1; }
+    
+    .stats-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+    
+    .stats-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    .admin-header {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+    
+    .admin-header h1 {
+        color: #495057;
+        margin-bottom: 10px;
+    }
+    
+    .admin-header p {
+        color: #6c757d;
+        margin-bottom: 0;
+    }
+    
+    .action-section {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 30px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    }
+    
+    .user-card {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 15px;
+        border-left: 4px solid #17a2b8;
+    }
+    
+    .user-card .user-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .user-card .user-details {
+        flex: 1;
+    }
+    
+    .user-card .user-actions {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .btn-admin {
+        border-radius: 25px;
+        padding: 8px 20px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-admin:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    
+    .status-badge {
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    .status-pending { background: #fff3cd; color: #856404; }
+    .status-paid { background: #d1ecf1; color: #0c5460; }
+    .status-approved { background: #d4edda; color: #155724; }
+    .status-rejected { background: #f8d7da; color: #721c24; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-dashboard">
+    <div class="container">
+        <!-- En-tête Admin -->
+        <div class="admin-header">
+            <h1><i class="fas fa-user-shield me-3"></i>Dashboard Administrateur</h1>
+            <p>Gestion des inscriptions payantes et validation des abonnements</p>
+        </div>
+
+        <!-- Statistiques -->
+        <div class="row mb-4">
+            <div class="col-md-2">
+                <div class="stats-card total">
+                    <div class="stats-number text-purple">{{ stats.total_users }}</div>
+                    <div class="stats-label">Total Utilisateurs</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="stats-card pending">
+                    <div class="stats-number text-warning">{{ stats.pending_users }}</div>
+                    <div class="stats-label">En Attente</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="stats-card paid">
+                    <div class="stats-number text-info">{{ stats.paid_users }}</div>
+                    <div class="stats-label">Payés</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="stats-card approved">
+                    <div class="stats-number text-success">{{ stats.approved_users }}</div>
+                    <div class="stats-label">Approuvés</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="stats-card rejected">
+                    <div class="stats-number text-danger">{{ stats.rejected_users }}</div>
+                    <div class="stats-label">Rejetés</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="text-center">
+                    <a href="{{ url_for('admin_subscriptions') }}" class="btn btn-primary btn-admin">
+                        <i class="fas fa-cogs me-2"></i>Gérer Tous
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Utilisateurs en attente de validation -->
+            <div class="col-md-8">
+                <div class="action-section">
+                    <h3><i class="fas fa-clock me-2 text-info"></i>En Attente de Validation ({{ users_awaiting_approval|length }})</h3>
+                    <p class="text-muted">Utilisateurs ayant payé leur abonnement et attendant votre validation</p>
+                    
+                    {% if users_awaiting_approval %}
+                        {% for user in users_awaiting_approval %}
+                        <div class="user-card">
+                            <div class="user-info">
+                                <div class="user-details">
+                                    <h5 class="mb-1">{{ user.name }}</h5>
+                                    <p class="mb-1 text-muted">{{ user.email }}</p>
+                                    <small class="text-muted">
+                                        <i class="fas fa-credit-card me-1"></i>
+                                        {{ user.subscription_type|title }} - {{ user.subscription_amount }}€
+                                        {% if user.payment_date %}
+                                        | Payé le {{ user.payment_date.strftime('%d/%m/%Y à %H:%M') }}
+                                        {% endif %}
+                                    </small>
+                                </div>
+                                <div class="user-actions">
+                                    <form method="POST" action="{{ url_for('approve_subscription', user_id=user.id) }}" style="display: inline;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                        <button type="submit" class="btn btn-success btn-sm btn-admin" 
+                                                onclick="return confirm('Approuver l\'abonnement de {{ user.name }} ?')">
+                                            <i class="fas fa-check me-1"></i>Approuver
+                                        </button>
+                                    </form>
+                                    <button type="button" class="btn btn-danger btn-sm btn-admin" 
+                                            data-bs-toggle="modal" data-bs-target="#rejectModal{{ user.id }}">
+                                        <i class="fas fa-times me-1"></i>Rejeter
+                                    </button>
+                                    <a href="{{ url_for('admin_user_details', user_id=user.id) }}" 
+                                       class="btn btn-outline-primary btn-sm btn-admin">
+                                        <i class="fas fa-eye me-1"></i>Détails
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Modal de rejet -->
+                        <div class="modal fade" id="rejectModal{{ user.id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Rejeter l'abonnement</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <form method="POST" action="{{ url_for('reject_subscription', user_id=user.id) }}">
+                                        <div class="modal-body">
+                                            <p>Rejeter l'abonnement de <strong>{{ user.name }}</strong> ?</p>
+                                            <div class="mb-3">
+                                                <label for="reason{{ user.id }}" class="form-label">Raison du rejet :</label>
+                                                <textarea class="form-control" id="reason{{ user.id }}" name="reason" rows="3" 
+                                                          placeholder="Expliquez pourquoi cet abonnement est rejeté..."></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                            <button type="submit" class="btn btn-danger">Rejeter</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-check-circle text-success" style="font-size: 3rem;"></i>
+                            <h4 class="mt-3">Aucune validation en attente</h4>
+                            <p class="text-muted">Tous les abonnements payés ont été traités.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Dernières inscriptions -->
+            <div class="col-md-4">
+                <div class="action-section">
+                    <h3><i class="fas fa-user-plus me-2 text-primary"></i>Dernières Inscriptions</h3>
+                    <p class="text-muted">Nouvelles demandes d'inscription</p>
+                    
+                    {% if recent_registrations %}
+                        {% for user in recent_registrations %}
+                        <div class="d-flex justify-content-between align-items-center mb-3 p-2 bg-light rounded">
+                            <div>
+                                <h6 class="mb-0">{{ user.name }}</h6>
+                                <small class="text-muted">{{ user.email }}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="status-badge status-{{ user.subscription_status }}">
+                                    {{ user.get_subscription_status_display() }}
+                                </span>
+                                <br>
+                                <small class="text-muted">{{ user.created_at.strftime('%d/%m') }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center">Aucune inscription récente</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

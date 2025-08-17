@@ -1,0 +1,35 @@
+2025-08-16 22:45:57,307 - login_diagnostic - INFO - Démarrage de l'application de diagnostic de connexion
+2025-08-16 22:45:57,411 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5002
+2025-08-16 22:45:57,411 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-08-16 22:45:57,413 - werkzeug - INFO -  * Restarting with stat
+2025-08-16 22:45:58,906 - login_diagnostic - INFO - Démarrage de l'application de diagnostic de connexion
+2025-08-16 22:45:58,948 - werkzeug - WARNING -  * Debugger is active!
+2025-08-16 22:45:58,954 - werkzeug - INFO -  * Debugger PIN: 773-832-873
+2025-08-16 22:57:00,651 - werkzeug - INFO -  * Detected change in 'C:\\Users\\JeMat\\OneDrive\\classenumerique20250801\\app.py', reloading
+2025-08-16 22:57:00,820 - werkzeug - INFO -  * Restarting with stat
+2025-08-16 22:57:02,146 - login_diagnostic - INFO - Démarrage de l'application de diagnostic de connexion
+2025-08-16 22:57:02,173 - werkzeug - WARNING -  * Debugger is active!
+2025-08-16 22:57:02,178 - werkzeug - INFO -  * Debugger PIN: 773-832-873
+2025-08-16 22:57:09,971 - login_diagnostic - INFO - Démarrage de l'application de diagnostic de connexion
+2025-08-16 22:57:10,006 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5002
+2025-08-16 22:57:10,006 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-08-16 22:57:10,007 - werkzeug - INFO -  * Restarting with stat
+2025-08-16 22:57:11,202 - login_diagnostic - INFO - Démarrage de l'application de diagnostic de connexion
+2025-08-16 22:57:11,227 - werkzeug - WARNING -  * Debugger is active!
+2025-08-16 22:57:11,229 - werkzeug - INFO -  * Debugger PIN: 773-832-873
+2025-08-16 22:57:12,781 - login_diagnostic - DEBUG - Affichage de la page d'accueil
+2025-08-16 22:57:12,782 - login_diagnostic - DEBUG - Session: {}
+2025-08-16 22:57:12,782 - login_diagnostic - DEBUG - Cookies: ImmutableMultiDict([])
+2025-08-16 22:57:12,782 - login_diagnostic - DEBUG - Token CSRF généré: ImVhNzBlNzM0MTI2OTdkOTI0ZmMzMGFlNjE4MTdjMTdkMzQ2NzgxZTEi.aKDwqA.tB0I3csaSVo2MB5lh3wKw6DeHac
+2025-08-16 22:57:12,792 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 22:57:12] "GET / HTTP/1.1" 200 -
+2025-08-16 22:57:14,828 - flask_wtf.csrf - INFO - The CSRF token is missing.
+2025-08-16 22:57:14,829 - werkzeug - INFO - 127.0.0.1 - - [16/Aug/2025 22:57:14] "[31m[1mPOST /test-login HTTP/1.1[0m" 400 -
+2025-08-16 23:01:57,856 - werkzeug - INFO -  * Detected change in 'C:\\Users\\JeMat\\OneDrive\\classenumerique20250801\\app.py', reloading
+2025-08-16 23:01:57,941 - werkzeug - INFO -  * Restarting with stat
+2025-08-16 23:01:58,344 - werkzeug - INFO -  * Detected change in 'C:\\Users\\JeMat\\OneDrive\\classenumerique20250801\\app.py', reloading
+2025-08-16 23:01:59,108 - login_diagnostic - INFO - Démarrage de l'application de diagnostic de connexion
+2025-08-16 23:01:59,133 - werkzeug - WARNING -  * Debugger is active!
+2025-08-16 23:01:59,135 - werkzeug - INFO -  * Debugger PIN: 773-832-873
+2025-08-16 23:11:50,356 - werkzeug - INFO -  * Detected change in 'C:\\Users\\JeMat\\OneDrive\\classenumerique20250801\\payment_routes.py', reloading

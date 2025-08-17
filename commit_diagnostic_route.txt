@@ -1,0 +1,12 @@
+Ajout d'une route de diagnostic pour fill_in_blanks sur Railway
+
+Cette modification ajoute:
+- Une route '/diagnostic-fill-in-blanks' pour vérifier la logique de scoring en production
+- Un test complet de la logique de scoring avec différents scénarios
+- Une vérification des dossiers uploads et des images
+- Une analyse des exercices fill_in_blanks existants
+- Un diagnostic de l'environnement Railway
+
+Cette route permettra de vérifier rapidement si la logique de scoring unifiée 
+fonctionne correctement en production et d'identifier d'éventuels problèmes 
+avec les images ou les dossiers d'uploads.

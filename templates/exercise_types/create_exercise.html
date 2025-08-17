@@ -138,15 +138,19 @@
             <div id="word_search_warning" class="alert alert-warning" style="display: none;"></div>
         </div>
 
-        <!-- Section Texte à trous -->
+        <!-- Section Texte à trous (Simplifiée - un mot par ligne) -->
         <div id="fill_in_blanks_section" class="exercise-type-section" style="display: none;">
-            <h3>Texte à trous</h3>
-            <p class="text-muted">Utilisez ___ (trois underscores) pour marquer les espaces à remplir.</p>
+            <h3>Texte à trous (Simplifié)</h3>
+            <p class="text-muted">Utilisez ___ (trois underscores) pour marquer l'emplacement du mot à remplir. <strong>Un seul mot par ligne.</strong></p>
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i>
+                <strong>Format simplifié :</strong> Chaque phrase ne doit contenir qu'un seul trou (___) et sera affichée sur une ligne séparée.
+            </div>
             
             <div id="sentences-container">
                 <div class="mb-3 sentence-group">
                     <div class="input-group">
-                        <input type="text" class="form-control" name="sentences[]" required placeholder="Entrez une phrase avec des trous (ex: Le chat ___ sur le tapis)">
+                        <input type="text" class="form-control" name="sentences[]" required placeholder="Entrez une phrase avec un trou (ex: Le chat ___ sur le tapis)">
                         <button type="button" class="btn btn-danger remove-sentence">
                             <i class="fas fa-trash"></i>
                         </button>
@@ -160,7 +164,7 @@
 
             <div class="mb-4 mt-4">
                 <h4>Mots à placer</h4>
-                <p class="text-muted">Ajoutez les mots que les élèves devront placer dans les trous.</p>
+                <p class="text-muted">Ajoutez les mots que les élèves devront placer dans les trous (un mot par trou).</p>
                 
                 <div id="words-container">
                     <div class="mb-2 word-group">

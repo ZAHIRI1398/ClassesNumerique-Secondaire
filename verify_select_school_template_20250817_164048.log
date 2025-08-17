@@ -1,0 +1,19 @@
+2025-08-17 16:40:48,400 - __main__ - INFO - Tentative d'acces a https://web-production-9a047.up.railway.app/payment/select_school
+2025-08-17 16:40:48,431 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): web-production-9a047.up.railway.app:443
+2025-08-17 16:40:48,812 - urllib3.connectionpool - DEBUG - https://web-production-9a047.up.railway.app:443 "GET /payment/select_school HTTP/1.1" 302 263
+2025-08-17 16:40:48,843 - urllib3.connectionpool - DEBUG - https://web-production-9a047.up.railway.app:443 "GET /login?next=%2Fpayment%2Fselect_school HTTP/1.1" 200 17668
+2025-08-17 16:40:48,862 - __main__ - INFO - Code de statut: 200
+2025-08-17 16:40:48,862 - __main__ - INFO - [SUCCES] La route /payment/select_school fonctionne correctement!
+2025-08-17 16:40:48,863 - __main__ - DEBUG - Contenu de la page (premiers 500 caracteres): <!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion - Classe Numérique Secondaire</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+         

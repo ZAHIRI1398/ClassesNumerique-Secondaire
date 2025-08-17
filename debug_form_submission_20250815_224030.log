@@ -1,0 +1,7 @@
+2025-08-15 22:40:30,970 - INFO - === DÉBOGAGE DE LA SOUMISSION DES FORMULAIRES FILL-IN-BLANKS ===
+2025-08-15 22:40:31,163 - INFO - Template de test créé: templates/debug/form_data.html
+2025-08-15 22:40:31,165 - INFO - Démarrage de l'application de débogage sur http://127.0.0.1:5000
+2025-08-15 22:40:31,165 - INFO - Utilisez Ctrl+C pour arrêter l'application
+2025-08-15 22:40:31,184 - WARNING -  * Debugger is active!
+2025-08-15 22:40:31,186 - INFO -  * Debugger PIN: 773-832-873
+2025-08-15 22:41:39,175 - INFO -  * Detected change in 'C:\\Users\\JeMat\\OneDrive\\classenumerique20250801\\app.py', reloading

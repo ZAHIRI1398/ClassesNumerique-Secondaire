@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}{{ exercise.title }}{% endblock %}
+
+{% block head %}
+<style>
+    /* Couleurs personnalisées pour QCM Multichoix */
+    .qcm-multichoix-header {
+        background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+        border: none;
+        box-shadow: 0 8px 32px rgba(255, 107, 53, 0.3);
+    }
+    
+    .qcm-question-card {
+        border: none;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border-radius: 15px;
+        transition: all 0.3s ease;
+        background: linear-gradient(145deg, #ffffff 0%, #f8f9ff 100%);
+    }
+    
+    .qcm-question-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    }
+    
+    .question-title {
+        color: #2c5aa0;
+        font-weight: 600;
+    }
+    
+    .form-check-input:checked {
+        background-color: #28a745;
+        border-color: #28a745;
+        box-shadow: 0 0 10px rgba(40, 167, 69, 0.3);
+    }
+    
+    .form-check-label {
+        color: #495057;
+        font-weight: 500;
+        cursor: pointer;
+        transition: color 0.2s ease;
+    }
+    
+    .form-check-label:hover {
+        color: #2c5aa0;
+    }
+    
+    .instructions-alert {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        border: none;
+        color: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(23, 162, 184, 0.3);
+    }
+    
+    .submit-btn {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        border: none;
+        padding: 12px 40px;
+        border-radius: 25px;
+        font-weight: 600;
+        box-shadow: 0 6px 20px rgba(40, 167, 69, 0.3);
+        transition: all 0.3s ease;
+    }
+    
+    .submit-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+        background: linear-gradient(135deg, #218838 0%, #1e7e34 100%);
+    }
+    
+    .image-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+    }
+    
+    .qcm-multichoix-container {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        min-height: 100vh;
+        padding: 20px 15px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="qcm-multichoix-container">
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <!-- En-tête de l'exercice -->
+            <div class="card mb-4 qcm-multichoix-header">
+                <div class="card-header text-white border-0">
+                    <h3 class="mb-0" style="color: white !important; text-shadow: 2px 2px 4px rgba(0,0,0,0.7);">
+                        <i class="fas fa-check-square me-2"></i>
+                        {{ exercise.title }}
+                    </h3>
+                    <p class="mb-0 mt-2 opacity-90" style="color: white !important; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">{{ exercise.description }}</p>
+                </div>
+            </div>
+
+            <!-- Image d'illustration si présente -->
+            {% if content.image %}
+            <div class="card mb-4 image-card">
+                <div class="card-body text-center p-4">
+                    <img src="{{ url_for('static', filename=content.image.replace('static/', '')) }}" 
+                         alt="Image d'illustration" class="img-fluid rounded shadow" style="max-height: 400px;">
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Formulaire de soumission -->
+            <form method="post" action="{{ url_for('handle_exercise_answer', exercise_id=exercise.id) }}" id="multichoix-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                {% if course_id %}
+                <input type="hidden" name="course_id" value="{{ course_id }}">
+                {% endif %}
+
+                <!-- Questions -->
+                {% for question in content.questions %}
+                <div class="card mb-4 qcm-question-card">
+                    <div class="card-body p-4">
+                        <h5 class="card-title question-title">
+                            <i class="fas fa-question-circle me-2"></i>
+                            Question {{ loop.index }}
+                        </h5>
+                        <p class="card-text mb-4 fs-5">{{ question.question }}</p>
+                        
+                        <!-- Options avec cases à cocher -->
+                        <div class="options-container">
+                            {% set question_index = loop.index0 %}
+                            {% for option in question.options %}
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" 
+                                       name="question_{{ question_index }}[]" 
+                                       value="{{ loop.index0 }}" 
+                                       id="q{{ question_index }}_option{{ loop.index0 }}">
+                                <label class="form-check-label" for="q{{ question_index }}_option{{ loop.index0 }}">
+                                    {{ option }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+
+                <!-- Instructions -->
+                <div class="alert instructions-alert mb-4">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Instructions :</strong> Cochez <strong>toutes</strong> les réponses correctes pour chaque question. 
+                    Plusieurs réponses peuvent être justes.
+                </div>
+
+                <!-- Bouton de soumission -->
+                <div class="text-center mb-4">
+                    <button type="submit" class="btn btn-lg submit-btn">
+                        <i class="fas fa-paper-plane me-2"></i>
+                        Valider mes réponses
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('multichoix-form');
+    
+    form.addEventListener('submit', function(e) {
+        // Vérifier qu'au moins une réponse est cochée pour chaque question
+        const questions = document.querySelectorAll('.card.mb-4.shadow-sm');
+        let allAnswered = true;
+        
+        questions.forEach((question, index) => {
+            const checkboxes = question.querySelectorAll('input[type="checkbox"]');
+            const hasChecked = Array.from(checkboxes).some(cb => cb.checked);
+            
+            if (!hasChecked) {
+                allAnswered = false;
+                question.style.border = '2px solid #dc3545';
+                question.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                question.style.border = '';
+            }
+        });
+        
+        if (!allAnswered) {
+            e.preventDefault();
+            alert('Veuillez répondre à toutes les questions en cochant au moins une réponse par question.');
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

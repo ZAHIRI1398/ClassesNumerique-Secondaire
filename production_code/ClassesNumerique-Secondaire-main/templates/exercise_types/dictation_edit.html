@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier l'exercice - {{ exercise.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="mb-0">
+                        <i class="fas fa-edit"></i> Modifier l'exercice de dictée
+                    </h2>
+                    <p class="mb-0">{{ exercise.title }}</p>
+                </div>
+                
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        <!-- Informations de base -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="title" class="form-label">Titre de l'exercice</label>
+                                <input type="text" class="form-control" id="title" name="title" 
+                                       value="{{ exercise.title }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="description" class="form-label">Description</label>
+                                <textarea class="form-control" id="description" name="description" 
+                                          rows="3">{{ exercise.description }}</textarea>
+                            </div>
+                        </div>
+                        
+                        <!-- Instructions -->
+                        <div class="mb-4">
+                            <label for="dictation_instructions" class="form-label">Instructions pour les élèves</label>
+                            <textarea class="form-control" id="dictation_instructions" name="dictation_instructions" 
+                                      rows="2" placeholder="Instructions pour l'exercice de dictée">{{ content.instructions }}</textarea>
+                        </div>
+                        
+                        <!-- Phrases de dictée -->
+                        <div class="mb-4">
+                            <h4>Phrases de dictée</h4>
+                            <p class="text-muted">Ajoutez les phrases que les élèves devront écrire. Vous pouvez optionnellement ajouter un fichier audio pour chaque phrase.</p>
+                            
+                            <div id="dictation_sentences_container">
+                                {% for i in range(content.sentences|length) %}
+                                <div class="dictation-sentence-item mb-3 p-3" style="border: 1px solid #ddd; border-radius: 8px; background-color: #f8f9fa;">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <label class="form-label">Phrase {{ i + 1 }}</label>
+                                            <input type="text" class="form-control" name="dictation_sentences[]" 
+                                                   value="{{ content.sentences[i] }}" 
+                                                   placeholder="Entrez la phrase de dictée" required>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Fichier audio (optionnel)</label>
+                                            <input type="file" class="form-control" name="dictation_audio_{{ i }}" 
+                                                   accept=".mp3,.wav,.ogg,.m4a">
+                                            {% if content.audio_files and content.audio_files[i] %}
+                                            <small class="text-success">
+                                                <i class="fas fa-check"></i> Fichier audio existant
+                                                <button type="button" class="btn btn-sm btn-outline-primary ms-2" 
+                                                        onclick="playExistingAudio('{{ content.audio_files[i] }}')">
+                                                    <i class="fas fa-play"></i> Écouter
+                                                </button>
+                                            </small>
+                                            {% else %}
+                                            <small class="text-muted">Aucun fichier audio</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="text-end mt-2">
+                                        <button type="button" class="btn btn-outline-danger btn-sm" 
+                                                onclick="removeDictationSentence(this)">
+                                            <i class="fas fa-trash"></i> Supprimer
+                                        </button>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                                
+                                <!-- Si aucune phrase existante, ajouter un champ vide -->
+                                {% if not content.sentences %}
+                                <div class="dictation-sentence-item mb-3 p-3" style="border: 1px solid #ddd; border-radius: 8px; background-color: #f8f9fa;">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <label class="form-label">Phrase 1</label>
+                                            <input type="text" class="form-control" name="dictation_sentences[]" 
+                                                   placeholder="Entrez la phrase de dictée" required>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Fichier audio (optionnel)</label>
+                                            <input type="file" class="form-control" name="dictation_audio_0" 
+                                                   accept=".mp3,.wav,.ogg,.m4a">
+                                            <small class="text-muted">Aucun fichier audio</small>
+                                        </div>
+                                    </div>
+                                    <div class="text-end mt-2">
+                                        <button type="button" class="btn btn-outline-danger btn-sm" 
+                                                onclick="removeDictationSentence(this)">
+                                            <i class="fas fa-trash"></i> Supprimer
+                                        </button>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <button type="button" class="btn btn-outline-primary" onclick="addDictationSentence()">
+                                <i class="fas fa-plus"></i> Ajouter une phrase
+                            </button>
+                        </div>
+                        
+                        <!-- Boutons d'action -->
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-success btn-lg me-3">
+                                <i class="fas fa-save"></i> Enregistrer les modifications
+                            </button>
+                            <a href="{{ url_for('exercise.exercise_library') }}" class="btn btn-secondary btn-lg">
+                                <i class="fas fa-times"></i> Annuler
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Audio player caché pour tester les fichiers existants -->
+<audio id="preview_audio" style="display: none;" controls>
+    Votre navigateur ne supporte pas l'élément audio.
+</audio>
+
+<script>
+// Compteur pour les nouvelles phrases
+let sentenceCounter = {{ content.sentences|length if content.sentences else 1 }};
+
+// Fonction pour ajouter une nouvelle phrase
+function addDictationSentence() {
+    const container = document.getElementById('dictation_sentences_container');
+    sentenceCounter++;
+    
+    const sentenceDiv = document.createElement('div');
+    sentenceDiv.className = 'dictation-sentence-item mb-3 p-3';
+    sentenceDiv.style.cssText = 'border: 1px solid #ddd; border-radius: 8px; background-color: #f8f9fa;';
+    
+    sentenceDiv.innerHTML = `
+        <div class="row">
+            <div class="col-md-8">
+                <label class="form-label">Phrase ${sentenceCounter}</label>
+                <input type="text" class="form-control" name="dictation_sentences[]" 
+                       placeholder="Entrez la phrase de dictée" required>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Fichier audio (optionnel)</label>
+                <input type="file" class="form-control" name="dictation_audio_${sentenceCounter - 1}" 
+                       accept=".mp3,.wav,.ogg,.m4a">
+                <small class="text-muted">Aucun fichier audio</small>
+            </div>
+        </div>
+        <div class="text-end mt-2">
+            <button type="button" class="btn btn-outline-danger btn-sm" 
+                    onclick="removeDictationSentence(this)">
+                <i class="fas fa-trash"></i> Supprimer
+            </button>
+        </div>
+    `;
+    
+    container.appendChild(sentenceDiv);
+    updateSentenceLabels();
+}
+
+// Fonction pour supprimer une phrase
+function removeDictationSentence(button) {
+    const sentenceItem = button.closest('.dictation-sentence-item');
+    const container = document.getElementById('dictation_sentences_container');
+    
+    // Vérifier qu'il reste au moins une phrase
+    const remainingSentences = container.querySelectorAll('.dictation-sentence-item');
+    if (remainingSentences.length <= 1) {
+        alert('Vous devez garder au moins une phrase de dictée.');
+        return;
+    }
+    
+    sentenceItem.remove();
+    updateSentenceLabels();
+}
+
+// Fonction pour mettre à jour les numéros des phrases
+function updateSentenceLabels() {
+    const container = document.getElementById('dictation_sentences_container');
+    const sentences = container.querySelectorAll('.dictation-sentence-item');
+    
+    sentences.forEach((sentence, index) => {
+        const label = sentence.querySelector('.form-label');
+        if (label && label.textContent.startsWith('Phrase')) {
+            label.textContent = `Phrase ${index + 1}`;
+        }
+        
+        // Mettre à jour le nom du champ audio
+        const audioInput = sentence.querySelector('input[type="file"]');
+        if (audioInput) {
+            audioInput.name = `dictation_audio_${index}`;
+        }
+    });
+}
+
+// Fonction pour jouer un fichier audio existant
+function playExistingAudio(audioPath) {
+    const audio = document.getElementById('preview_audio');
+    audio.src = audioPath;
+    audio.load();
+    
+    audio.play().then(() => {
+        console.log('Lecture audio démarrée');
+    }).catch((error) => {
+        console.error('Erreur lors de la lecture audio:', error);
+        alert('Erreur lors de la lecture du fichier audio');
+    });
+}
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+    updateSentenceLabels();
+});
+</script>
+
+{% endblock %}

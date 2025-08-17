@@ -1,0 +1,10 @@
+2025-08-16 23:53:19,865 - INFO - === DÉBUT DE LA CORRECTION DE LA BASE DE DONNÉES LOCALE ===
+2025-08-16 23:53:19,939 - INFO - Connexion établie à la base de données: instance/site.db
+2025-08-16 23:53:19,939 - INFO - 1. Vérification des noms d'écoles actuels
+2025-08-16 23:53:19,939 - ERROR - Erreur lors de la vérification des noms d'écoles: no such table: user
+2025-08-16 23:53:19,940 - INFO - École 'Ecole Bruxelles ll' non trouvée dans la base de données
+2025-08-16 23:53:19,940 - INFO - Aucune correction nécessaire pour les noms d'écoles
+2025-08-16 23:53:19,940 - INFO - 7. Vérification finale des écoles après corrections
+2025-08-16 23:53:19,940 - ERROR - Erreur lors de la vérification des noms d'écoles: no such table: user
+2025-08-16 23:53:19,962 - INFO - Connexion à la base de données fermée
+2025-08-16 23:53:19,962 - INFO - === FIN DE LA CORRECTION DE LA BASE DE DONNÉES LOCALE ===

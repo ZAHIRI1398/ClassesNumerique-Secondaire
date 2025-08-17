@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Bibliothèque d'exercices{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-4">Bibliothèque d'exercices 🔧 [TEMPLATE MODIFIÉ]</h2>
+        <a href="{{ url_for('exercise.create_exercise') }}" class="btn btn-success">
+            <i class="bi bi-plus-circle"></i> Créer un exercice
+        </a>
+    </div>
+
+    <!-- Filtres -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('exercise_library') }}" class="row g-3">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <input type="text" 
+                               class="form-control" 
+                               name="search" 
+                               placeholder="Rechercher un exercice..."
+                               value="{{ search_query if search_query else '' }}">
+                        <button class="btn btn-outline-secondary" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" name="type">
+                        <option value="">Tous les types</option>
+                        {# Temporary hardcoded list to force Mots à placer to appear #}
+                        <option value="qcm" {% if 'qcm' == selected_type %}selected{% endif %}>QCM</option>
+                        <option value="qcm_multichoix" {% if 'qcm_multichoix' == selected_type %}selected{% endif %}>QCM Multichoix</option>
+                        <option value="word_search" {% if 'word_search' == selected_type %}selected{% endif %}>Mots mêlés</option>
+                        <option value="pairs" {% if 'pairs' == selected_type %}selected{% endif %}>Association de paires</option>
+                        <option value="fill_in_blanks" {% if 'fill_in_blanks' == selected_type %}selected{% endif %}>Texte à trous</option>
+                        <option value="word_placement" {% if 'word_placement' == selected_type %}selected{% endif %}>Mots à placer</option>
+                        <option value="underline_words" {% if 'underline_words' == selected_type %}selected{% endif %}>Souligner les mots</option>
+                        <option value="drag_and_drop" {% if 'drag_and_drop' == selected_type %}selected{% endif %}>Glisser-déposer</option>
+                        <option value="dictation" {% if 'dictation' == selected_type %}selected{% endif %}>Dictée</option>
+                        <option value="image_labeling" {% if 'image_labeling' == selected_type %}selected{% endif %}>Étiquetage d'image</option>
+                        <option value="flashcards" {% if 'flashcards' == selected_type %}selected{% endif %}>Cartes mémoire</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" name="subject">
+                        <option value="">Toutes les matières</option>
+                        <option value="Français" {% if selected_subject == 'Français' %}selected{% endif %}>Français</option>
+                        <option value="Mathématiques" {% if selected_subject == 'Mathématiques' %}selected{% endif %}>Mathématiques</option>
+                        <option value="Histoire" {% if selected_subject == 'Histoire' %}selected{% endif %}>Histoire</option>
+                        <option value="Géographie" {% if selected_subject == 'Géographie' %}selected{% endif %}>Géographie</option>
+                        <option value="Sciences" {% if selected_subject == 'Sciences' %}selected{% endif %}>Sciences</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter"></i> Filtrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if exercises %}
+    <div class="row">
+        {% for exercise in exercises %}
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">{{ exercise.title }}</h5>
+                    <p class="card-text">
+                        <span class="badge bg-primary">{{ exercise.exercise_type }}</span>
+                        <small class="text-muted d-block mt-2">Créé le {{ exercise.created_at.strftime('%d/%m/%Y') }}</small>
+                    </p>
+                    <div class="btn-group">
+                        <a href="{{ url_for('edit_exercise', exercise_id=exercise.id) }}" class="btn btn-primary">
+                            <i class="bi bi-pencil"></i> Modifier
+                        </a>
+                        <a href="{{ url_for('view_exercise', exercise_id=exercise.id) }}" class="btn btn-info">
+                            <i class="bi bi-eye"></i> Aperçu
+                        </a>
+                        <div class="dropdown">
+                            <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenuButton{{ exercise.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-plus"></i> Ajouter à un cours
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton{{ exercise.id }}">
+                                {% for course in courses %}
+                                <li>
+                                    <form action="{{ url_for('add_exercise_to_course', course_id=course.id, exercise_id=exercise.id) }}" method="POST" style="display: inline;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="dropdown-item">{{ course.title }}</button>
+                                    </form>
+                                </li>
+                                {% else %}
+                                <li><span class="dropdown-item disabled">Aucun cours disponible</span></li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        <button type="button" class="btn btn-danger" onclick="confirmDelete('{{ exercise.id }}')">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <p>Vous n'avez pas encore créé d'exercices. Cliquez sur le bouton "Créer un exercice" pour commencer.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmDelete(exerciseId) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cet exercice ? Cette action est irréversible.')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = "{{ url_for('exercise.delete_exercise', exercise_id=0) }}".replace('0', exerciseId);
+
+        // Add CSRF token
+        const csrfToken = document.createElement('input');
+        csrfToken.type = 'hidden';
+        csrfToken.name = 'csrf_token';
+        csrfToken.value = "{{ csrf_token() }}";
+        form.appendChild(csrfToken);
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

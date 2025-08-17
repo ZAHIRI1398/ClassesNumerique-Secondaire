@@ -1,0 +1,898 @@
+{% extends "base.html" %}
+
+{% block title %}Créer un exercice{% endblock title %}
+
+{% block content %}
+<div class="container py-4">
+    <h1>Créer un nouvel exercice</h1>
+    <form method="post" action="{{ url_for('exercise.create_exercise') }}" enctype="multipart/form-data">
+        {{ form.csrf_token }}
+        <!-- Sélection du cours -->
+        <div class="mb-3">
+            <label for="course_id" class="form-label">Sélectionner un cours</label>
+            <select class="form-select" id="course_id" name="course_id">
+                <option value="">-- Choisir un cours (optionnel) --</option>
+                {% if current_user.is_teacher %}
+                    {% for class_obj in current_user.classes_teaching %}
+                        <optgroup label="{{ class_obj.name }}">
+                            {% for course in class_obj.courses %}
+                                <option value="{{ course.id }}">{{ course.title }}</option>
+                            {% endfor %}
+                        </optgroup>
+                    {% endfor %}
+                {% endif %}
+            </select>
+        </div>
+
+        <!-- Matière -->
+        <div class="mb-3">
+            <label for="subject" class="form-label">Matière</label>
+            <select class="form-select" id="subject" name="subject">
+                <option value="">-- Sélectionner une matière --</option>
+                <option value="Français">Français</option>
+                <option value="Mathématiques">Mathématiques</option>
+                <option value="Histoire">Histoire</option>
+                <option value="Géographie">Géographie</option>
+                <option value="Sciences">Sciences</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            {{ form.exercise_type.label(class="form-label") }}
+            {{ form.exercise_type(class="form-select", id="exercise_type") }}
+            {% if form.exercise_type.errors %}
+                {% for error in form.exercise_type.errors %}
+                    <div class="invalid-feedback d-block">{{ error }}</div>
+                {% endfor %}
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.title.label(class="form-label") }}
+            {{ form.title(class="form-control") }}
+            {% if form.title.errors %}
+                {% for error in form.title.errors %}
+                    <div class="invalid-feedback d-block">{{ error }}</div>
+                {% endfor %}
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.description.label(class="form-label") }}
+            {{ form.description(class="form-control", rows=3) }}
+            {% if form.description.errors %}
+                {% for error in form.description.errors %}
+                    <div class="invalid-feedback d-block">{{ error }}</div>
+                {% endfor %}
+            {% endif %}
+        </div>
+
+        <!-- Section QCM -->
+        <div id="qcm_section" class="exercise-type-section" style="display: none;">
+            <h3>Questions à choix multiples</h3>
+            <div id="questions_container"></div>
+            <button type="button" class="btn btn-primary mb-3" onclick="addQuestion()">
+                <i class="bi bi-plus-circle"></i> Ajouter une question
+            </button>
+        </div>
+
+        <!-- Section Mots mêlés -->
+        <div id="word_search_section" class="exercise-type-section" style="display: none;">
+            <h3>Mots mêlés</h3>
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i>
+                Les mots peuvent être placés horizontalement, verticalement ou en diagonale, dans les deux sens.
+                Utilisez uniquement des lettres (pas d'espaces, de chiffres ou de caractères spéciaux).
+            </div>
+            <div id="words_container">
+                <!-- Champ initial pour le premier mot -->
+                <div class="mb-3 word-item">
+                    <label class="form-label">Mot 1</label>
+                    <div class="input-group">
+                        <input type="text" 
+                               class="form-control" 
+                               name="word_search_words[]" 
+                               placeholder="Entrez un mot (ou plusieurs mots séparés par des virgules)" 
+                               required>
+                        <button type="button" 
+                                class="btn btn-danger" 
+                                onclick="removeWord(this)" 
+                                style="display: none;">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-primary mb-3" onclick="addWord()">
+                <i class="bi bi-plus-circle"></i> Ajouter un mot
+            </button>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="grid_width" class="form-label">Largeur de la grille</label>
+                    <input type="number" 
+                           class="form-control" 
+                           id="grid_width" 
+                           name="grid_width" 
+                           min="5" 
+                           max="15" 
+                           value="10" 
+                           onchange="validateWordSearchForm()" 
+                           required />
+                </div>
+                <div class="col-md-6">
+                    <label for="grid_height" class="form-label">Hauteur de la grille</label>
+                    <input type="number" 
+                           class="form-control" 
+                           id="grid_height" 
+                           name="grid_height" 
+                           min="5" 
+                           max="15" 
+                           value="10" 
+                           onchange="validateWordSearchForm()" 
+                           required />
+                </div>
+                <div class="col-12">
+                    <small class="form-text text-muted">La taille de la grille doit être entre 5x5 et 15x15</small>
+                </div>
+            </div>
+            <div id="word_search_warning" class="alert alert-warning" style="display: none;"></div>
+        </div>
+
+        <!-- Section Texte à trous -->
+        <div id="fill_in_blanks_section" class="exercise-type-section" style="display: none;">
+            <h3>Texte à trous</h3>
+            <p class="text-muted">Utilisez ___ (trois underscores) pour marquer les espaces à remplir.</p>
+            
+            <div id="sentences-container">
+                <div class="mb-3 sentence-group">
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="sentences[]" required placeholder="Entrez une phrase avec des trous (ex: Le chat ___ sur le tapis)">
+                        <button type="button" class="btn btn-danger remove-sentence">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="button" class="btn btn-outline-primary" id="add-sentence">
+                <i class="fas fa-plus"></i> Ajouter une phrase
+            </button>
+
+            <div class="mb-4 mt-4">
+                <h4>Mots à placer</h4>
+                <p class="text-muted">Ajoutez les mots que les élèves devront placer dans les trous.</p>
+                
+                <div id="words-container">
+                    <div class="mb-2 word-group">
+                        <div class="input-group">
+                            <input type="text" class="form-control" name="words[]" required placeholder="Entrez un mot">
+                            <button type="button" class="btn btn-danger remove-word">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="button" class="btn btn-outline-primary" id="add-word">
+                    <i class="fas fa-plus"></i> Ajouter un mot
+                </button>
+            </div>
+        </div>
+
+        <!-- Section Association de paires -->
+        <div id="pairs_section" class="exercise-type-section" style="display: none;">
+            <h3>Association de paires</h3>
+            <div id="pairs_container" class="mb-3"></div>
+            <button type="button" class="btn btn-primary mb-3" onclick="addPair()">
+                <i class="bi bi-plus-circle"></i> Ajouter une paire
+            </button>
+        </div>
+
+        <!-- Section Texte à trous -->
+        <div id="fill_in_blanks_section" class="exercise-type-section" style="display: none;">
+            <h3>Texte à trous</h3>
+            <p class="text-muted">Utilisez ___ (trois underscores) pour marquer les espaces à remplir.</p>
+            
+            <div id="fill_in_blanks_container">
+                <div class="sentence-block mb-3" data-sentence-index="0">
+                    <label class="form-label">Phrase 1</label>
+                    <div class="input-group">
+                        <input type="text" 
+                               class="form-control" 
+                               name="fill_in_blanks_sentences[]" 
+                               placeholder="Entrez une phrase avec des trous (ex: Le chat ___ sur le tapis)" 
+                               required>
+                        <button type="button" 
+                                class="btn btn-danger" 
+                                onclick="removeFillInBlanksSentence(this)" 
+                                style="display: none;">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="button" class="btn btn-primary mb-3" onclick="addFillInBlanksSentence()">
+                <i class="bi bi-plus-circle"></i> Ajouter une phrase
+            </button>
+        </div>
+
+        <!-- Section Glisser-déposer -->
+        <div id="drag_and_drop_section" class="exercise-type-section" style="display: none;">
+            <h3>Glisser-déposer</h3>
+            <p class="text-muted">Créez un exercice où les étudiants doivent glisser les éléments dans le bon ordre.</p>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Éléments à glisser</h5>
+                    <div id="draggable_items_container">
+                        <div class="mb-2">
+                            <input type="text" class="form-control" name="draggable_items[]" placeholder="Élément à glisser" required>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="addDraggableItem()">
+                        <i class="bi bi-plus-circle"></i> Ajouter un élément
+                    </button>
+                </div>
+                
+                <div class="col-md-6">
+                    <h5>Zones de dépôt</h5>
+                    <div id="drop_zones_container">
+                        <div class="mb-2">
+                            <input type="text" class="form-control" name="drop_zones[]" placeholder="Zone de dépôt" required>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="addDropZone()">
+                        <i class="bi bi-plus-circle"></i> Ajouter une zone
+                    </button>
+                </div>
+            </div>
+            
+            <div class="mt-3">
+                <h5>Ordre correct</h5>
+                <p class="text-muted small">L'ordre correct sera déterminé automatiquement selon l'ordre de saisie des éléments.</p>
+            </div>
+        </div>
+
+        <!-- Section Souligner les mots -->
+        <div id="underline_words_section" class="exercise-type-section" style="display: none;">
+            <h3>Souligner les mots</h3>
+            <p class="text-muted">Créez un exercice où les étudiants doivent souligner les mots spécifiés dans des phrases.</p>
+            
+            <div class="mb-3">
+                <label class="form-label">Instructions</label>
+                <textarea class="form-control" name="underline_instructions" rows="2" placeholder="Ex: Soulignez tous les noms et adjectifs dans chaque phrase.">Soulignez tous les mots demandés dans chaque phrase.</textarea>
+            </div>
+            
+            <div class="mb-3">
+                <h5>Phrases et mots à souligner</h5>
+                <div id="underline_sentences_container">
+                    <div class="sentence-item border rounded p-3 mb-3">
+                        <div class="mb-2">
+                            <label class="form-label">Phrase 1</label>
+                            <input type="text" class="form-control" name="underline_sentences[]" placeholder="Ex: Le chat noir dort sur le canapé rouge." required>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Mots à souligner (séparés par des virgules)</label>
+                            <input type="text" class="form-control" name="underline_words[]" placeholder="Ex: chat, noir, canapé, rouge" required>
+                            <small class="form-text text-muted">Entrez les mots exactement comme ils apparaissent dans la phrase, séparés par des virgules.</small>
+                        </div>
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeUnderlineSentence(this)" style="display: none;">
+                            <i class="bi bi-trash"></i> Supprimer cette phrase
+                        </button>
+                    </div>
+                </div>
+                
+                <button type="button" class="btn btn-outline-primary" onclick="addUnderlineSentence()">
+                    <i class="bi bi-plus-circle"></i> Ajouter une phrase
+                </button>
+            </div>
+            
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i>
+                <strong>Conseils :</strong>
+                <ul class="mb-0 mt-2">
+                    <li>Entrez les mots à souligner exactement comme ils apparaissent dans la phrase</li>
+                    <li>La ponctuation sera automatiquement ignorée lors de la correction</li>
+                    <li>Les articles contractés (l'autoroute) seront normalisés automatiquement</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <button type="submit" class="btn btn-success btn-lg">Créer l'exercice</button>
+            <br><br>
+            <button type="button" class="btn btn-warning btn-lg" onclick="testSubmit()" style="background-color: orange; border: 3px solid red; font-weight: bold;">
+                🐛 TEST SUBMIT (DEBUG) 🐛
+            </button>
+        </div>
+    </form>
+</div>
+
+{% block scripts %}
+<script>
+function showExerciseType() {
+    const exerciseType = document.getElementById('exercise_type').value;
+    const sections = document.querySelectorAll('.exercise-type-section');
+    
+    sections.forEach(section => section.style.display = 'none');
+
+    if (exerciseType) {
+        const targetSection = document.getElementById(exerciseType + '_section');
+        if (targetSection) {
+            targetSection.style.display = 'block';
+        }
+    }
+}
+
+function addQuestion() {
+    const container = document.getElementById('questions_container');
+    const questionCount = container.children.length;
+    const questionDiv = document.createElement('div');
+    questionDiv.className = 'card mb-3 p-3';
+    questionDiv.dataset.questionIndex = questionCount;
+    questionDiv.innerHTML = `
+        <div class="mb-3">
+            <label class="form-label">Question</label>
+            <input type="text" class="form-control" name="question_${questionCount}" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Options</label>
+            <div style="background: yellow; padding: 5px; margin: 5px 0;">🔥 TEMPLATE CORRIGÉ CHARGÉ - 3 OPTIONS ACTIVES 🔥</div>
+            <div class="options-container" data-question-index="${questionCount}">
+                <div class="input-group mb-2">
+                    <div class="input-group-text">
+                        <input class="form-check-input" type="radio" name="correct_${questionCount}" value="0">
+                    </div>
+                    <input type="text" class="form-control" name="options_${questionCount}[]" placeholder="Option A" required>
+                </div>
+                <div class="input-group mb-2">
+                    <div class="input-group-text">
+                        <input class="form-check-input" type="radio" name="correct_${questionCount}" value="1">
+                    </div>
+                    <input type="text" class="form-control" name="options_${questionCount}[]" placeholder="Option B" required>
+                </div>
+                <div class="input-group mb-2">
+                    <div class="input-group-text">
+                        <input class="form-check-input" type="radio" name="correct_${questionCount}" value="2">
+                    </div>
+                    <input type="text" class="form-control" name="options_${questionCount}[]" placeholder="Option C" required>
+                </div>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-primary btn-sm" onclick="addOption(this)">
+                <i class="bi bi-plus-circle"></i> Ajouter une option
+            </button>
+            <button type="button" class="btn btn-danger btn-sm" onclick="removeQuestion(this)">
+                <i class="bi bi-trash"></i> Supprimer la question
+            </button>
+        </div>
+    `;
+    container.appendChild(questionDiv);
+    
+    // Options maintenant codées en dur dans le HTML - plus besoin de JavaScript
+}
+
+function addWord() {
+    const container = document.getElementById('words_container');
+    const wordCount = container.children.length;
+
+    const wordDiv = document.createElement('div');
+    wordDiv.className = 'input-group mb-2';
+    wordDiv.innerHTML = `
+        <input type="text" 
+               name="word_search_words[]" 
+               class="form-control" 
+               placeholder="Entrez un mot (ou plusieurs mots séparés par des virgules)" 
+               maxlength="50"
+               required>
+        <button type="button" 
+                class="btn btn-danger" 
+                onclick="this.closest('.input-group').remove(); validateWordSearchForm();">
+            <i class="bi bi-trash"></i>
+        </button>
+    `;
+    container.appendChild(wordDiv);
+    validateWordSearchForm();
+}
+
+function createField(containerSelector, inputName, placeholder) {
+    const container = document.querySelector(containerSelector);
+    if (!container) return;
+
+    const groupDiv = document.createElement('div');
+    groupDiv.className = containerSelector === '#sentences-container' ? 'mb-3 sentence-group' : 'mb-2 word-group';
+
+    const inputGroup = document.createElement('div');
+    inputGroup.className = 'input-group';
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'form-control';
+    input.name = inputName;
+    input.required = true;
+    input.placeholder = placeholder;
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'btn btn-danger remove-' + (containerSelector === '#sentences-container' ? 'sentence' : 'word');
+    button.innerHTML = '<i class="fas fa-trash"></i>';
+
+    button.addEventListener('click', function() {
+        const container = this.closest(containerSelector);
+        const groups = container.querySelectorAll(containerSelector === '#sentences-container' ? '.sentence-group' : '.word-group');
+        if (groups.length > 1) {
+            groupDiv.remove();
+        } else {
+            alert('Vous devez avoir au moins ' + (containerSelector === '#sentences-container' ? 'une phrase' : 'un mot'));
+        }
+    });
+
+    inputGroup.appendChild(input);
+    inputGroup.appendChild(button);
+    groupDiv.appendChild(inputGroup);
+    container.appendChild(groupDiv);
+}
+
+function addPair() {
+    const container = document.getElementById('pairs_container');
+    const pairIndex = container.children.length;
+    const pairDiv = document.createElement('div');
+    pairDiv.className = 'card mb-3';
+    pairDiv.innerHTML = `
+        <div class="card-body">
+            <button type="button" class="btn-close float-end" onclick="this.closest('.card').remove()"></button>
+            <div class="row">
+                <!-- Élément à gauche -->
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Élément à gauche</label>
+                        <div class="mb-2">
+                            <select class="form-select" name="left_type_${pairIndex}" onchange="togglePairInput(this, 'left', ${pairIndex})">
+                                <option value="text">Texte</option>
+                                <option value="image">Image</option>
+                            </select>
+                        </div>
+                        <div id="left_content_${pairIndex}">
+                            <input type="text" class="form-control" name="pair_left_${pairIndex}" required placeholder="Ex: 125 x 5">
+                            <input type="hidden" name="pair_left_type_${pairIndex}" value="text">
+                        </div>
+                    </div>
+                </div>
+                <!-- Élément à droite -->
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Élément à droite</label>
+                        <div class="mb-2">
+                            <select class="form-select" name="right_type_${pairIndex}" onchange="togglePairInput(this, 'right', ${pairIndex})">
+                                <option value="text">Texte</option>
+                                <option value="image">Image</option>
+                            </select>
+                        </div>
+                        <div id="right_content_${pairIndex}">
+                            <input type="text" class="form-control" name="pair_right_${pairIndex}" required placeholder="Ex: 625">
+                            <input type="hidden" name="pair_right_type_${pairIndex}" value="text">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    container.appendChild(pairDiv);
+}
+
+function togglePairInput(selectElement, side, pairIndex) {
+    const contentDiv = document.getElementById(`${side}_content_${pairIndex}`);
+    const selectedType = selectElement.value;
+    
+    if (selectedType === 'text') {
+        contentDiv.innerHTML = `
+            <input type="text" class="form-control" name="pair_${side}_${pairIndex}" required placeholder="${side === 'left' ? 'Ex: 125 x 5' : 'Ex: 625'}">
+        `;
+    } else if (selectedType === 'image') {
+        contentDiv.innerHTML = `
+            <div class="input-group">
+                <input type="file" class="form-control" name="pair_${side}_image_${pairIndex}" accept="image/*">
+                <span class="input-group-text">ou</span>
+            </div>
+            <div class="mt-2">
+                <input type="url" class="form-control" name="pair_${side}_${pairIndex}" placeholder="URL de l'image">
+                <small class="form-text text-muted">Vous pouvez uploader un fichier ou saisir une URL d'image</small>
+            </div>
+        `;
+    }
+    
+    // Ajouter le champ de type caché
+    const typeInput = document.createElement('input');
+    typeInput.type = 'hidden';
+    typeInput.name = `pair_${side}_type_${pairIndex}`;
+    typeInput.value = selectedType;
+    contentDiv.appendChild(typeInput);
+}
+
+function addOption(button) {
+    const questionDiv = button.closest('.card');
+    const optionsContainer = questionDiv.querySelector('.options-container');
+    const questionIndex = questionDiv.dataset.questionIndex;
+    const optionCount = optionsContainer.children.length;
+    const optionDiv = document.createElement('div');
+    optionDiv.className = 'input-group mb-2';
+    optionDiv.innerHTML = `
+        <div class="input-group-text">
+            <input class="form-check-input" type="radio" name="correct_${questionIndex}" value="${optionCount}">
+        </div>
+        <input type="text" class="form-control" name="options_${questionIndex}[]" required>
+        <button type="button" class="btn btn-outline-danger" onclick="removeOption(this)">
+            <i class="bi bi-trash"></i>
+        </button>
+    `;
+    optionsContainer.appendChild(optionDiv);
+}
+
+function removeOption(button) {
+    const optionsContainer = button.closest('.options-container');
+    if (optionsContainer.querySelectorAll('.input-group').length > 2) {
+        button.closest('.input-group').remove();
+    } else {
+        alert('Une question doit avoir au moins deux options.');
+    }
+}
+
+function removeQuestion(button) {
+    const questionDiv = button.closest('.card');
+    const container = document.getElementById('questions_container');
+    questionDiv.remove();
+    
+    // Réindexer les questions restantes
+    const questions = container.querySelectorAll('.card');
+    questions.forEach((div, index) => {
+        div.dataset.questionIndex = index;
+        const questionInput = div.querySelector('input[type="text"]');
+        questionInput.name = `question_${index}`;
+        
+        const optionsContainer = div.querySelector('.options-container');
+        const options = optionsContainer.querySelectorAll('.input-group');
+        options.forEach((optionDiv, optionIndex) => {
+            const radio = optionDiv.querySelector('input[type="radio"]');
+            const optionInput = optionDiv.querySelector('input[type="text"]');
+            radio.name = `correct_${index}`;
+            radio.value = optionIndex;
+            optionInput.name = `options_${index}[]`;
+        });
+    });
+}
+
+function validateWordSearchForm() {
+    const words = document.querySelectorAll('#words_container input[type="text"]');
+    const gridWidth = document.getElementById('grid_width');
+    const gridHeight = document.getElementById('grid_height');
+    const submitBtn = document.querySelector('button[type="submit"]');
+    const warningDiv = document.getElementById('word_search_warning');
+    
+    let isValid = true;
+    let warningMessage = '';
+    
+    // Vérifier qu'il y a au moins un mot
+    if (words.length === 0) {
+        isValid = false;
+        warningMessage = 'Veuillez ajouter au moins un mot.';
+    }
+    
+    // Vérifier la longueur des mots par rapport à la grille
+    const maxGridDimension = Math.max(parseInt(gridWidth.value), parseInt(gridHeight.value));
+    for (const input of words) {
+        if (input.value.length > maxGridDimension) {
+            isValid = false;
+            warningMessage = `Le mot "${input.value}" est trop long pour la grille actuelle.`;
+            break;
+        }
+    }
+    
+    // Vérifier qu'il n'y a pas trop de mots pour la grille
+    const gridSize = parseInt(gridWidth.value) * parseInt(gridHeight.value);
+    const totalLetters = Array.from(words).reduce((sum, input) => sum + input.value.length, 0);
+    if (totalLetters > gridSize * 0.7) {  // Maximum 70% de la grille
+        isValid = false;
+        warningMessage = 'Trop de mots pour la taille de grille actuelle.';
+    }
+    
+    // Afficher ou masquer l'avertissement
+    if (warningDiv) {
+        warningDiv.textContent = warningMessage;
+        warningDiv.style.display = warningMessage ? 'block' : 'none';
+    }
+    
+    // Activer ou désactiver le bouton de soumission seulement pour les mots mêlés
+    if (submitBtn && document.getElementById('exercise_type').value === 'word_search') {
+        submitBtn.disabled = !isValid;
+    }
+    
+    return isValid;
+}
+
+function testSubmit() {
+    console.log('Test submit function called');
+    const form = document.querySelector('form');
+    if (form) {
+        console.log('Form found, submitting...');
+        form.submit();
+    } else {
+        console.log('Form not found!');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing form...');
+    
+    // Initialiser l'affichage des sections
+    showExerciseType();
+    
+    // Écouter les changements de type d'exercice
+    const exerciseTypeSelect = document.getElementById('exercise_type');
+    if (exerciseTypeSelect) {
+        exerciseTypeSelect.addEventListener('change', showExerciseType);
+    }
+
+    // Gestionnaire de soumission de formulaire très simplifié
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            console.log('Form submission attempted...');
+            
+            const title = document.getElementById('title').value.trim();
+            const exerciseType = document.getElementById('exercise_type').value;
+            
+            // Validation minimale - juste titre et type
+            if (!title) {
+                alert('Veuillez saisir un titre pour l\'exercice.');
+                e.preventDefault();
+                return false;
+            }
+            
+            if (!exerciseType) {
+                alert('Veuillez sélectionner un type d\'exercice.');
+                e.preventDefault();
+                return false;
+            }
+            
+            console.log('Form validation passed, submitting form...');
+            // Laisser le formulaire se soumettre normalement
+            return true;
+        });
+    }
+    
+    // Initialiser les boutons d'ajout de questions pour QCM
+    const addQuestionBtn = document.querySelector('button[onclick="addQuestion()"]');
+    if (addQuestionBtn) {
+        addQuestionBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            addQuestion();
+        });
+    }
+});
+
+// Fonctions pour les exercices Glisser-déposer
+function addDraggableItem() {
+    const container = document.getElementById('draggable_items_container');
+    const newItem = document.createElement('div');
+    newItem.className = 'mb-2 input-group';
+    newItem.innerHTML = `
+        <input type="text" class="form-control" name="draggable_items[]" placeholder="Élément à glisser" required>
+        <button type="button" class="btn btn-outline-danger" onclick="removeDraggableItem(this)">
+            <i class="bi bi-trash"></i>
+        </button>
+    `;
+    container.appendChild(newItem);
+    
+    // Synchroniser les zones de dépôt
+    syncDropZones();
+}
+
+function addDropZone() {
+    const container = document.getElementById('drop_zones_container');
+    const newZone = document.createElement('div');
+    newZone.className = 'mb-2 input-group';
+    newZone.innerHTML = `
+        <input type="text" class="form-control" name="drop_zones[]" placeholder="Zone de dépôt" required>
+        <button type="button" class="btn btn-outline-danger" onclick="removeDropZone(this)">
+            <i class="bi bi-trash"></i>
+        </button>
+    `;
+    container.appendChild(newZone);
+    
+    // Synchroniser les éléments glissables
+    syncDraggableItems();
+}
+
+function removeDraggableItem(button) {
+    const container = document.getElementById('draggable_items_container');
+    if (container.children.length > 1) {
+        button.closest('.input-group').remove();
+        syncDropZones();
+    } else {
+        alert('Il doit y avoir au moins un élément à glisser.');
+    }
+}
+
+function removeDropZone(button) {
+    const container = document.getElementById('drop_zones_container');
+    if (container.children.length > 1) {
+        button.closest('.input-group').remove();
+        syncDraggableItems();
+    } else {
+        alert('Il doit y avoir au moins une zone de dépôt.');
+    }
+}
+
+// Synchroniser le nombre de zones de dépôt avec les éléments glissables
+function syncDropZones() {
+    const draggableCount = document.getElementById('draggable_items_container').children.length;
+    const dropContainer = document.getElementById('drop_zones_container');
+    const dropCount = dropContainer.children.length;
+    
+    if (draggableCount > dropCount) {
+        // Ajouter des zones de dépôt
+        for (let i = dropCount; i < draggableCount; i++) {
+            const newZone = document.createElement('div');
+            newZone.className = 'mb-2 input-group';
+            newZone.innerHTML = `
+                <input type="text" class="form-control" name="drop_zones[]" placeholder="Zone de dépôt ${i + 1}" required>
+                <button type="button" class="btn btn-outline-danger" onclick="removeDropZone(this)">
+                    <i class="bi bi-trash"></i>
+                </button>
+            `;
+            dropContainer.appendChild(newZone);
+        }
+    } else if (draggableCount < dropCount) {
+        // Supprimer des zones de dépôt en trop
+        for (let i = dropCount; i > draggableCount; i--) {
+            if (dropContainer.children.length > 1) {
+                dropContainer.removeChild(dropContainer.lastElementChild);
+            }
+        }
+    }
+}
+
+// Synchroniser le nombre d'éléments glissables avec les zones de dépôt
+function syncDraggableItems() {
+    const dropCount = document.getElementById('drop_zones_container').children.length;
+    const draggableContainer = document.getElementById('draggable_items_container');
+    const draggableCount = draggableContainer.children.length;
+    
+    if (dropCount > draggableCount) {
+        // Ajouter des éléments glissables
+        for (let i = draggableCount; i < dropCount; i++) {
+            const newItem = document.createElement('div');
+            newItem.className = 'mb-2 input-group';
+            newItem.innerHTML = `
+                <input type="text" class="form-control" name="draggable_items[]" placeholder="Élément ${i + 1}" required>
+                <button type="button" class="btn btn-outline-danger" onclick="removeDraggableItem(this)">
+                    <i class="bi bi-trash"></i>
+                </button>
+            `;
+            draggableContainer.appendChild(newItem);
+        }
+    } else if (dropCount < draggableCount) {
+        // Supprimer des éléments glissables en trop
+        for (let i = draggableCount; i > dropCount; i--) {
+            if (draggableContainer.children.length > 1) {
+                draggableContainer.removeChild(draggableContainer.lastElementChild);
+            }
+        }
+    }
+}
+
+// Fonctions pour les exercices "Souligner les mots"
+function addUnderlineSentence() {
+    const container = document.getElementById('underline_sentences_container');
+    const sentenceCount = container.children.length + 1;
+    
+    const newSentence = document.createElement('div');
+    newSentence.className = 'sentence-item border rounded p-3 mb-3';
+    newSentence.innerHTML = `
+        <div class="mb-2">
+            <label class="form-label">Phrase ${sentenceCount}</label>
+            <input type="text" class="form-control" name="underline_sentences[]" placeholder="Ex: Le chat noir dort sur le canapé rouge." required>
+        </div>
+        <div class="mb-2">
+            <label class="form-label">Mots à souligner (séparés par des virgules)</label>
+            <input type="text" class="form-control" name="underline_words[]" placeholder="Ex: chat, noir, canapé, rouge" required>
+            <small class="form-text text-muted">Entrez les mots exactement comme ils apparaissent dans la phrase, séparés par des virgules.</small>
+        </div>
+        <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeUnderlineSentence(this)">
+            <i class="bi bi-trash"></i> Supprimer cette phrase
+        </button>
+    `;
+    
+    container.appendChild(newSentence);
+    updateUnderlineRemoveButtons();
+}
+
+function removeUnderlineSentence(button) {
+    const sentenceItem = button.closest('.sentence-item');
+    sentenceItem.remove();
+    updateUnderlineLabels();
+    updateUnderlineRemoveButtons();
+}
+
+function updateUnderlineLabels() {
+    const container = document.getElementById('underline_sentences_container');
+    const sentences = container.querySelectorAll('.sentence-item');
+    
+    sentences.forEach((sentence, index) => {
+        const label = sentence.querySelector('label');
+        label.textContent = `Phrase ${index + 1}`;
+    });
+}
+
+function updateUnderlineRemoveButtons() {
+    const container = document.getElementById('underline_sentences_container');
+    const removeButtons = container.querySelectorAll('.btn-outline-danger');
+    
+    // Afficher/masquer les boutons de suppression
+    removeButtons.forEach(button => {
+        button.style.display = removeButtons.length > 1 ? 'inline-block' : 'none';
+    });
+}
+
+// Fonctions pour les exercices "Texte à trous"
+function addFillInBlanksSentence() {
+    const container = document.getElementById('fill_in_blanks_container');
+    const sentenceCount = container.querySelectorAll('.sentence-block').length;
+    
+    const newSentence = document.createElement('div');
+    newSentence.className = 'sentence-block mb-3';
+    newSentence.setAttribute('data-sentence-index', sentenceCount);
+    
+    newSentence.innerHTML = `
+        <label class="form-label">Phrase ${sentenceCount + 1}</label>
+        <div class="input-group">
+            <input type="text" 
+                   class="form-control" 
+                   name="fill_in_blanks_sentences[]" 
+                   placeholder="Entrez une phrase avec des trous (ex: Le chat ___ sur le tapis)" 
+                   required>
+            <button type="button" 
+                    class="btn btn-danger" 
+                    onclick="removeFillInBlanksSentence(this)">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    `;
+    
+    container.appendChild(newSentence);
+    updateFillInBlanksRemoveButtons();
+}
+
+function removeFillInBlanksSentence(button) {
+    const sentenceBlock = button.closest('.sentence-block');
+    sentenceBlock.remove();
+    updateFillInBlanksLabels();
+    updateFillInBlanksRemoveButtons();
+}
+
+function updateFillInBlanksLabels() {
+    const container = document.getElementById('fill_in_blanks_container');
+    const sentences = container.querySelectorAll('.sentence-block');
+    
+    sentences.forEach((sentence, index) => {
+        const label = sentence.querySelector('label');
+        label.textContent = `Phrase ${index + 1}`;
+        sentence.setAttribute('data-sentence-index', index);
+    });
+}
+
+function updateFillInBlanksRemoveButtons() {
+    const container = document.getElementById('fill_in_blanks_container');
+    const removeButtons = container.querySelectorAll('.btn-danger');
+    
+    // Afficher/masquer les boutons de suppression
+    removeButtons.forEach(button => {
+        button.style.display = removeButtons.length > 1 ? 'inline-block' : 'none';
+    });
+}
+
+</script>
+{% endblock scripts %}
+{% endblock content %}

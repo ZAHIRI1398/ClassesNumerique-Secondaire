@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Test de scoring pour l'exercice "{{ data.exercise.title }}"</h1>
+    <p><a href="{{ url_for('diagnostic_word_placement') }}" class="btn btn-secondary">Retour au diagnostic</a></p>
+    
+    <div class="alert alert-info">
+        <h4>Informations sur l'exercice</h4>
+        <p>ID: {{ data.exercise.id }}</p>
+        <p>Titre: {{ data.exercise.title }}</p>
+        <p>Nombre de blancs dans les phrases: {{ data.total_blanks_in_sentences }}</p>
+        <p>Nombre de réponses attendues: {{ data.total_answers }}</p>
+    </div>
+    
+    <h2>Contenu de l'exercice</h2>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">Phrases</div>
+                <div class="card-body">
+                    <ol>
+                        {% for sentence in data.sentences %}
+                        <li>{{ sentence }}</li>
+                        {% endfor %}
+                    </ol>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">Réponses attendues</div>
+                <div class="card-body">
+                    <ol>
+                        {% for answer in data.correct_answers %}
+                        <li>{{ answer }}</li>
+                        {% endfor %}
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <h2 class="mt-4">Simulation de scoring</h2>
+    <p>Cette simulation suppose que toutes les réponses sont correctes.</p>
+    
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">Logique 1</div>
+                <div class="card-body">
+                    <h5>{{ data.logic1.description }}</h5>
+                    <p>Total: {{ data.logic1.total }}</p>
+                    <p>Score: {{ data.logic1.score|round(1) }}%</p>
+                    <p>Formule: {{ data.total_answers }} / {{ data.logic1.total }} * 100</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">Logique 2</div>
+                <div class="card-body">
+                    <h5>{{ data.logic2.description }}</h5>
+                    <p>Total: {{ data.logic2.total }}</p>
+                    <p>Score: {{ data.logic2.score|round(1) }}%</p>
+                    <p>Formule: {{ min(data.total_answers, data.total_blanks_in_sentences) }} / {{ data.logic2.total }} * 100</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card {{ 'border-success' if data.logic3.score == 100 else '' }}">
+                <div class="card-header {{ 'bg-success text-white' if data.logic3.score == 100 else '' }}">Logique 3 (actuelle)</div>
+                <div class="card-body">
+                    <h5>{{ data.logic3.description }}</h5>
+                    <p>Total: {{ data.logic3.total }}</p>
+                    <p>Score: {{ data.logic3.score|round(1) }}%</p>
+                    <p>Formule: {{ data.total_answers }} / {{ data.logic3.total }} * 100</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <h2 class="mt-4">Conclusion</h2>
+    <div class="alert alert-success">
+        <p>La logique actuelle utilise le <strong>maximum</strong> entre le nombre de blancs dans les phrases et le nombre de réponses attendues.</p>
+        <p>Cette approche est la plus robuste car elle gère correctement les cas où:</p>
+        <ul>
+            <li>Il y a plus de blancs que de réponses</li>
+            <li>Il y a plus de réponses que de blancs</li>
+        </ul>
+        <p>Pour cet exercice, le score avec la logique actuelle est de <strong>{{ data.logic3.score|round(1) }}%</strong>.</p>
+    </div>
+    
+    <div class="mt-4">
+        <a href="{{ url_for('diagnostic_word_placement') }}" class="btn btn-secondary">Retour au diagnostic</a>
+        <a href="{{ url_for('edit_exercise', exercise_id=data.exercise.id) }}" class="btn btn-primary">Modifier l'exercice</a>
+    </div>
+</div>
+{% endblock %}

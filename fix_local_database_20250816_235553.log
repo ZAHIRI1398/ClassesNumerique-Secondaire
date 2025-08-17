@@ -1,0 +1,24 @@
+2025-08-16 23:55:53,102 - INFO - === DÉBUT DE LA CORRECTION DE LA BASE DE DONNÉES LOCALE ===
+2025-08-16 23:55:53,103 - INFO - Connexion établie à la base de données: instance/classe_numerique.db
+2025-08-16 23:55:53,103 - INFO - 1. Vérification des noms d'écoles actuels
+2025-08-16 23:55:53,104 - INFO - Écoles trouvées dans la base de données:
+2025-08-16 23:55:53,104 - INFO - - Ecole Bruxelles ll
+2025-08-16 23:55:53,104 - INFO - École 'Ecole Bruxelles ll' trouvée dans la base de données
+2025-08-16 23:55:53,104 - INFO - 3. Vérification des utilisateurs associés à l'école 'Ecole Bruxelles ll'
+2025-08-16 23:55:53,105 - INFO - Utilisateurs associés à l'école 'Ecole Bruxelles ll':
+2025-08-16 23:55:53,105 - INFO - - ID: 3, Email: responsable@example.com, Rôle: teacher, Type d'abonnement: trial, Statut: approved
+2025-08-16 23:55:53,105 - INFO - 4. Correction du nom de l'école: 'Ecole Bruxelles ll' -> 'École Bruxelles II'
+2025-08-16 23:55:53,309 - INFO - Nom d'école mis à jour: 'Ecole Bruxelles ll' -> 'École Bruxelles II', 1 utilisateurs affectés
+2025-08-16 23:55:53,309 - INFO - Nombre d'utilisateurs avec école mise à jour: 1
+2025-08-16 23:55:53,309 - INFO - 5. Mise à jour du type d'abonnement des utilisateurs de l'école 'École Bruxelles II'
+2025-08-16 23:55:53,500 - INFO - Type d'abonnement mis à jour pour l'école 'École Bruxelles II': 'trial' -> 'school', 1 utilisateurs affectés
+2025-08-16 23:55:53,500 - INFO - Nombre d'utilisateurs avec type d'abonnement mis à jour: 1
+2025-08-16 23:55:53,500 - INFO - 6. Vérification des utilisateurs après mise à jour
+2025-08-16 23:55:53,500 - INFO - Utilisateurs associés à l'école 'École Bruxelles II':
+2025-08-16 23:55:53,500 - INFO - - ID: 3, Email: responsable@example.com, Rôle: teacher, Type d'abonnement: school, Statut: approved
+2025-08-16 23:55:53,500 - INFO - Correction terminée pour l'école 'Ecole Bruxelles ll' -> 'École Bruxelles II'
+2025-08-16 23:55:53,500 - INFO - 7. Vérification finale des écoles après corrections
+2025-08-16 23:55:53,500 - INFO - Écoles trouvées dans la base de données:
+2025-08-16 23:55:53,501 - INFO - - École Bruxelles II
+2025-08-16 23:55:53,501 - INFO - Connexion à la base de données fermée
+2025-08-16 23:55:53,501 - INFO - === FIN DE LA CORRECTION DE LA BASE DE DONNÉES LOCALE ===

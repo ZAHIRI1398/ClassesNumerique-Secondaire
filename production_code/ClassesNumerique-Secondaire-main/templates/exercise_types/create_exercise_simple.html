@@ -1,0 +1,2991 @@
+{% extends "base.html" %}
+
+{% block title %}Créer un exercice{% endblock title %}
+
+{% block content %}
+<div class="container py-4">
+    <h1>Créer un nouvel exercice</h1>
+    <form method="post" action="{{ url_for('exercise.create_exercise') }}" enctype="multipart/form-data">
+        {{ form.csrf_token }}
+        
+        <!-- Sélection du cours -->
+        <div class="mb-3">
+            <label for="course_id" class="form-label">Sélectionner un cours</label>
+            <select class="form-select" id="course_id" name="course_id">
+                <option value="">-- Choisir un cours (optionnel) --</option>
+                {% if current_user.is_teacher %}
+                    {% for class_obj in current_user.classes_teaching %}
+                        <optgroup label="{{ class_obj.name }}">
+                            {% for course in class_obj.courses %}
+                                <option value="{{ course.id }}">{{ course.title }}</option>
+                            {% endfor %}
+                        </optgroup>
+                    {% endfor %}
+                {% endif %}
+            </select>
+        </div>
+
+        <!-- Matière -->
+        <div class="mb-3">
+            <label for="subject" class="form-label">Matière</label>
+            <select class="form-select" id="subject" name="subject">
+                <option value="">-- Sélectionner une matière --</option>
+                <option value="Français">Français</option>
+                <option value="Mathématiques">Mathématiques</option>
+                <option value="Histoire">Histoire</option>
+                <option value="Géographie">Géographie</option>
+                <option value="Sciences">Sciences</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            {{ form.exercise_type.label(class="form-label") }}
+            {{ form.exercise_type(class="form-select", id="exercise_type", onchange="showExerciseType()") }}
+        </div>
+
+        <div class="mb-3">
+            {{ form.title.label(class="form-label") }}
+            {{ form.title(class="form-control") }}
+        </div>
+
+        <div class="mb-3">
+            {{ form.description.label(class="form-label") }}
+            {{ form.description(class="form-control", rows=3) }}
+        </div>
+
+        <!-- Section QCM -->
+        <div id="qcm_section" class="exercise-type-section" style="display: none;">
+            <h3>Questions à choix multiples</h3>
+            
+            <!-- Image optionnelle pour QCM -->
+            <div class="mb-4 p-3" style="border: 2px dashed #007bff; border-radius: 8px; background-color: #f8f9fa;">
+                <h5 class="text-primary"><i class="bi bi-image"></i> Image d'illustration (optionnel)</h5>
+                <p class="text-muted mb-3">Ajoutez une image pour illustrer vos questions (schéma, photo, graphique...)</p>
+                <div class="mb-3">
+                    <input type="file" class="form-control" name="qcm_image" accept="image/*" id="qcm_image_input">
+                    <small class="text-muted">Formats acceptés : JPG, PNG, GIF (max 5MB)</small>
+                </div>
+                <div id="qcm_image_preview" style="display: none;">
+                    <img id="qcm_image_preview_img" src="" alt="Aperçu" class="img-thumbnail" style="max-width: 300px; max-height: 200px;">
+                    <button type="button" class="btn btn-sm btn-danger ms-2" onclick="removeQcmImage()">Supprimer</button>
+                </div>
+            </div>
+            
+            <div id="questions_container"></div>
+            <button type="button" class="btn btn-primary mb-3" onclick="addQuestion()">
+                <i class="bi bi-plus-circle"></i> Ajouter une question
+            </button>
+        </div>
+
+        <!-- Section QCM Multichoix -->
+        <div id="qcm_multichoix_section" class="exercise-type-section" style="display: none;">
+            <h3>QCM Multichoix</h3>
+            <p class="text-muted">Créez des questions où plusieurs réponses peuvent être correctes. Les élèves devront cocher toutes les bonnes réponses.</p>
+            
+            <!-- Image optionnelle pour QCM Multichoix -->
+            <div class="mb-4 p-3" style="border: 2px dashed #28a745; border-radius: 8px; background-color: #f8f9fa;">
+                <h5 class="text-success"><i class="bi bi-image"></i> Image d'illustration (optionnel)</h5>
+                <p class="text-muted mb-3">Ajoutez une image pour illustrer vos questions (schéma, photo, graphique...)</p>
+                <div class="mb-3">
+                    <input type="file" class="form-control" name="qcm_multichoix_image" accept="image/*" id="qcm_multichoix_image_input">
+                    <small class="text-muted">Formats acceptés : JPG, PNG, GIF (max 5MB)</small>
+                </div>
+                <div id="qcm_multichoix_image_preview" style="display: none;">
+                    <img id="qcm_multichoix_image_preview_img" src="" alt="Aperçu" class="img-thumbnail" style="max-width: 300px; max-height: 200px;">
+                    <button type="button" class="btn btn-sm btn-danger ms-2" onclick="removeQcmMultichoixImage()">Supprimer</button>
+                </div>
+            </div>
+            
+            <div id="multichoix_questions_container"></div>
+            <button type="button" class="btn btn-success mb-3" onclick="addMultichoixQuestion()">
+                <i class="bi bi-plus-circle"></i> Ajouter une question multichoix
+            </button>
+        </div>
+
+        <!-- Section Mots mêlés -->
+        <div id="word_search_section" class="exercise-type-section" style="display: none;">
+            <h3>Mots mêlés</h3>
+            <div id="words_container">
+                <div class="input-group mb-2">
+                    <input type="text" name="word_search_words[]" class="form-control" placeholder="Entrez un mot (ou plusieurs mots séparés par des virgules)">
+                </div>
+            </div>
+            <button type="button" class="btn btn-primary mb-3" onclick="addWord()">
+                <i class="bi bi-plus-circle"></i> Ajouter un mot
+            </button>
+        </div>
+
+        <!-- Section Texte à trous -->
+        <div id="fill_in_blanks_section" class="exercise-type-section" style="display: none;">
+            <h3>Texte à trous</h3>
+            <p class="text-muted">Utilisez ___ (trois underscores) pour marquer les espaces à remplir.</p>
+            
+            <!-- Image optionnelle pour Texte à trous -->
+            <div class="mb-4 p-3" style="border: 2px dashed #28a745; border-radius: 8px; background-color: #f8f9fa;">
+                <h5 class="text-success"><i class="bi bi-image"></i> Image d'illustration (optionnel)</h5>
+                <p class="text-muted mb-3">Ajoutez une image pour accompagner votre texte à trous (diagramme, photo, support visuel...)</p>
+                <div class="mb-3">
+                    <input type="file" class="form-control" name="fill_in_blanks_image" accept="image/*" id="fill_in_blanks_image_input">
+                    <small class="text-muted">Formats acceptés : JPG, PNG, GIF (max 5MB)</small>
+                </div>
+                <div id="fill_in_blanks_image_preview" style="display: none;">
+                    <img id="fill_in_blanks_image_preview_img" src="" alt="Aperçu" class="img-thumbnail" style="max-width: 300px; max-height: 200px;">
+                    <button type="button" class="btn btn-sm btn-danger ms-2" onclick="removeFillInBlanksImage()">Supprimer</button>
+                </div>
+            </div>
+            
+            <div id="fill_in_blanks_container">
+                <div class="sentence-block mb-3">
+                    <label class="form-label">Phrase 1</label>
+                    <input type="text" class="form-control" name="fill_in_blanks_sentences[]" 
+                           placeholder="Entrez une phrase avec des trous (ex: Le chat ___ sur le tapis)">
+                </div>
+            </div>
+            
+            <button type="button" class="btn btn-primary mb-3" onclick="addFillInBlanksSentence()">
+                <i class="bi bi-plus-circle"></i> Ajouter une phrase
+            </button>
+            
+            <h4 class="mt-4">Mots de réponse</h4>
+            <p class="text-muted">Ajoutez les mots qui peuvent remplir les trous.</p>
+            
+            <div id="fill_in_blanks_words_container">
+                <div class="input-group mb-2">
+                    <input type="text" name="fill_in_blanks_words[]" class="form-control" placeholder="Entrez un mot de réponse">
+                </div>
+            </div>
+            
+            <button type="button" class="btn btn-primary mb-3" onclick="addFillInBlanksWord()">
+                <i class="bi bi-plus-circle"></i> Ajouter un mot de réponse
+            </button>
+        </div>
+
+        <!-- Section Mots à placer -->
+        <div id="word_placement_section" class="exercise-type-section" style="display: none;">
+            <h3>Mots à placer</h3>
+            <p class="text-muted">Créez un exercice inclusif où les élèves cliquent sur des mots pour compléter les phrases. Parfait pour les élèves dyslexiques !</p>
+            
+            <!-- Image optionnelle pour Mots à placer -->
+            <div class="mb-4 p-3" style="border: 2px dashed #ffc107; border-radius: 8px; background-color: #fffbf0;">
+                <h5 style="color: #856404; margin-bottom: 15px;">
+                    <i class="bi bi-image"></i> Image d'illustration (optionnelle)
+                </h5>
+                <input type="file" name="word_placement_image" class="form-control" accept="image/*" 
+                       onchange="setupImagePreview('word_placement_image', 'word_placement_image_preview', 'word_placement_preview_img')">
+                <div id="word_placement_image_preview" style="display: none; margin-top: 15px;">
+                    <img id="word_placement_preview_img" src="" alt="Aperçu" style="max-width: 200px; max-height: 200px; border-radius: 8px;">
+                    <button type="button" class="btn btn-sm btn-danger ms-2" onclick="removeWordPlacementImage()">
+                        <i class="bi bi-trash"></i> Supprimer
+                    </button>
+                </div>
+            </div>
+
+            <!-- Phrases à compléter -->
+            <div class="mb-4 p-3" style="border: 2px solid #17a2b8; border-radius: 8px; background-color: #f0f9ff;">
+                <h5 style="color: #17a2b8; margin-bottom: 15px;">
+                    <i class="bi bi-chat-text"></i> Phrases à compléter
+                </h5>
+                <p class="text-info small mb-3">
+                    <i class="bi bi-info-circle"></i> Utilisez <strong>___</strong> (trois underscores) pour marquer les endroits où les élèves doivent placer un mot.
+                </p>
+                
+                <div id="word_placement_sentences_container">
+                    <div class="mb-3">
+                        <label class="form-label">Phrase 1 :</label>
+                        <input type="text" name="sentences[]" class="form-control" 
+                               placeholder="Exemple: Le chat ___ sur le tapis." 
+                               style="border: 2px solid #17a2b8;">
+                    </div>
+                </div>
+                
+                <button type="button" class="btn btn-outline-info mb-3" onclick="addWordPlacementSentence()">
+                    <i class="bi bi-plus-circle"></i> Ajouter une phrase
+                </button>
+            </div>
+
+            <!-- Mots disponibles -->
+            <div class="mb-4 p-3" style="border: 2px solid #ffc107; border-radius: 8px; background-color: #fffbf0;">
+                <h5 style="color: #856404; margin-bottom: 15px;">
+                    <i class="bi bi-collection"></i> Mots disponibles pour les élèves
+                </h5>
+                <p class="text-warning small mb-3">
+                    <i class="bi bi-heart"></i> <strong>Conseil inclusif :</strong> Ajoutez quelques mots supplémentaires (distracteurs) pour rendre l'exercice plus stimulant, mais pas trop pour éviter de surcharger les élèves dyslexiques.
+                </p>
+                
+                <div id="word_placement_words_container">
+                    <div class="mb-3">
+                        <label class="form-label">Mot 1 :</label>
+                        <input type="text" name="words[]" class="form-control" 
+                               placeholder="Exemple: dort" 
+                               style="border: 2px solid #ffc107;">
+                    </div>
+                </div>
+                
+                <button type="button" class="btn btn-outline-warning mb-3" onclick="addWordPlacementWord()">
+                    <i class="bi bi-plus-circle"></i> Ajouter un mot
+                </button>
+            </div>
+        </div>
+
+        <!-- Section Mots mêlés -->
+        <div id="word_search_section" class="exercise-type-section" style="display: none;">
+            <h3>Mots mêlés</h3>
+            <p class="text-muted">Ajoutez les mots qui seront cachés dans la grille de mots mêlés (5 mots maximum).</p>
+            
+            <div class="word-search-inputs" style="background: #f8f9fa; padding: 15px; border: 2px solid #28a745; border-radius: 8px; margin: 15px 0;">
+                <h5 style="color: #28a745; margin-bottom: 15px;">Mots à cacher dans la grille :</h5>
+                
+                <div class="mb-3">
+                    <label class="form-label">Mot 1 :</label>
+                    <input type="text" name="word_search_words[]" class="form-control" placeholder="Entrez le premier mot" style="border: 2px solid #007bff;">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Mot 2 :</label>
+                    <input type="text" name="word_search_words[]" class="form-control" placeholder="Entrez le deuxième mot" style="border: 2px solid #007bff;">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Mot 3 :</label>
+                    <input type="text" name="word_search_words[]" class="form-control" placeholder="Entrez le troisième mot" style="border: 2px solid #007bff;">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Mot 4 (optionnel) :</label>
+                    <input type="text" name="word_search_words[]" class="form-control" placeholder="Entrez le quatrième mot (optionnel)" style="border: 2px solid #6c757d;">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Mot 5 (optionnel) :</label>
+                    <input type="text" name="word_search_words[]" class="form-control" placeholder="Entrez le cinquième mot (optionnel)" style="border: 2px solid #6c757d;">
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> <strong>Astuce :</strong> Vous pouvez laisser les champs optionnels vides. Au minimum 3 mots sont recommandés pour une grille intéressante.
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Taille de la grille</label>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label">Largeur</label>
+                        <input type="number" name="grid_width" class="form-control" value="15" min="10" max="20">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Hauteur</label>
+                        <input type="number" name="grid_height" class="form-control" value="15" min="10" max="20">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Mots mêlés -->
+        <div id="word_search_section" class="exercise-type-section" style="display: none;">
+            <h3>Mots mêlés</h3>
+            <p class="text-muted">Créez une grille de mots mêlés. Entrez les mots que les élèves devront trouver dans la grille.</p>
+            
+            <div class="mb-3">
+                <label class="form-label">Mots à cacher dans la grille</label>
+                <div id="word_search_words_container" style="border: 2px solid #28a745; padding: 15px; border-radius: 8px; background-color: #f8f9fa;">
+                    <div class="alert alert-info mb-3">
+                        <i class="bi bi-info-circle"></i> <strong>Instructions :</strong> 
+                        Entrez vos mots dans les champs ci-dessous. Vous pouvez aussi séparer plusieurs mots par des virgules dans un seul champ.
+                        <br><strong>Exemple :</strong> CHAT,CHIEN,OISEAU ou un mot par champ.
+                    </div>
+                    
+                    <!-- 5 champs fixes pour les mots -->
+                    <div class="mb-3">
+                        <label class="form-label" style="color: #0066cc; font-weight: bold;">Mot 1 : (obligatoire)</label>
+                        <input type="text" name="word_search_words[]" class="form-control" 
+                               style="border: 2px solid #0066cc;" 
+                               placeholder="Entrez le premier mot ou plusieurs mots séparés par des virgules" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label" style="color: #0066cc; font-weight: bold;">Mot 2 : (obligatoire)</label>
+                        <input type="text" name="word_search_words[]" class="form-control" 
+                               style="border: 2px solid #0066cc;" 
+                               placeholder="Entrez le deuxième mot" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label" style="color: #0066cc; font-weight: bold;">Mot 3 : (obligatoire)</label>
+                        <input type="text" name="word_search_words[]" class="form-control" 
+                               style="border: 2px solid #0066cc;" 
+                               placeholder="Entrez le troisième mot" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label" style="color: #666; font-weight: normal;">Mot 4 : (optionnel)</label>
+                        <input type="text" name="word_search_words[]" class="form-control" 
+                               style="border: 2px solid #ccc;" 
+                               placeholder="Mot optionnel">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label" style="color: #666; font-weight: normal;">Mot 5 : (optionnel)</label>
+                        <input type="text" name="word_search_words[]" class="form-control" 
+                               style="border: 2px solid #ccc;" 
+                               placeholder="Mot optionnel">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Taille de la grille</label>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label">Largeur</label>
+                        <input type="number" name="grid_width" class="form-control" value="15" min="10" max="20">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Hauteur</label>
+                        <input type="number" name="grid_height" class="form-control" value="15" min="10" max="20">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Association de paires -->
+        <div id="pairs_section" class="exercise-type-section" style="display: none;">
+            <h3>Association de paires</h3>
+            <p class="text-muted">Créez des paires d'éléments à associer. Chaque élément peut être du texte ou une image.</p>
+            
+            <div id="pairs_container">
+                <div class="pair-item mb-4 border p-3 rounded" data-pair-id="1">
+                    <h5>Paire 1</h5>
+                    <div class="row">
+                        <!-- Élément de gauche -->
+                        <div class="col-md-6">
+                            <label class="form-label">Élément de gauche</label>
+                            <div class="mb-2">
+                                <select class="form-select pair-left-type" name="pair_left_type_1" onchange="togglePairInput(this, 'left')">
+                                    <option value="text">Texte</option>
+                                    <option value="image">Image</option>
+                                </select>
+                            </div>
+                            <div class="pair-left-text">
+                                <input type="text" class="form-control" name="pair_left_1" placeholder="Entrez le texte">
+                            </div>
+                            <div class="pair-left-image" style="display: none;">
+                                <input type="file" class="form-control" name="pair_left_image_1" accept="image/*">
+                            </div>
+                        </div>
+                        
+                        <!-- Élément de droite -->
+                        <div class="col-md-6">
+                            <label class="form-label">Élément de droite</label>
+                            <div class="mb-2">
+                                <select class="form-select pair-right-type" name="pair_right_type_1" onchange="togglePairInput(this, 'right')">
+                                    <option value="text">Texte</option>
+                                    <option value="image">Image</option>
+                                </select>
+                            </div>
+                            <div class="pair-right-text">
+                                <input type="text" class="form-control" name="pair_right_1" placeholder="Entrez le texte">
+                            </div>
+                            <div class="pair-right-image" style="display: none;">
+                                <input type="file" class="form-control" name="pair_right_image_1" accept="image/*">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="button" class="btn btn-primary mb-3" onclick="addPair()">
+                <i class="bi bi-plus-circle"></i> Ajouter une paire
+            </button>
+        </div>
+
+        <!-- Section Souligner les mots -->
+        <div id="underline_words_section" class="exercise-type-section" style="display: none;">
+            <h3>Souligner les mots</h3>
+            
+            <!-- Image optionnelle pour Souligner les mots -->
+            <div class="mb-4 p-3" style="border: 2px dashed #dc3545; border-radius: 8px; background-color: #f8f9fa;">
+                <h5 class="text-danger"><i class="bi bi-image"></i> Image d'illustration (optionnel)</h5>
+                <p class="text-muted mb-3">Ajoutez une image pour accompagner votre exercice (texte, document, support visuel...)</p>
+                <div class="mb-3">
+                    <input type="file" class="form-control" name="underline_words_image" accept="image/*" id="underline_words_image_input">
+                    <small class="text-muted">Formats acceptés : JPG, PNG, GIF (max 5MB)</small>
+                </div>
+                <div id="underline_words_image_preview" style="display: none;">
+                    <img id="underline_words_image_preview_img" src="" alt="Aperçu" class="img-thumbnail" style="max-width: 300px; max-height: 200px;">
+                    <button type="button" class="btn btn-sm btn-danger ms-2" onclick="removeUnderlineWordsImage()">Supprimer</button>
+                </div>
+            </div>
+            
+            <div id="underline_sentences_container">
+                <div class="sentence-item mb-3">
+                    <label class="form-label">Phrase 1</label>
+                    <div class="row">
+                        <div class="col-md-8">
+                            <input type="text" class="form-control" name="underline_sentences[]" 
+                                   placeholder="Entrez une phrase">
+                        </div>
+                        <div class="col-md-4">
+                            <input type="text" class="form-control" name="underline_words[]" 
+                                   placeholder="Mots à souligner (séparés par des virgules)">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="button" class="btn btn-primary mb-3" onclick="addUnderlineSentence()">
+                <i class="bi bi-plus-circle"></i> Ajouter une phrase
+            </button>
+        </div>
+
+        <!-- Section Dictée -->
+        <div id="dictation_section" class="exercise-type-section" style="display: none;">
+            <h3>Dictée</h3>
+            <p class="text-muted">Écoute et écris sans faute. Ne mets pas de majuscule.</p>
+            
+            <div class="mb-3">
+                <label class="form-label">Instructions personnalisées (optionnel)</label>
+                <input type="text" class="form-control" name="dictation_instructions" 
+                       placeholder="Écoute et écris sans faute. Ne mets pas de majuscule.">
+            </div>
+            
+            <div id="dictation_sentences_container">
+                <div class="dictation-item mb-4 p-3" style="border: 1px solid #ddd; border-radius: 8px; background-color: #f8f9fa;">
+                    <h5>Phrase 1</h5>
+                    <div class="row">
+                        <div class="col-md-8">
+                            <label class="form-label">Texte de la phrase</label>
+                            <input type="text" class="form-control" name="dictation_sentences[]" 
+                                   placeholder="Entrez la phrase à dicter" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Fichier audio (optionnel)</label>
+                            <input type="file" class="form-control" name="dictation_audio_0" 
+                                   accept="audio/*" title="Uploadez un fichier audio MP3 ou WAV">
+                            <small class="text-muted">Formats acceptés : MP3, WAV</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="button" class="btn btn-primary mb-3" onclick="addDictationSentence()">
+                <i class="bi bi-plus-circle"></i> Ajouter une phrase
+            </button>
+        </div>
+
+        <!-- Section Glisser-déposer -->
+        <div id="drag_and_drop_section" class="exercise-type-section" style="display: none;">
+            <h3>Glisser-déposer</h3>
+            <p class="text-muted">Créez des éléments à faire glisser et des zones de dépôt.</p>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <h4>Éléments à glisser</h4>
+                    <div id="drag_items_container">
+                        <div class="input-group mb-2">
+                            <input type="text" name="drag_items[]" class="form-control" placeholder="Entrez un élément à glisser" required>
+                            <button type="button" class="btn btn-danger" onclick="this.closest('.input-group').remove()">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="addDragItem()">
+                        <i class="bi bi-plus-circle"></i> Ajouter un élément
+                    </button>
+                </div>
+                
+                <div class="col-md-6">
+                    <h4>Zones de dépôt</h4>
+                    <div id="drop_zones_container">
+                        <div class="input-group mb-2">
+                            <input type="text" name="drop_zones[]" class="form-control" placeholder="Entrez une zone de dépôt" required>
+                            <button type="button" class="btn btn-danger" onclick="this.closest('.input-group').remove()">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="addDropZone()">
+                        <i class="bi bi-plus-circle"></i> Ajouter une zone
+                    </button>
+                </div>
+            </div>
+            
+            <div class="mt-4">
+                <h4>Ordre correct</h4>
+                <p class="text-muted">Spécifiez l'ordre correct des éléments (numérotation à partir de 0).</p>
+                <div id="correct_order_container">
+                    <input type="text" name="correct_order" class="form-control" placeholder="Ex: 1,0,2,3 (ordre des éléments dans les zones)" required>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Légende -->
+        <div id="legend_section" class="exercise-type-section" style="display: none;">
+            <h3>Exercice de légende</h3>
+            <p class="text-muted">Créez un exercice où les élèves doivent placer des légendes aux bons endroits sur une image.</p>
+            
+            <!-- Sélection du mode d'exercice -->
+            <div class="mb-4">
+                <label class="form-label">Mode d'exercice</label>
+                <select class="form-select" id="legend_mode" name="legend_mode" onchange="changeLegendMode()">
+                    <option value="classic">Classique - Zones libres sur l'image</option>
+                    <option value="grid">Quadrillage - Grille superposée à l'image</option>
+                    <option value="spatial">Spatial - Zones prédéfinies sur l'image</option>
+                </select>
+                <div class="form-text">Choisissez le type d'interaction pour votre exercice de légende</div>
+            </div>
+            
+            <!-- Instructions personnalisées -->
+            <div class="mb-4">
+                <label class="form-label">Instructions</label>
+                <textarea class="form-control" 
+                         id="legend_instructions" 
+                         name="legend_instructions" 
+                         rows="3" 
+                         placeholder="Les instructions seront générées automatiquement selon le mode choisi, mais vous pouvez les personnaliser ici."></textarea>
+            </div>
+            
+            <div class="alert alert-info" role="alert">
+                <i class="fas fa-info-circle"></i>
+                <strong>Instructions :</strong>
+                <ol class="mb-0 mt-2">
+                    <li>Uploadez une image principale (obligatoire)</li>
+                    <li>Cliquez sur l'image pour placer des zones de légende</li>
+                    <li>Pour chaque zone, saisissez le texte de la légende correspondante</li>
+                </ol>
+            </div>
+
+            <!-- Instructions personnalisées -->
+            <div class="mb-3">
+                <label for="legend_instructions" class="form-label">Instructions</label>
+                <textarea class="form-control" id="legend_instructions" name="legend_instructions" rows="2" placeholder="Placez les légendes aux bons endroits sur l'image."></textarea>
+                <div class="form-text">Instructions qui seront affichées aux élèves</div>
+            </div>
+
+            <!-- Upload d'image principale -->
+            <div class="mb-4">
+                <label class="form-label">Image principale (obligatoire)</label>
+                <input type="file" 
+                       class="form-control" 
+                       id="legend_main_image" 
+                       name="legend_main_image" 
+                       accept=".jpg,.jpeg,.png,.gif"
+                       onchange="previewLegendMainImage(this)"
+                       required>
+                <div class="form-text">Ajoutez l'image principale à légender (formats acceptés : JPG, PNG, GIF, max 5MB)</div>
+                <div id="legend-main-image-preview" class="mt-2" style="display: none;">
+                    <img id="preview-legend-main-img" src="" alt="Prévisualisation" class="img-thumbnail" style="max-width: 300px; max-height: 300px;">
+                    <p id="preview-legend-main-filename" class="small text-muted mt-1"></p>
+                </div>
+            </div>
+            
+            <!-- Section Mode Quadrillage -->
+            <div id="legend-grid-section" class="legend-mode-section" style="display: none;">
+                <h4 class="text-primary">Configuration du quadrillage</h4>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label">Nombre de lignes</label>
+                        <input type="number" class="form-control" id="grid_rows" name="grid_rows" value="4" min="2" max="10">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Nombre de colonnes</label>
+                        <input type="number" class="form-control" id="grid_cols" name="grid_cols" value="4" min="2" max="10">
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <h5>Éléments à placer dans la grille</h5>
+                    <div id="grid-elements-container">
+                        <div class="grid-element-item border p-3 mb-3 rounded">
+                            <h6>Élément 1</h6>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label class="form-label">Type</label>
+                                    <select class="form-select" name="grid_element_1_type" onchange="toggleGridElementType(this, 1)">
+                                        <option value="text">Texte</option>
+                                        <option value="image">Image</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Ligne cible</label>
+                                    <input type="number" class="form-control" name="grid_element_1_target_row" min="1" max="10" value="1">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Colonne cible</label>
+                                    <input type="number" class="form-control" name="grid_element_1_target_col" min="1" max="10" value="1">
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <div class="grid-element-text">
+                                    <label class="form-label">Texte de l'élément</label>
+                                    <input type="text" class="form-control" name="grid_element_1_text" placeholder="Entrez le texte">
+                                </div>
+                                <div class="grid-element-image" style="display: none;">
+                                    <label class="form-label">Image de l'élément</label>
+                                    <input type="file" class="form-control" name="grid_element_1_image" accept="image/*">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-outline-primary" onclick="addGridElement()">Ajouter un élément</button>
+                </div>
+            </div>
+            
+            <!-- Section Mode Spatial -->
+            <div id="legend-spatial-section" class="legend-mode-section" style="display: none;">
+                <h4 class="text-success">Configuration des zones spatiales</h4>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Mode spatial :</strong> Définissez des zones prédéfinies sur l'image où les éléments peuvent être déposés.
+                </div>
+                
+                <div class="mt-4">
+                    <h5>Zones de dépôt</h5>
+                    <div id="spatial-zones-container">
+                        <div class="spatial-zone-item border p-3 mb-3 rounded">
+                            <h6>Zone 1</h6>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label class="form-label">Position X (%)</label>
+                                    <input type="number" class="form-control" name="zone_0_x" min="0" max="100" value="10">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Position Y (%)</label>
+                                    <input type="number" class="form-control" name="zone_0_y" min="0" max="100" value="10">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Nom de la zone</label>
+                                    <input type="text" class="form-control" name="zone_0_legend" placeholder="Nom de la zone">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-outline-success" onclick="addSpatialZone()">Ajouter une zone</button>
+                </div>
+                
+                <div class="mt-4">
+                    <h5>Éléments à placer</h5>
+                    <div id="spatial-elements-container">
+                        <div class="spatial-element-item border p-3 mb-3 rounded">
+                            <h6>Élément 1</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label">Type</label>
+                                    <select class="form-select" name="spatial_element_1_type" onchange="toggleSpatialElementType(this, 1)">
+                                        <option value="text">Texte</option>
+                                        <option value="image">Image</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Zone cible</label>
+                                    <select class="form-select" name="spatial_element_1_target_zone">
+                                        <option value="0">Zone 1</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <div class="spatial-element-text">
+                                    <label class="form-label">Texte de l'élément</label>
+                                    <input type="text" class="form-control" name="spatial_element_1_text" placeholder="Entrez le texte">
+                                </div>
+                                <div class="spatial-element-image" style="display: none;">
+                                    <label class="form-label">Image de l'élément</label>
+                                    <input type="file" class="form-control" name="spatial_element_1_image" accept="image/*">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-outline-success" onclick="addSpatialElement()">Ajouter un élément</button>
+                </div>
+            </div>
+
+            <!-- Zone interactive pour placer les légendes -->
+            <div class="mb-4">
+                <label class="form-label">Zones de légende</label>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Comment ajouter des zones :</strong>
+                    <ol class="mb-0 mt-2">
+                        <li>Uploadez d'abord une image principale</li>
+                        <li>Cliquez sur l'image pour placer une zone de légende</li>
+                        <li>Saisissez le texte de la légende dans le champ qui apparaît</li>
+                        <li>Répétez pour ajouter d'autres zones</li>
+                    </ol>
+                </div>
+                
+                <div id="legend-editor" class="border rounded p-3" style="min-height: 400px; background-color: #f8f9fa;">
+                    <div id="legend-image-container" style="position: relative; display: inline-block;">
+                        <p class="text-muted">Uploadez une image pour commencer à placer des zones de légende</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Liste des zones créées -->
+            <div class="mb-4">
+                <label class="form-label">Légendes créées</label>
+                <div id="legend-zones-list" class="border rounded p-3" style="min-height: 100px; background-color: #f8f9fa;">
+                    <p class="text-muted">Aucune zone de légende créée. Cliquez sur l'image pour en ajouter.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Étiquetage d'image -->
+        <div id="image_labeling_section" class="exercise-type-section" style="display: none;">
+            <h3>Étiquetage d'image</h3>
+            <p class="text-muted">Créez un exercice où les élèves doivent placer des étiquettes aux bons endroits sur une image.</p>
+            
+            <!-- Upload de l'image principale -->
+            <div class="mb-4 p-3" style="border: 2px dashed #17a2b8; border-radius: 8px; background-color: #f8f9fa;">
+                <h5 class="text-info"><i class="bi bi-image"></i> Image principale</h5>
+                <p class="text-muted mb-3">Uploadez l'image sur laquelle les étiquettes seront placées</p>
+                <div class="mb-3">
+                    <input type="file" class="form-control" name="main_image" accept="image/*" id="main_image_input_create" onchange="previewMainImageCreate(this)" required>
+                    <small class="text-muted">Formats acceptés : JPG, PNG, GIF (max 5MB)</small>
+                </div>
+                <div id="main_image_preview_create" style="display: none;">
+                    <img id="main_image_preview_img_create" src="" alt="Aperçu" class="img-thumbnail" style="max-width: 400px; max-height: 300px;">
+                    <button type="button" class="btn btn-sm btn-danger ms-2" onclick="removeMainImageCreate()">Supprimer</button>
+                </div>
+            </div>
+            
+            <!-- Interface interactive pour créer l'exercice -->
+            <div id="interactive_image_editor_create" style="display: none;">
+                <div class="row">
+                    <!-- Colonne gauche : Image avec zones -->
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="bi bi-image"></i> Image à légender</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="image_container_create" style="position: relative; display: inline-block;">
+                                    <img id="editor_image_create" src="" alt="Image à légender" 
+                                         style="max-width: 100%; height: auto; cursor: crosshair;"
+                                         onclick="addZoneOnImageCreate(event)">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Colonne droite : Gestion des étiquettes et zones -->
+                    <div class="col-md-4">
+                        <!-- Étiquettes -->
+                        <div class="card mb-3">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6><i class="bi bi-tags"></i> Étiquettes</h6>
+                                <button type="button" class="btn btn-sm btn-success" onclick="addLabelCreate()">
+                                    <i class="bi bi-plus"></i> Ajouter
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div id="labels_list_create">
+                                    <p class="text-muted">Aucune étiquette ajoutée</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Zones -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h6><i class="bi bi-geo-alt"></i> Zones de placement</h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="zones_list_create">
+                                    <p class="text-muted">Cliquez sur l'image pour placer des zones</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Instructions d'aide -->
+            <div class="alert alert-info">
+                <h6><i class="bi bi-info-circle"></i> Comment créer votre exercice :</h6>
+                <ol class="mb-0">
+                    <li><strong>Uploadez une image</strong> ci-dessus</li>
+                    <li><strong>Ajoutez des étiquettes</strong> avec le bouton vert</li>
+                    <li><strong>Cliquez sur l'image</strong> pour placer les zones où les étiquettes doivent être déposées</li>
+                    <li><strong>Associez chaque zone</strong> à une étiquette</li>
+                    <li><strong>Créez l'exercice</strong> avec le bouton en bas</li>
+                </ol>
+            </div>
+            
+            <!-- Champs cachés pour la soumission -->
+            <div id="hidden_fields_create"></div>
+        </div>
+
+        <!-- Section Flashcards (Cartes mémoire) -->
+        <div id="flashcards_section" class="exercise-type-section" style="display: none;">
+            <h3>Cartes mémoire (Flashcards)</h3>
+            <p class="text-muted">Créez des cartes avec questions et réponses. Chaque carte peut avoir une image optionnelle.</p>
+            
+            <div id="flashcards_container">
+                <!-- Carte par défaut -->
+                <div class="card mb-3 flashcard-item" data-card-index="0">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Carte 1</h5>
+                        <button type="button" class="btn btn-danger btn-sm" onclick="removeFlashcard(this)">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Question</label>
+                                <textarea class="form-control" name="card_questions[]" rows="3" 
+                                          placeholder="Entrez la question..." required></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Réponse correcte</label>
+                                <input type="text" class="form-control" name="card_answers[]" 
+                                       placeholder="Réponse attendue..." required>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Image (optionnelle)</label>
+                                <input type="file" class="form-control" name="card_images[]" 
+                                       accept="image/*" onchange="previewFlashcardImage(this)">
+                            </div>
+                            <div class="col-md-6">
+                                <div class="image-preview-container"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mb-3">
+                <button type="button" class="btn btn-primary" onclick="addFlashcard()">
+                    <i class="fas fa-plus me-2"></i>
+                    Ajouter une carte
+                </button>
+            </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <button type="submit" class="btn btn-success btn-lg">Créer l'exercice</button>
+            <button type="button" class="btn btn-primary btn-lg ms-3" onclick="testFormSubmission()">Test Submit</button>
+            <button type="button" class="btn btn-warning btn-lg ms-3" onclick="directSubmit()">Submit Direct</button>
+        </div>
+    </form>
+</div>
+
+<script>
+// Fonction pour afficher/masquer les sections selon le type d'exercice
+function showExerciseType() {
+    const exerciseType = document.getElementById('exercise_type').value;
+    const sections = document.querySelectorAll('.exercise-type-section');
+    
+    sections.forEach(section => section.style.display = 'none');
+
+    if (exerciseType) {
+        const targetSection = document.getElementById(exerciseType + '_section');
+        if (targetSection) {
+            targetSection.style.display = 'block';
+        }
+    }
+}
+
+// Fonction pour ajouter une question QCM
+function addQuestion() {
+    const container = document.getElementById('questions_container');
+    const questionCount = container.children.length;
+    
+    const questionDiv = document.createElement('div');
+    questionDiv.className = 'card mb-3 p-3';
+    questionDiv.innerHTML = `
+        <div class="mb-3">
+            <label class="form-label">Question ${questionCount + 1}</label>
+            <input type="text" class="form-control" name="question_${questionCount}" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Options</label>
+            <div style="background: yellow; padding: 5px; margin: 5px 0;">🔥 TEMPLATE SIMPLE CORRIGÉ - 3 OPTIONS AVEC RADIO 🔥</div>
+            <div class="options-container">
+                <div class="input-group mb-2">
+                    <div class="input-group-text">
+                        <input class="form-check-input" type="radio" name="correct_${questionCount}" value="0">
+                    </div>
+                    <input type="text" class="form-control" name="option_${questionCount}_0" placeholder="Option A" required>
+                </div>
+                <div class="input-group mb-2">
+                    <div class="input-group-text">
+                        <input class="form-check-input" type="radio" name="correct_${questionCount}" value="1">
+                    </div>
+                    <input type="text" class="form-control" name="option_${questionCount}_1" placeholder="Option B" required>
+                </div>
+                <div class="input-group mb-2">
+                    <div class="input-group-text">
+                        <input class="form-check-input" type="radio" name="correct_${questionCount}" value="2">
+                    </div>
+                    <input type="text" class="form-control" name="option_${questionCount}_2" placeholder="Option C" required>
+                </div>
+            </div>
+            <div class="mt-2">
+                <button type="button" class="btn btn-outline-primary btn-sm" onclick="addOption(this)">
+                    <i class="fas fa-plus"></i> Ajouter une option
+                </button>
+            </div>
+        </div>
+        <button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.card').remove()">
+            Supprimer cette question
+        </button>
+    `;
+    container.appendChild(questionDiv);
+}
+
+// Fonction pour ajouter un mot (Mots mêlés) - VERSION SIMPLE ET DIRECTE
+function addWord() {
+    console.log('[DEBUG] addWord() appelée - VERSION SIMPLE');
+    
+    // Trouver le conteneur existant
+    const container = document.getElementById('words_container');
+    if (!container) {
+        console.error('[DEBUG] Conteneur words_container introuvable');
+        return;
+    }
+    
+    console.log('[DEBUG] Conteneur trouvé:', container);
+    
+    // Créer un nouveau champ de mot
+    const newDiv = document.createElement('div');
+    newDiv.className = 'input-group mb-2';
+    newDiv.innerHTML = `
+        <input type="text" name="word_search_words[]" class="form-control" placeholder="Entrez un mot">
+        <button type="button" class="btn btn-outline-danger" onclick="removeWord(this)">
+            <i class="bi bi-trash"></i>
+        </button>
+    `;
+    
+    // Ajouter le nouveau champ
+    container.appendChild(newDiv);
+    console.log('[DEBUG] Nouveau champ ajouté');
+    
+    // Focus sur le nouveau champ
+    const newInput = newDiv.querySelector('input');
+    if (newInput) {
+        newInput.focus();
+        console.log('[DEBUG] Focus mis sur le nouveau champ');
+    }
+}
+
+// Fonction pour supprimer un mot (Mots mêlés)
+function removeWord(button) {
+    console.log('[DEBUG] removeWord() appelée');
+    const container = document.getElementById('words_container');
+    const wordDiv = button.closest('.input-group');
+    
+    // Ne pas supprimer s'il n'y a qu'un seul champ
+    if (container && container.children.length > 1) {
+        wordDiv.remove();
+        console.log('[DEBUG] Champ supprimé');
+    } else {
+        console.log('[DEBUG] Impossible de supprimer le dernier champ');
+    }
+}
+
+
+// Fonction pour ajouter une phrase (Texte à trous)
+function addFillInBlanksSentence() {
+    const container = document.getElementById('fill_in_blanks_container');
+    const sentenceCount = container.children.length;
+    
+    const sentenceDiv = document.createElement('div');
+    sentenceDiv.className = 'sentence-block mb-3';
+    sentenceDiv.innerHTML = `
+        <label class="form-label">Phrase ${sentenceCount + 1}</label>
+        <div class="input-group">
+            <input type="text" class="form-control" name="fill_in_blanks_sentences[]" 
+                   placeholder="Entrez une phrase avec des trous (ex: Le chat ___ sur le tapis)" required>
+            <button type="button" class="btn btn-danger" onclick="this.closest('.sentence-block').remove(); updateFillInBlanksLabels()">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    `;
+    container.appendChild(sentenceDiv);
+}
+
+// Fonction pour ajouter un mot de réponse (Texte à trous)
+function addFillInBlanksWord() {
+    const container = document.getElementById('fill_in_blanks_words_container');
+    const wordDiv = document.createElement('div');
+    wordDiv.className = 'input-group mb-2';
+    wordDiv.innerHTML = `
+        <input type="text" name="fill_in_blanks_words[]" class="form-control" placeholder="Entrez un mot de réponse" required>
+        <button type="button" class="btn btn-danger" onclick="this.closest('.input-group').remove()">
+            <i class="bi bi-trash"></i>
+        </button>
+    `;
+    container.appendChild(wordDiv);
+}
+
+// Fonction pour ajouter une phrase (Souligner les mots)
+function addUnderlineSentence() {
+    const container = document.getElementById('underline_sentences_container');
+    const sentenceCount = container.children.length;
+    
+    const sentenceDiv = document.createElement('div');
+    sentenceDiv.className = 'sentence-item mb-3';
+    sentenceDiv.innerHTML = `
+        <label class="form-label">Phrase ${sentenceCount + 1}</label>
+        <div class="row">
+            <div class="col-md-8">
+                <input type="text" class="form-control" name="underline_sentences[]" 
+                       placeholder="Entrez une phrase" required>
+            </div>
+            <div class="col-md-4">
+                <input type="text" class="form-control" name="underline_words[]" 
+                       placeholder="Mots à souligner (séparés par des virgules)" required>
+            </div>
+        </div>
+        <button type="button" class="btn btn-outline-danger btn-sm mt-2" onclick="this.closest('.sentence-item').remove(); updateUnderlineLabels()">
+            <i class="bi bi-trash"></i> Supprimer cette phrase
+        </button>
+    `;
+    container.appendChild(sentenceDiv);
+}
+
+// Fonction pour mettre à jour les labels des phrases (Texte à trous)
+function updateFillInBlanksLabels() {
+    const container = document.getElementById('fill_in_blanks_container');
+    const sentences = container.querySelectorAll('.sentence-block');
+    
+    sentences.forEach((sentence, index) => {
+        const label = sentence.querySelector('label');
+        label.textContent = `Phrase ${index + 1}`;
+    });
+}
+
+// Fonction pour mettre à jour les labels des phrases (Souligner les mots)
+function updateUnderlineLabels() {
+    const container = document.getElementById('underline_sentences_container');
+    const sentences = container.querySelectorAll('.sentence-item');
+    
+    sentences.forEach((sentence, index) => {
+        const label = sentence.querySelector('label');
+        label.textContent = `Phrase ${index + 1}`;
+    });
+}
+
+// Fonction pour ajouter une option dynamiquement (QCM)
+function addOption(button) {
+    const questionCard = button.closest('.card');
+    const optionsContainer = questionCard.querySelector('.options-container');
+    const questionIndex = Array.from(document.getElementById('questions_container').children).indexOf(questionCard);
+    
+    // Compter le nombre d'options existantes
+    const existingOptions = optionsContainer.querySelectorAll('.input-group');
+    const optionIndex = existingOptions.length;
+    
+    // Générer la lettre de l'option (A, B, C, D, E, F...)
+    const optionLetter = String.fromCharCode(65 + optionIndex); // A=65, B=66, etc.
+    
+    // Créer la nouvelle option
+    const newOptionDiv = document.createElement('div');
+    newOptionDiv.className = 'input-group mb-2';
+    newOptionDiv.innerHTML = `
+        <div class="input-group-text">
+            <input class="form-check-input" type="radio" name="correct_${questionIndex}" value="${optionIndex}">
+        </div>
+        <input type="text" class="form-control" name="option_${questionIndex}_${optionIndex}" placeholder="Option ${optionLetter}" required>
+        <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeOption(this)">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    // Ajouter la nouvelle option avant le bouton "Ajouter une option"
+    optionsContainer.appendChild(newOptionDiv);
+    
+    console.log(`Option ${optionLetter} ajoutée à la question ${questionIndex + 1}`);
+}
+
+// Fonction pour supprimer une option (QCM)
+function removeOption(button) {
+    const optionDiv = button.closest('.input-group');
+    const questionCard = button.closest('.card');
+    const optionsContainer = questionCard.querySelector('.options-container');
+    
+    // Vérifier qu'il reste au moins 2 options
+    const remainingOptions = optionsContainer.querySelectorAll('.input-group');
+    if (remainingOptions.length <= 2) {
+        alert('Une question doit avoir au moins 2 options.');
+        return;
+    }
+    
+    // Supprimer l'option
+    optionDiv.remove();
+    
+    // Mettre à jour les indices et placeholders des options restantes
+    updateOptionIndices(questionCard);
+}
+
+// Fonction pour mettre à jour les indices des options après suppression
+function updateOptionIndices(questionCard) {
+    const optionsContainer = questionCard.querySelector('.options-container');
+    const options = optionsContainer.querySelectorAll('.input-group');
+    const questionIndex = Array.from(document.getElementById('questions_container').children).indexOf(questionCard);
+    
+    options.forEach((option, index) => {
+        const radio = option.querySelector('input[type="radio"]');
+        const textInput = option.querySelector('input[type="text"]');
+        const optionLetter = String.fromCharCode(65 + index); // A, B, C, D...
+        
+        // Mettre à jour les attributs
+        radio.value = index;
+        textInput.name = `option_${questionIndex}_${index}`;
+        textInput.placeholder = `Option ${optionLetter}`;
+    });
+}
+
+// Fonctions pour gérer l'aperçu des images
+function setupImagePreview(inputId, previewId, previewImgId) {
+    const input = document.getElementById(inputId);
+    if (input) {
+        input.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById(previewId);
+                    const previewImg = document.getElementById(previewImgId);
+                    
+                    previewImg.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+}
+
+// Fonctions de suppression d'images
+function removeQcmImage() {
+    const input = document.getElementById('qcm_image_input');
+    const preview = document.getElementById('qcm_image_preview');
+    
+    input.value = '';
+    preview.style.display = 'none';
+}
+
+function removeFillInBlanksImage() {
+    const input = document.getElementById('fill_in_blanks_image_input');
+    const preview = document.getElementById('fill_in_blanks_image_preview');
+    
+    input.value = '';
+    preview.style.display = 'none';
+}
+
+function removeUnderlineWordsImage() {
+    const input = document.getElementById('underline_words_image_input');
+    const preview = document.getElementById('underline_words_image_preview');
+    
+    input.value = '';
+    preview.style.display = 'none';
+}
+
+// Variables globales pour la gestion des légendes
+let legendZoneCounter = 0;
+let currentLegendZone = null;
+let gridElementCounter = 1;
+let spatialZoneCounter = 0;
+let spatialElementCounter = 1;
+
+// Fonction pour changer le mode de légende
+function changeLegendMode() {
+    const mode = document.getElementById('legend_mode').value;
+    const instructions = document.getElementById('legend_instructions');
+    
+    // Masquer toutes les sections de mode
+    document.querySelectorAll('.legend-mode-section').forEach(section => {
+        section.style.display = 'none';
+    });
+    
+    // Afficher la section correspondante et mettre à jour les instructions
+    if (mode === 'grid') {
+        document.getElementById('legend-grid-section').style.display = 'block';
+        if (!instructions.value) {
+            instructions.value = 'Déplacez les éléments vers les bonnes cases du quadrillage.';
+        }
+    } else if (mode === 'spatial') {
+        document.getElementById('legend-spatial-section').style.display = 'block';
+        if (!instructions.value) {
+            instructions.value = 'Placez les éléments dans les bonnes zones.';
+        }
+    } else {
+        // Mode classique - afficher la zone interactive
+        if (!instructions.value) {
+            instructions.value = 'Placez les légendes aux bons endroits sur l\'image.';
+        }
+    }
+}
+
+// Fonctions pour le mode quadrillage
+function addGridElement() {
+    gridElementCounter++;
+    const container = document.getElementById('grid-elements-container');
+    
+    const elementDiv = document.createElement('div');
+    elementDiv.className = 'grid-element-item border p-3 mb-3 rounded';
+    elementDiv.innerHTML = `
+        <h6>Élément ${gridElementCounter}</h6>
+        <div class="row">
+            <div class="col-md-4">
+                <label class="form-label">Type</label>
+                <select class="form-select" name="grid_element_${gridElementCounter}_type" onchange="toggleGridElementType(this, ${gridElementCounter})">
+                    <option value="text">Texte</option>
+                    <option value="image">Image</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Ligne cible</label>
+                <input type="number" class="form-control" name="grid_element_${gridElementCounter}_target_row" min="1" max="10" value="1">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Colonne cible</label>
+                <input type="number" class="form-control" name="grid_element_${gridElementCounter}_target_col" min="1" max="10" value="1">
+            </div>
+        </div>
+        <div class="mt-3">
+            <div class="grid-element-text">
+                <label class="form-label">Texte de l'élément</label>
+                <input type="text" class="form-control" name="grid_element_${gridElementCounter}_text" placeholder="Entrez le texte">
+            </div>
+            <div class="grid-element-image" style="display: none;">
+                <label class="form-label">Image de l'élément</label>
+                <input type="file" class="form-control" name="grid_element_${gridElementCounter}_image" accept="image/*">
+            </div>
+        </div>
+        <button type="button" class="btn btn-outline-danger btn-sm mt-2" onclick="this.closest('.grid-element-item').remove()">
+            <i class="fas fa-trash"></i> Supprimer cet élément
+        </button>
+    `;
+    
+    container.appendChild(elementDiv);
+}
+
+function toggleGridElementType(select, elementId) {
+    const parent = select.closest('.grid-element-item');
+    const textDiv = parent.querySelector('.grid-element-text');
+    const imageDiv = parent.querySelector('.grid-element-image');
+    
+    if (select.value === 'text') {
+        textDiv.style.display = 'block';
+        imageDiv.style.display = 'none';
+    } else {
+        textDiv.style.display = 'none';
+        imageDiv.style.display = 'block';
+    }
+}
+
+// Fonctions pour le mode spatial
+function addSpatialZone() {
+    spatialZoneCounter++;
+    const container = document.getElementById('spatial-zones-container');
+    
+    const zoneDiv = document.createElement('div');
+    zoneDiv.className = 'spatial-zone-item border p-3 mb-3 rounded';
+    zoneDiv.innerHTML = `
+        <h6>Zone ${spatialZoneCounter + 1}</h6>
+        <div class="row">
+            <div class="col-md-4">
+                <label class="form-label">Position X (%)</label>
+                <input type="number" class="form-control" name="zone_${spatialZoneCounter}_x" min="0" max="100" value="10">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Position Y (%)</label>
+                <input type="number" class="form-control" name="zone_${spatialZoneCounter}_y" min="0" max="100" value="10">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Nom de la zone</label>
+                <input type="text" class="form-control" name="zone_${spatialZoneCounter}_legend" placeholder="Nom de la zone">
+            </div>
+        </div>
+        <button type="button" class="btn btn-outline-danger btn-sm mt-2" onclick="removeSpatialZone(this)">
+            <i class="fas fa-trash"></i> Supprimer cette zone
+        </button>
+    `;
+    
+    container.appendChild(zoneDiv);
+    updateSpatialElementTargets();
+}
+
+function removeSpatialZone(button) {
+    button.closest('.spatial-zone-item').remove();
+    updateSpatialElementTargets();
+}
+
+function addSpatialElement() {
+    spatialElementCounter++;
+    const container = document.getElementById('spatial-elements-container');
+    
+    const elementDiv = document.createElement('div');
+    elementDiv.className = 'spatial-element-item border p-3 mb-3 rounded';
+    elementDiv.innerHTML = `
+        <h6>Élément ${spatialElementCounter}</h6>
+        <div class="row">
+            <div class="col-md-6">
+                <label class="form-label">Type</label>
+                <select class="form-select" name="spatial_element_${spatialElementCounter}_type" onchange="toggleSpatialElementType(this, ${spatialElementCounter})">
+                    <option value="text">Texte</option>
+                    <option value="image">Image</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Zone cible</label>
+                <select class="form-select" name="spatial_element_${spatialElementCounter}_target_zone">
+                    <!-- Options mises à jour dynamiquement -->
+                </select>
+            </div>
+        </div>
+        <div class="mt-3">
+            <div class="spatial-element-text">
+                <label class="form-label">Texte de l'élément</label>
+                <input type="text" class="form-control" name="spatial_element_${spatialElementCounter}_text" placeholder="Entrez le texte">
+            </div>
+            <div class="spatial-element-image" style="display: none;">
+                <label class="form-label">Image de l'élément</label>
+                <input type="file" class="form-control" name="spatial_element_${spatialElementCounter}_image" accept="image/*">
+            </div>
+        </div>
+        <button type="button" class="btn btn-outline-danger btn-sm mt-2" onclick="this.closest('.spatial-element-item').remove()">
+            <i class="fas fa-trash"></i> Supprimer cet élément
+        </button>
+    `;
+    
+    container.appendChild(elementDiv);
+    updateSpatialElementTargets();
+}
+
+function toggleSpatialElementType(select, elementId) {
+    const parent = select.closest('.spatial-element-item');
+    const textDiv = parent.querySelector('.spatial-element-text');
+    const imageDiv = parent.querySelector('.spatial-element-image');
+    
+    if (select.value === 'text') {
+        textDiv.style.display = 'block';
+        imageDiv.style.display = 'none';
+    } else {
+        textDiv.style.display = 'none';
+        imageDiv.style.display = 'block';
+    }
+}
+
+function updateSpatialElementTargets() {
+    const zones = document.querySelectorAll('.spatial-zone-item');
+    const elementSelects = document.querySelectorAll('[name*="spatial_element_"][name*="_target_zone"]');
+    
+    elementSelects.forEach(select => {
+        const currentValue = select.value;
+        select.innerHTML = '';
+        
+        zones.forEach((zone, index) => {
+            const option = document.createElement('option');
+            option.value = index;
+            option.textContent = `Zone ${index + 1}`;
+            if (currentValue == index) {
+                option.selected = true;
+            }
+            select.appendChild(option);
+        });
+    });
+}
+
+// Fonction de prévisualisation d'image principale pour légende
+function previewLegendMainImage(input) {
+    const preview = document.getElementById('legend-main-image-preview');
+    const previewImg = document.getElementById('preview-legend-main-img');
+    const previewFilename = document.getElementById('preview-legend-main-filename');
+    
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            previewImg.src = e.target.result;
+            previewFilename.textContent = input.files[0].name;
+            preview.style.display = 'block';
+            
+            // Remplacer l'image dans l'éditeur
+            const imageContainer = document.getElementById('legend-image-container');
+            imageContainer.innerHTML = `
+                <img id="legend-editor-image" 
+                     src="${e.target.result}" 
+                     alt="Image à légender" 
+                     style="max-width: 100%; height: auto; cursor: crosshair;"
+                     onclick="addLegendZone(event)">
+            `;
+        };
+        
+        reader.readAsDataURL(input.files[0]);
+    } else {
+        preview.style.display = 'none';
+    }
+}
+
+// Fonction pour ajouter une zone de légende
+function addLegendZone(event) {
+    const rect = event.target.getBoundingClientRect();
+    const x = event.offsetX;
+    const y = event.offsetY;
+    
+    const legendText = prompt('Saisissez le texte de la légende :');
+    
+    if (!legendText || !legendText.trim()) {
+        return;
+    }
+    
+    currentLegendZone = {
+        id: legendZoneCounter,
+        x: x,
+        y: y,
+        legend: legendText.trim()
+    };
+    
+    // Ajouter le marqueur visuel sur l'image
+    const imageContainer = document.getElementById('legend-image-container');
+    const marker = document.createElement('div');
+    marker.className = 'legend-zone-marker';
+    marker.dataset.zoneId = currentLegendZone.id;
+    marker.style.cssText = `
+        position: absolute; 
+        left: ${currentLegendZone.x}px; 
+        top: ${currentLegendZone.y}px; 
+        width: 20px; 
+        height: 20px; 
+        background-color: #ff4444; 
+        border: 2px solid #fff; 
+        border-radius: 50%; 
+        transform: translate(-50%, -50%); 
+        cursor: pointer;
+        z-index: 10;
+    `;
+    marker.title = legendText;
+    imageContainer.appendChild(marker);
+    
+    // Ajouter l'élément dans la liste des zones
+    const zonesList = document.getElementById('legend-zones-list');
+    const zoneItem = document.createElement('div');
+    zoneItem.className = 'legend-zone-item mb-2 p-2 bg-white border rounded';
+    zoneItem.dataset.zoneId = currentLegendZone.id;
+    zoneItem.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <strong>Zone ${legendZoneCounter + 1} :</strong> ${legendText}
+                <small class="text-muted">(Position: ${currentLegendZone.x}, ${currentLegendZone.y})</small>
+            </div>
+            <button type="button" class="btn btn-sm btn-danger" onclick="removeLegendZone(${currentLegendZone.id})">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+        <input type="hidden" name="zone_${currentLegendZone.id}_x" value="${currentLegendZone.x}">
+        <input type="hidden" name="zone_${currentLegendZone.id}_y" value="${currentLegendZone.y}">
+        <input type="hidden" name="zone_${currentLegendZone.id}_legend" value="${legendText}">
+    `;
+    
+    // Supprimer le message "Aucune zone" s'il existe
+    const noZonesMessage = zonesList.querySelector('p.text-muted');
+    if (noZonesMessage) {
+        noZonesMessage.remove();
+    }
+    
+    zonesList.appendChild(zoneItem);
+    
+    // Incrémenter le compteur
+    legendZoneCounter++;
+    currentLegendZone = null;
+}
+
+// Fonction pour supprimer une zone de légende
+function removeLegendZone(zoneId) {
+    // Supprimer le marqueur visuel
+    const marker = document.querySelector(`[data-zone-id="${zoneId}"]`);
+    if (marker && marker.classList.contains('legend-zone-marker')) {
+        marker.remove();
+    }
+    
+    // Supprimer l'élément de la liste
+    const zoneItem = document.querySelector(`.legend-zone-item[data-zone-id="${zoneId}"]`);
+    if (zoneItem) {
+        zoneItem.remove();
+    }
+    
+    // Vérifier s'il reste des zones
+    const remainingZones = document.querySelectorAll('.legend-zone-item');
+    if (remainingZones.length === 0) {
+        const zonesList = document.getElementById('legend-zones-list');
+        zonesList.innerHTML = '<p class="text-muted">Aucune zone de légende créée. Cliquez sur l\'image pour en ajouter.</p>';
+    }
+}
+
+// Initialiser les aperçus d'images au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing simplified form...');
+    
+    // Initialiser les aperçus d'images
+    setupImagePreview('qcm_image_input', 'qcm_image_preview', 'qcm_image_preview_img');
+    setupImagePreview('qcm_multichoix_image_input', 'qcm_multichoix_image_preview', 'qcm_multichoix_image_preview_img');
+    setupImagePreview('fill_in_blanks_image_input', 'fill_in_blanks_image_preview', 'fill_in_blanks_image_preview_img');
+    setupImagePreview('underline_words_image_input', 'underline_words_image_preview', 'underline_words_image_preview_img');
+    
+    // Configuration de l'aperçu d'image pour l'étiquetage d'image avec activation du gestionnaire de clic
+    const imageLabelingInput = document.querySelector('input[name="image_labeling_main_image"]');
+    if (imageLabelingInput) {
+        imageLabelingInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    // Afficher l'interface interactive
+                    const interactiveEditor = document.getElementById('interactive_image_editor');
+                    const imageContainer = document.getElementById('interactive_image_container');
+                    const image = imageContainer.querySelector('img');
+                    
+                    if (interactiveEditor && imageContainer && image) {
+                        image.src = e.target.result;
+                        interactiveEditor.style.display = 'block';
+                        
+                        // Activer le gestionnaire de clic sur l'image
+                        console.log('[DEBUG] Activation du gestionnaire de clic sur l\'image');
+                        setTimeout(() => {
+                            setupImageClickHandler();
+                        }, 100); // Petit délai pour s'assurer que l'image est chargée
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+    
+    // Initialiser avec une question QCM par défaut
+    addQuestion();
+    
+    // Ajouter un gestionnaire d'événements au bouton "Ajouter un mot"
+    const addWordButton = document.querySelector('button[onclick="addWord()"]');
+    if (addWordButton) {
+        console.log('[INIT] Gestionnaire d\'événements ajouté au bouton Ajouter un mot');
+        addWordButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            addWord();
+        });
+    }
+});
+
+// Fonction de test pour diagnostiquer la soumission du formulaire
+function testFormSubmission() {
+    console.log('=== TEST FORM SUBMISSION ===');
+    
+    const form = document.querySelector('form');
+    const exerciseType = document.getElementById('exercise_type').value;
+    const title = document.querySelector('input[name="title"]').value;
+    
+    console.log('Form element:', form);
+    console.log('Exercise type:', exerciseType);
+    console.log('Title:', title);
+    console.log('Form action:', form.action);
+    console.log('Form method:', form.method);
+    
+    // Test de validation basique
+    if (!exerciseType) {
+        alert('ERREUR: Aucun type d\'exercice sélectionné!');
+        return;
+    }
+    
+    if (!title) {
+        alert('ERREUR: Aucun titre saisi!');
+        return;
+    }
+    
+    console.log('Validation OK - Tentative de soumission...');
+    alert('Test OK! Le formulaire semble valide. Vérifiez la console pour les détails.');
+    
+    // Optionnel: soumettre réellement le formulaire
+    // form.submit();
+}
+
+// ===== FONCTIONS POUR ÉTIQUETAGE D'IMAGE =====
+
+// Fonction pour ajouter une étiquette
+function addImageLabel() {
+    const container = document.getElementById('labels_container');
+    const labelDiv = document.createElement('div');
+    labelDiv.className = 'input-group mb-2';
+    labelDiv.innerHTML = `
+        <input type="text" name="image_labels[]" class="form-control" placeholder="Entrez le texte de l'étiquette" required>
+        <button type="button" class="btn btn-danger" onclick="this.closest('.input-group').remove()">
+            <i class="bi bi-trash"></i>
+        </button>
+    `;
+    container.appendChild(labelDiv);
+}
+
+// Fonction pour ajouter une zone de placement
+function addImageZone() {
+    const container = document.getElementById('zones_container');
+    const zoneCount = container.children.length + 1;
+    
+    const zoneDiv = document.createElement('div');
+    zoneDiv.className = 'card mb-3 p-3';
+    zoneDiv.innerHTML = `
+        <h6>Zone ${zoneCount}</h6>
+        <div class="row">
+            <div class="col-md-3">
+                <label class="form-label">Position X</label>
+                <input type="number" name="zone_x[]" class="form-control" placeholder="150" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Position Y</label>
+                <input type="number" name="zone_y[]" class="form-control" placeholder="120" required>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Étiquette correspondante</label>
+                <input type="text" name="zone_label[]" class="form-control" placeholder="Le cœur" required>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="button" class="btn btn-danger" onclick="this.closest('.card').remove()">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    container.appendChild(zoneDiv);
+}
+
+// Variables globales pour l'étiquetage d'image
+let imageLabelingZones = [];
+let imageLabelingLabels = [];
+
+// Fonction pour prévisualiser l'image principale
+function previewMainImage(input) {
+    const file = input.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('main_image_preview');
+            const img = document.getElementById('main_image_preview_img');
+            img.src = e.target.result;
+            preview.style.display = 'block';
+            
+            // Créer l'interface interactive pour placer les zones
+            createInteractiveImageEditor(e.target.result);
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+// Créer l'éditeur interactif d'image
+function createInteractiveImageEditor(imageSrc) {
+    const editorContainer = document.getElementById('interactive_image_editor');
+    if (!editorContainer) return;
+    
+    editorContainer.innerHTML = `
+        <div class="card mt-3">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0"><i class="bi bi-cursor-fill"></i> Placer les zones sur l'image</h6>
+                <small>Cliquez sur l'image pour placer une zone d'étiquette</small>
+            </div>
+            <div class="card-body">
+                <div id="image_editor_container" style="position: relative; display: inline-block; border: 2px solid #ddd; border-radius: 8px; overflow: hidden;">
+                    <img id="interactive_image" 
+                         src="${imageSrc}" 
+                         alt="Image à étiqueter" 
+                         style="max-width: 600px; height: auto; display: block; cursor: crosshair;"
+                         onclick="placeZoneOnImage(event)">
+                </div>
+                <div class="mt-3">
+                    <button type="button" class="btn btn-success btn-sm" onclick="addImageLabelInteractive()">
+                        <i class="bi bi-plus-circle"></i> Ajouter une étiquette
+                    </button>
+                    <button type="button" class="btn btn-warning btn-sm ms-2" onclick="clearAllZones()">
+                        <i class="bi bi-arrow-clockwise"></i> Effacer toutes les zones
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-list-ul"></i> Étiquettes disponibles</h6>
+            </div>
+            <div class="card-body">
+                <div id="available_labels_list">
+                    <p class="text-muted">Ajoutez des étiquettes ci-dessus</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-geo-alt"></i> Zones placées</h6>
+            </div>
+            <div class="card-body">
+                <div id="placed_zones_list">
+                    <p class="text-muted">Cliquez sur l'image pour placer des zones</p>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    editorContainer.style.display = 'block';
+}
+
+// Placer une zone sur l'image
+function placeZoneOnImage(event) {
+    if (imageLabelingLabels.length === 0) {
+        alert('Veuillez d\'abord ajouter au moins une étiquette !');
+        return;
+    }
+    
+    const rect = event.target.getBoundingClientRect();
+    const x = event.offsetX;
+    const y = event.offsetY;
+    
+    // Demander quelle étiquette associer à cette zone
+    let labelOptions = imageLabelingLabels.map((label, index) => `${index + 1}. ${label}`).join('\n');
+    const labelChoice = prompt(`Choisissez l'étiquette pour cette zone :\n\n${labelOptions}\n\nEntrez le numéro :`);
+    
+    if (!labelChoice || isNaN(labelChoice) || labelChoice < 1 || labelChoice > imageLabelingLabels.length) {
+        return;
+    }
+    
+    const selectedLabel = imageLabelingLabels[labelChoice - 1];
+    const zoneId = imageLabelingZones.length;
+    
+    // Créer la zone
+    const zone = {
+        id: zoneId,
+        x: x,
+        y: y,
+        label: selectedLabel
+    };
+    
+    imageLabelingZones.push(zone);
+    
+    // Ajouter le marqueur visuel sur l'image
+    const imageContainer = document.getElementById('image_editor_container');
+    const marker = document.createElement('div');
+    marker.className = 'zone-marker';
+    marker.dataset.zoneId = zoneId;
+    marker.style.cssText = `
+        position: absolute; 
+        left: ${x}px; 
+        top: ${y}px; 
+        width: 24px; 
+        height: 24px; 
+        background-color: #28a745; 
+        border: 3px solid #fff; 
+        border-radius: 50%; 
+        transform: translate(-50%, -50%); 
+        cursor: pointer;
+        z-index: 10;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    `;
+    marker.title = selectedLabel;
+    marker.onclick = function(e) {
+        e.stopPropagation();
+        removeZoneFromImage(zoneId);
+    };
+    
+    imageContainer.appendChild(marker);
+    
+    // Mettre à jour la liste des zones placées
+    updatePlacedZonesList();
+    updateHiddenFormFields();
+}
+
+// Ajouter une étiquette de façon interactive
+function addImageLabelInteractive() {
+    console.log('[DEBUG] addImageLabelInteractive() appelée');
+    
+    // Créer une interface moderne au lieu du prompt()
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    `;
+    
+    modal.innerHTML = `
+        <div style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); max-width: 400px; width: 90%;">
+            <h5 style="margin-bottom: 20px; color: #333;">Ajouter une étiquette</h5>
+            <input type="text" id="label_input" placeholder="Entrez le texte de l'étiquette..." 
+                   style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; margin-bottom: 20px; font-size: 16px;">
+            <div style="text-align: right;">
+                <button onclick="cancelAddLabel()" style="padding: 8px 15px; margin-right: 10px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">Annuler</button>
+                <button onclick="confirmAddLabel()" style="padding: 8px 15px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Ajouter</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    document.getElementById('label_input').focus();
+    
+    // Permettre la validation avec Entrée
+    document.getElementById('label_input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            confirmAddLabel();
+        }
+    });
+}
+
+// Confirmer l'ajout d'étiquette
+function confirmAddLabel() {
+    const input = document.getElementById('label_input');
+    const labelText = input.value.trim();
+    
+    if (!labelText) {
+        alert('Veuillez saisir un texte pour l\'étiquette');
+        return;
+    }
+    
+    console.log('[DEBUG] Ajout de l\'étiquette:', labelText);
+    imageLabelingLabels.push(labelText);
+    console.log('[DEBUG] Liste des étiquettes:', imageLabelingLabels);
+    updateAvailableLabelsList();
+    updateHiddenFormFields();
+    
+    // Fermer le modal
+    const modal = document.querySelector('div[style*="position: fixed"]');
+    if (modal) modal.remove();
+}
+
+// Annuler l'ajout d'étiquette
+function cancelAddLabel() {
+    console.log('[DEBUG] Ajout d\'étiquette annulé');
+    const modal = document.querySelector('div[style*="position: fixed"]');
+    if (modal) modal.remove();
+}
+
+// ===== FONCTIONS POUR L'INTERFACE DE CRÉATION IMAGE_LABELING =====
+
+// Variables globales pour la création
+let createLabels = [];
+let createZones = [];
+
+// Prévisualiser l'image principale (création)
+function previewMainImageCreate(input) {
+    console.log('[CREATE_DEBUG] Prévisualisation image principale');
+    const file = input.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            // Afficher l'aperçu basique
+            const preview = document.getElementById('main_image_preview_create');
+            const img = document.getElementById('main_image_preview_img_create');
+            img.src = e.target.result;
+            preview.style.display = 'block';
+            
+            // Afficher l'éditeur interactif
+            const editor = document.getElementById('interactive_image_editor_create');
+            const editorImg = document.getElementById('editor_image_create');
+            editorImg.src = e.target.result;
+            editor.style.display = 'block';
+            
+            console.log('[CREATE_DEBUG] Interface interactive activée');
+        };
+        reader.readAsDataURL(file);
+    } else {
+        document.getElementById('main_image_preview_create').style.display = 'none';
+        document.getElementById('interactive_image_editor_create').style.display = 'none';
+    }
+}
+
+// Supprimer l'image principale (création)
+function removeMainImageCreate() {
+    console.log('[CREATE_DEBUG] Suppression image principale');
+    document.getElementById('main_image_input_create').value = '';
+    document.getElementById('main_image_preview_create').style.display = 'none';
+    document.getElementById('interactive_image_editor_create').style.display = 'none';
+    
+    // Réinitialiser les données
+    createLabels = [];
+    createZones = [];
+    updateLabelsListCreate();
+    updateZonesListCreate();
+    updateHiddenFieldsCreate();
+}
+
+// Ajouter une étiquette (création)
+function addLabelCreate() {
+    console.log('[CREATE_DEBUG] Ajout d\'une étiquette');
+    const labelText = prompt('Entrez le texte de l\'étiquette :');
+    
+    if (!labelText || !labelText.trim()) {
+        console.log('[CREATE_DEBUG] Ajout annulé - texte vide');
+        return;
+    }
+    
+    const trimmedText = labelText.trim();
+    createLabels.push(trimmedText);
+    console.log('[CREATE_DEBUG] Étiquette ajoutée:', trimmedText);
+    console.log('[CREATE_DEBUG] Total étiquettes:', createLabels.length);
+    
+    updateLabelsListCreate();
+    updateHiddenFieldsCreate();
+}
+
+// Supprimer une étiquette (création)
+function removeLabelCreate(index) {
+    console.log('[CREATE_DEBUG] Suppression étiquette index:', index);
+    createLabels.splice(index, 1);
+    
+    // Supprimer aussi les zones associées à cette étiquette
+    const removedLabel = createLabels[index];
+    createZones = createZones.filter(zone => zone.label !== removedLabel);
+    
+    updateLabelsListCreate();
+    updateZonesListCreate();
+    updateHiddenFieldsCreate();
+}
+
+// Mettre à jour la liste des étiquettes (création)
+function updateLabelsListCreate() {
+    const container = document.getElementById('labels_list_create');
+    
+    if (createLabels.length === 0) {
+        container.innerHTML = '<p class="text-muted">Aucune étiquette ajoutée</p>';
+        return;
+    }
+    
+    let html = '';
+    createLabels.forEach((label, index) => {
+        html += `
+            <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
+                <span><strong>Étiquette ${index + 1}:</strong> ${label}</span>
+                <button type="button" class="btn btn-sm btn-danger" onclick="removeLabelCreate(${index})">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+// Ajouter une zone sur l'image (création)
+function addZoneOnImageCreate(event) {
+    console.log('[CREATE_DEBUG] Clic sur image pour ajouter zone');
+    
+    if (createLabels.length === 0) {
+        alert('Veuillez d\'abord ajouter au moins une étiquette !');
+        return;
+    }
+    
+    const rect = event.target.getBoundingClientRect();
+    const x = event.offsetX;
+    const y = event.offsetY;
+    
+    // Calculer les coordonnées en pourcentages pour compatibilité multi-résolution
+    const imageWidth = event.target.naturalWidth || event.target.width;
+    const imageHeight = event.target.naturalHeight || event.target.height;
+    const displayWidth = event.target.width;
+    const displayHeight = event.target.height;
+    
+    // Convertir les coordonnées de clic en coordonnées relatives à l'image originale
+    const relativeX = (x / displayWidth) * imageWidth;
+    const relativeY = (y / displayHeight) * imageHeight;
+    
+    console.log('[CREATE_DEBUG] Position clic: x=' + x + ', y=' + y);
+    console.log('[CREATE_DEBUG] Taille affichage: ' + displayWidth + 'x' + displayHeight);
+    console.log('[CREATE_DEBUG] Taille originale: ' + imageWidth + 'x' + imageHeight);
+    console.log('[CREATE_DEBUG] Position relative: x=' + relativeX + ', y=' + relativeY);
+    
+    // Proposer les étiquettes disponibles
+    let labelOptions = createLabels.map((label, index) => `${index + 1}. ${label}`).join('\n');
+    const labelChoice = prompt(`Choisissez l'étiquette pour cette zone :\n\n${labelOptions}\n\nEntrez le numéro :`);
+    
+    if (!labelChoice || isNaN(labelChoice) || labelChoice < 1 || labelChoice > createLabels.length) {
+        console.log('[CREATE_DEBUG] Choix d\'étiquette annulé ou invalide');
+        return;
+    }
+    
+    const selectedLabel = createLabels[labelChoice - 1];
+    console.log('[CREATE_DEBUG] Étiquette sélectionnée:', selectedLabel);
+    
+    // Vérifier si cette étiquette a déjà une zone
+    const existingZone = createZones.find(zone => zone.label === selectedLabel);
+    if (existingZone) {
+        const replace = confirm(`L'étiquette "${selectedLabel}" a déjà une zone. Voulez-vous la remplacer ?`);
+        if (!replace) {
+            return;
+        }
+        // Supprimer l'ancienne zone
+        createZones = createZones.filter(zone => zone.label !== selectedLabel);
+        // Supprimer le marqueur visuel
+        const oldMarker = document.querySelector(`[data-zone-label="${selectedLabel}"]`);
+        if (oldMarker) oldMarker.remove();
+    }
+    
+    // Créer la nouvelle zone avec coordonnées relatives
+    const zone = {
+        x: Math.round(relativeX),
+        y: Math.round(relativeY),
+        label: selectedLabel
+    };
+    
+    createZones.push(zone);
+    console.log('[CREATE_DEBUG] Zone ajoutée avec coordonnées relatives:', zone);
+    
+    // Ajouter le marqueur visuel sur l'image (utiliser les coordonnées d'affichage pour le marqueur)
+    addVisualMarkerCreate(x, y, selectedLabel);
+    
+    updateZonesListCreate();
+    updateHiddenFieldsCreate();
+}
+
+// Ajouter un marqueur visuel sur l'image (création)
+function addVisualMarkerCreate(x, y, label) {
+    const container = document.getElementById('image_container_create');
+    
+    const marker = document.createElement('div');
+    marker.className = 'zone-marker';
+    marker.dataset.zoneLabel = label;
+    marker.style.cssText = `
+        position: absolute;
+        left: ${x}px;
+        top: ${y}px;
+        width: 20px;
+        height: 20px;
+        background-color: #007bff;
+        border: 2px solid #fff;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        cursor: pointer;
+        z-index: 10;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    `;
+    marker.title = label;
+    marker.onclick = function() {
+        removeZoneCreate(label);
+    };
+    
+    container.appendChild(marker);
+}
+
+// Supprimer une zone (création)
+function removeZoneCreate(label) {
+    console.log('[CREATE_DEBUG] Suppression zone pour étiquette:', label);
+    
+    // Supprimer de la liste
+    createZones = createZones.filter(zone => zone.label !== label);
+    
+    // Supprimer le marqueur visuel
+    const marker = document.querySelector(`[data-zone-label="${label}"]`);
+    if (marker) marker.remove();
+    
+    updateZonesListCreate();
+    updateHiddenFieldsCreate();
+}
+
+// Mettre à jour la liste des zones (création)
+function updateZonesListCreate() {
+    const container = document.getElementById('zones_list_create');
+    
+    if (createZones.length === 0) {
+        container.innerHTML = '<p class="text-muted">Cliquez sur l\'image pour placer des zones</p>';
+        return;
+    }
+    
+    let html = '';
+    createZones.forEach((zone, index) => {
+        html += `
+            <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
+                <div>
+                    <strong>Zone ${index + 1}:</strong> ${zone.label}<br>
+                    <small class="text-muted">Position: (${zone.x}, ${zone.y})</small>
+                </div>
+                <button type="button" class="btn btn-sm btn-danger" onclick="removeZoneCreate('${zone.label}')">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+// Mettre à jour les champs cachés pour la soumission (création)
+function updateHiddenFieldsCreate() {
+    const container = document.getElementById('hidden_fields_create');
+    let html = '';
+    
+    // Champs pour les étiquettes
+    createLabels.forEach((label, index) => {
+        html += `<input type="hidden" name="image_labels[]" value="${label}">`;
+    });
+    
+    // Champs pour les zones
+    createZones.forEach((zone, index) => {
+        html += `<input type="hidden" name="zone_x[]" value="${zone.x}">`;
+        html += `<input type="hidden" name="zone_y[]" value="${zone.y}">`;
+        html += `<input type="hidden" name="zone_label[]" value="${zone.label}">`;
+    });
+    
+    container.innerHTML = html;
+    console.log('[CREATE_DEBUG] Champs cachés mis à jour:', createLabels.length, 'étiquettes,', createZones.length, 'zones');
+}
+
+// Mettre à jour la liste des étiquettes disponibles
+function updateAvailableLabelsList() {
+    const container = document.getElementById('available_labels_list');
+    if (imageLabelingLabels.length === 0) {
+        container.innerHTML = '<p class="text-muted">Ajoutez des étiquettes ci-dessus</p>';
+        return;
+    }
+    
+    container.innerHTML = imageLabelingLabels.map((label, index) => `
+        <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
+            <span><strong>${index + 1}.</strong> ${label}</span>
+            <button type="button" class="btn btn-sm btn-danger" onclick="removeLabelInteractive(${index})">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    `).join('');
+}
+
+// Supprimer une étiquette
+function removeLabelInteractive(index) {
+    imageLabelingLabels.splice(index, 1);
+    updateAvailableLabelsList();
+    updateHiddenFormFields();
+}
+
+// Mettre à jour la liste des zones placées
+function updatePlacedZonesList() {
+    const container = document.getElementById('placed_zones_list');
+    if (imageLabelingZones.length === 0) {
+        container.innerHTML = '<p class="text-muted">Cliquez sur l\'image pour placer des zones</p>';
+        return;
+    }
+    
+    container.innerHTML = imageLabelingZones.map((zone, index) => `
+        <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-success bg-opacity-10 border border-success rounded">
+            <span><strong>Zone ${index + 1}:</strong> ${zone.label} <small class="text-muted">(${zone.x}, ${zone.y})</small></span>
+            <button type="button" class="btn btn-sm btn-danger" onclick="removeZoneFromImage(${zone.id})">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    `).join('');
+}
+
+// Supprimer une zone de l'image
+function removeZoneFromImage(zoneId) {
+    // Supprimer de la liste
+    imageLabelingZones = imageLabelingZones.filter(zone => zone.id !== zoneId);
+    
+    // Supprimer le marqueur visuel
+    const marker = document.querySelector(`[data-zone-id="${zoneId}"]`);
+    if (marker) marker.remove();
+    
+    updatePlacedZonesList();
+    updateHiddenFormFields();
+}
+
+// Effacer toutes les zones
+function clearAllZones() {
+    imageLabelingZones = [];
+    document.querySelectorAll('.zone-marker').forEach(marker => marker.remove());
+    updatePlacedZonesList();
+    updateHiddenFormFields();
+}
+
+// Gestionnaire de clic sur l'image pour placer les zones
+function setupImageClickHandler() {
+    const imageContainer = document.getElementById('interactive_image_container');
+    const image = imageContainer.querySelector('img');
+    
+    if (!image) {
+        console.log('[DEBUG] Image non trouvée pour le gestionnaire de clic');
+        return;
+    }
+    
+    console.log('[DEBUG] Gestionnaire de clic configuré sur l\'image');
+    
+    image.style.cursor = 'crosshair';
+    image.addEventListener('click', function(event) {
+        console.log('[DEBUG] Clic sur l\'image détecté');
+        
+        if (imageLabelingLabels.length === 0) {
+            alert('Veuillez d\'abord ajouter au moins une étiquette');
+            return;
+        }
+        
+        // Calculer les coordonnées relatives à l'image
+        const rect = image.getBoundingClientRect();
+        const x = ((event.clientX - rect.left) / rect.width * 100).toFixed(1);
+        const y = ((event.clientY - rect.top) / rect.height * 100).toFixed(1);
+        
+        console.log('[DEBUG] Coordonnées calculées:', x + '%', y + '%');
+        
+        // Demander quelle étiquette associer
+        showLabelSelectionModal(x, y);
+    });
+}
+
+// Modal de sélection d'étiquette pour une zone
+function showLabelSelectionModal(x, y) {
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    `;
+    
+    const availableLabels = imageLabelingLabels.filter(label => 
+        !imageLabelingZones.some(zone => zone.label === label)
+    );
+    
+    if (availableLabels.length === 0) {
+        alert('Toutes les étiquettes ont déjà été placées');
+        return;
+    }
+    
+    modal.innerHTML = `
+        <div style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); max-width: 400px; width: 90%;">
+            <h5 style="margin-bottom: 20px; color: #333;">Choisir une étiquette</h5>
+            <p style="margin-bottom: 15px; color: #666;">Position: ${x}%, ${y}%</p>
+            <select id="zone_label_select" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; margin-bottom: 20px; font-size: 16px;">
+                <option value="">-- Sélectionnez une étiquette --</option>
+                ${availableLabels.map(label => `<option value="${label}">${label}</option>`).join('')}
+            </select>
+            <div style="text-align: right;">
+                <button onclick="cancelZonePlacement()" style="padding: 8px 15px; margin-right: 10px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">Annuler</button>
+                <button onclick="confirmZonePlacement(${x}, ${y})" style="padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Placer</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    document.getElementById('zone_label_select').focus();
+}
+
+// Confirmer le placement d'une zone
+function confirmZonePlacement(x, y) {
+    const select = document.getElementById('zone_label_select');
+    const selectedLabel = select.value;
+    
+    if (!selectedLabel) {
+        alert('Veuillez sélectionner une étiquette');
+        return;
+    }
+    
+    // Créer la zone
+    const zone = {
+        id: Date.now(),
+        x: parseFloat(x),
+        y: parseFloat(y),
+        label: selectedLabel
+    };
+    
+    imageLabelingZones.push(zone);
+    console.log('[DEBUG] Zone ajoutée:', zone);
+    
+    // Créer le marqueur visuel
+    createZoneMarker(zone);
+    
+    // Mettre à jour les listes
+    updatePlacedZonesList();
+    updateHiddenFormFields();
+    
+    // Fermer le modal
+    const modal = document.querySelector('div[style*="position: fixed"]');
+    if (modal) modal.remove();
+}
+
+// Annuler le placement d'une zone
+function cancelZonePlacement() {
+    const modal = document.querySelector('div[style*="position: fixed"]');
+    if (modal) modal.remove();
+}
+
+// Créer un marqueur visuel pour une zone
+function createZoneMarker(zone) {
+    const imageContainer = document.getElementById('interactive_image_container');
+    const marker = document.createElement('div');
+    
+    marker.className = 'zone-marker';
+    marker.setAttribute('data-zone-id', zone.id);
+    marker.style.cssText = `
+        position: absolute;
+        left: ${zone.x}%;
+        top: ${zone.y}%;
+        width: 20px;
+        height: 20px;
+        background: #007bff;
+        border: 2px solid white;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        cursor: pointer;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        z-index: 100;
+    `;
+    
+    marker.title = zone.label;
+    marker.onclick = function() {
+        if (confirm(`Supprimer la zone "${zone.label}" ?`)) {
+            removeZoneFromImage(zone.id);
+        }
+    };
+    
+    imageContainer.appendChild(marker);
+    console.log('[DEBUG] Marqueur visuel créé pour:', zone.label);
+}
+
+// Mettre à jour les champs cachés du formulaire
+function updateHiddenFormFields() {
+    // Supprimer les anciens champs cachés
+    document.querySelectorAll('input[name^="image_labels"], input[name^="zone_x"], input[name^="zone_y"], input[name^="zone_label"]').forEach(input => {
+        if (input.closest('#interactive_image_editor')) return; // Ne pas supprimer ceux de l'éditeur
+        input.remove();
+    });
+    
+    const form = document.querySelector('form');
+    
+    // Ajouter les étiquettes
+    imageLabelingLabels.forEach(label => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'image_labels[]';
+        input.value = label;
+        form.appendChild(input);
+    });
+    
+    // Ajouter les zones
+    imageLabelingZones.forEach(zone => {
+        const inputX = document.createElement('input');
+        inputX.type = 'hidden';
+        inputX.name = 'zone_x[]';
+        inputX.value = zone.x;
+        form.appendChild(inputX);
+        
+        const inputY = document.createElement('input');
+        inputY.type = 'hidden';
+        inputY.name = 'zone_y[]';
+        inputY.value = zone.y;
+        form.appendChild(inputY);
+        
+        const inputLabel = document.createElement('input');
+        inputLabel.type = 'hidden';
+        inputLabel.name = 'zone_label[]';
+        inputLabel.value = zone.label;
+        form.appendChild(inputLabel);
+    });
+}
+
+// Fonction pour supprimer l'image principale
+function removeMainImage() {
+    const input = document.getElementById('main_image_input');
+    const preview = document.getElementById('main_image_preview');
+    input.value = '';
+    preview.style.display = 'none';
+}
+
+// Initialiser l'affichage au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing simplified form...');
+    showExerciseType();
+    
+    // Ajouter gestionnaire d'événements pour le bouton "Ajouter un mot"
+    // Chercher le bouton par son texte dans la section Mots mêlés
+    const wordSearchSection = document.getElementById('word_search_section');
+    if (wordSearchSection) {
+        const addWordBtn = wordSearchSection.querySelector('button[onclick="addWord()"]');
+        if (addWordBtn) {
+            // Supprimer l'ancien onclick pour éviter les doublons
+            addWordBtn.removeAttribute('onclick');
+            
+            addWordBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('[EVENT] Bouton Ajouter un mot cliqué via gestionnaire');
+                addWord();
+            });
+            console.log('[INIT] Gestionnaire d\'événements ajouté au bouton Ajouter un mot');
+        } else {
+            console.error('[ERROR] Bouton Ajouter un mot non trouvé dans la section');
+        }
+    } else {
+        console.error('[ERROR] Section word_search_section non trouvée');
+    }
+    
+    // Ajouter gestionnaire pour la prévisualisation d'image principale
+    const mainImageInput = document.getElementById('main_image_input');
+    if (mainImageInput) {
+        mainImageInput.addEventListener('change', function() {
+            previewMainImage(this);
+        });
+    }
+    
+    // Écouter les changements de type d'exercice
+    const exerciseTypeSelect = document.getElementById('exercise_type');
+    if (exerciseTypeSelect) {
+        exerciseTypeSelect.addEventListener('change', showExerciseType);
+    }
+});
+
+// Fonctions pour Glisser-déposer
+function addDragItem() {
+    const container = document.getElementById('drag_items_container');
+    const newItemDiv = document.createElement('div');
+    newItemDiv.className = 'input-group mb-2';
+    newItemDiv.innerHTML = `
+        <input type="text" name="drag_items[]" class="form-control" placeholder="Entrez un élément à glisser" required>
+        <button type="button" class="btn btn-danger" onclick="this.closest('.input-group').remove()">
+            <i class="bi bi-trash"></i>
+        </button>
+    `;
+    container.appendChild(newItemDiv);
+}
+
+function addDropZone() {
+    const container = document.getElementById('drop_zones_container');
+    const newZoneDiv = document.createElement('div');
+    newZoneDiv.className = 'input-group mb-2';
+    newZoneDiv.innerHTML = `
+        <input type="text" name="drop_zones[]" class="form-control" placeholder="Entrez une zone de dépôt" required>
+        <button type="button" class="btn btn-danger" onclick="this.closest('.input-group').remove()">
+            <i class="bi bi-trash"></i>
+        </button>
+    `;
+    container.appendChild(newZoneDiv);
+}
+
+// Fonctions pour Association de paires
+function addPair() {
+    const container = document.getElementById('pairs_container');
+    const pairCount = container.children.length + 1;
+    
+    const newPairDiv = document.createElement('div');
+    newPairDiv.className = 'pair-item mb-4 border p-3 rounded';
+    newPairDiv.setAttribute('data-pair-id', pairCount);
+    newPairDiv.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5>Paire ${pairCount}</h5>
+            <button type="button" class="btn btn-danger btn-sm" onclick="removePair(this)">
+                <i class="bi bi-trash"></i> Supprimer
+            </button>
+        </div>
+        <div class="row">
+            <!-- Élément de gauche -->
+            <div class="col-md-6">
+                <label class="form-label">Élément de gauche</label>
+                <div class="mb-2">
+                    <select class="form-select pair-left-type" name="pair_left_type_${pairCount}" onchange="togglePairInput(this, 'left')">
+                        <option value="text">Texte</option>
+                        <option value="image">Image</option>
+                    </select>
+                </div>
+                <div class="pair-left-text">
+                    <input type="text" class="form-control" name="pair_left_${pairCount}" placeholder="Entrez le texte">
+                </div>
+                <div class="pair-left-image" style="display: none;">
+                    <input type="file" class="form-control" name="pair_left_image_${pairCount}" accept="image/*">
+                </div>
+            </div>
+            
+            <!-- Élément de droite -->
+            <div class="col-md-6">
+                <label class="form-label">Élément de droite</label>
+                <div class="mb-2">
+                    <select class="form-select pair-right-type" name="pair_right_type_${pairCount}" onchange="togglePairInput(this, 'right')">
+                        <option value="text">Texte</option>
+                        <option value="image">Image</option>
+                    </select>
+                </div>
+                <div class="pair-right-text">
+                    <input type="text" class="form-control" name="pair_right_${pairCount}" placeholder="Entrez le texte">
+                </div>
+                <div class="pair-right-image" style="display: none;">
+                    <input type="file" class="form-control" name="pair_right_image_${pairCount}" accept="image/*">
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(newPairDiv);
+    updatePairLabels();
+}
+
+function removePair(button) {
+    const pairItem = button.closest('.pair-item');
+    pairItem.remove();
+    updatePairLabels();
+}
+
+function updatePairLabels() {
+    const pairItems = document.querySelectorAll('#pairs_container .pair-item');
+    pairItems.forEach((item, index) => {
+        const title = item.querySelector('h5');
+        title.textContent = `Paire ${index + 1}`;
+    });
+}
+
+function togglePairInput(selectElement, side) {
+    const pairItem = selectElement.closest('.pair-item');
+    const textDiv = pairItem.querySelector(`.pair-${side}-text`);
+    const imageDiv = pairItem.querySelector(`.pair-${side}-image`);
+    
+    if (selectElement.value === 'text') {
+        textDiv.style.display = 'block';
+        imageDiv.style.display = 'none';
+        // Vider le champ image
+        const imageInput = imageDiv.querySelector('input[type="file"]');
+        if (imageInput) imageInput.value = '';
+    } else {
+        textDiv.style.display = 'none';
+        imageDiv.style.display = 'block';
+        // Vider le champ texte
+        const textInput = textDiv.querySelector('input[type="text"]');
+        if (textInput) textInput.value = '';
+    }
+}
+
+// Fonction pour ajouter une phrase de dictée
+function addDictationSentence() {
+    const container = document.getElementById('dictation_sentences_container');
+    const currentItems = container.querySelectorAll('.dictation-item');
+    const newIndex = currentItems.length;
+    
+    const newSentenceDiv = document.createElement('div');
+    newSentenceDiv.className = 'dictation-item mb-4 p-3';
+    newSentenceDiv.style.cssText = 'border: 1px solid #ddd; border-radius: 8px; background-color: #f8f9fa;';
+    
+    newSentenceDiv.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5>Phrase ${newIndex + 1}</h5>
+            <button type="button" class="btn btn-danger btn-sm" onclick="removeDictationSentence(this)">
+                <i class="bi bi-trash"></i> Supprimer
+            </button>
+        </div>
+        <div class="row">
+            <div class="col-md-8">
+                <label class="form-label">Texte de la phrase</label>
+                <input type="text" class="form-control" name="dictation_sentences[]" 
+                       placeholder="Entrez la phrase à dicter" required>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Fichier audio (optionnel)</label>
+                <input type="file" class="form-control" name="dictation_audio_${newIndex}" 
+                       accept="audio/*" title="Uploadez un fichier audio MP3 ou WAV">
+                <small class="text-muted">Formats acceptés : MP3, WAV</small>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(newSentenceDiv);
+}
+
+// Fonction pour supprimer une phrase de dictée
+function removeDictationSentence(button) {
+    const dictationItem = button.closest('.dictation-item');
+    dictationItem.remove();
+    updateDictationLabels();
+}
+
+// Fonction pour mettre à jour les labels des phrases de dictée
+function updateDictationLabels() {
+    const container = document.getElementById('dictation_sentences_container');
+    const items = container.querySelectorAll('.dictation-item');
+    
+    items.forEach((item, index) => {
+        const title = item.querySelector('h5');
+        title.textContent = `Phrase ${index + 1}`;
+        
+        // Mettre à jour le nom du champ audio
+        const audioInput = item.querySelector('input[type="file"]');
+        if (audioInput) {
+            audioInput.name = `dictation_audio_${index}`;
+        }
+    });
+}
+
+// Fonction de soumission directe qui contourne toute validation
+function directSubmit() {
+    console.log('=== DIRECT SUBMIT - BYPASS ALL VALIDATION ===');
+    
+    const form = document.querySelector('form');
+    
+    if (!form) {
+        console.error('Formulaire non trouvé!');
+        alert('ERREUR: Formulaire non trouvé!');
+        return;
+    }
+    
+    console.log('Formulaire trouvé, soumission directe...');
+    console.log('Action:', form.action);
+    console.log('Method:', form.method);
+    
+    // Soumission directe sans validation
+    try {
+        form.submit();
+        console.log('Formulaire soumis avec succès!');
+    } catch (error) {
+        console.error('Erreur lors de la soumission:', error);
+        alert('ERREUR: ' + error.message);
+    }
+}
+
+// ===== FONCTIONS QCM MULTICHOIX =====
+
+let multichoixQuestionCounter = 0;
+
+// Fonction pour ajouter une question QCM multichoix
+function addMultichoixQuestion() {
+    const container = document.getElementById('multichoix_questions_container');
+    const questionIndex = multichoixQuestionCounter;
+    
+    const questionHtml = `
+        <div class="card mb-4 multichoix-question-card" data-question-index="${questionIndex}">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Question ${questionIndex + 1}</h5>
+                <button type="button" class="btn btn-sm btn-outline-light" onclick="removeMultichoixQuestion(this)">
+                    <i class="bi bi-trash"></i> Supprimer
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Question</label>
+                    <input type="text" class="form-control" name="questions[]" required>
+                </div>
+                
+                <div class="options-container">
+                    <label class="form-label">Options (cochez les bonnes réponses)</label>
+                    <div class="input-group mb-2 option-group">
+                        <div class="input-group-text">
+                            <input type="checkbox" name="correct_options_${questionIndex}[]" value="0" aria-label="Option correcte">
+                        </div>
+                        <input type="text" class="form-control" name="options_${questionIndex}[]" placeholder="Texte de l'option" required>
+                        <button type="button" class="btn btn-outline-danger" onclick="removeMultichoixOption(this)">
+                            <i class="bi bi-dash"></i>
+                        </button>
+                    </div>
+                    <div class="input-group mb-2 option-group">
+                        <div class="input-group-text">
+                            <input type="checkbox" name="correct_options_${questionIndex}[]" value="1" aria-label="Option correcte">
+                        </div>
+                        <input type="text" class="form-control" name="options_${questionIndex}[]" placeholder="Texte de l'option" required>
+                        <button type="button" class="btn btn-outline-danger" onclick="removeMultichoixOption(this)">
+                            <i class="bi bi-dash"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <button type="button" class="btn btn-sm btn-outline-success" onclick="addMultichoixOption(this)">
+                    <i class="bi bi-plus"></i> Ajouter une option
+                </button>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', questionHtml);
+    multichoixQuestionCounter++;
+    updateMultichoixQuestionNumbers();
+}
+
+// Fonction pour supprimer une question QCM multichoix
+function removeMultichoixQuestion(button) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette question ?')) {
+        button.closest('.multichoix-question-card').remove();
+        updateMultichoixQuestionNumbers();
+    }
+}
+
+// Fonction pour ajouter une option à une question multichoix
+function addMultichoixOption(button) {
+    const questionCard = button.closest('.multichoix-question-card');
+    const questionIndex = questionCard.dataset.questionIndex;
+    const optionsContainer = questionCard.querySelector('.options-container');
+    const optionGroups = optionsContainer.querySelectorAll('.option-group');
+    const optionIndex = optionGroups.length;
+    
+    const optionHtml = `
+        <div class="input-group mb-2 option-group">
+            <div class="input-group-text">
+                <input type="checkbox" name="correct_options_${questionIndex}[]" value="${optionIndex}" aria-label="Option correcte">
+            </div>
+            <input type="text" class="form-control" name="options_${questionIndex}[]" placeholder="Texte de l'option" required>
+            <button type="button" class="btn btn-outline-danger" onclick="removeMultichoixOption(this)">
+                <i class="bi bi-dash"></i>
+            </button>
+        </div>
+    `;
+    
+    button.parentNode.insertBefore(document.createRange().createContextualFragment(optionHtml), button);
+}
+
+// Fonction pour supprimer une option multichoix
+function removeMultichoixOption(button) {
+    const optionsContainer = button.closest('.options-container');
+    const optionGroups = optionsContainer.querySelectorAll('.option-group');
+    
+    if (optionGroups.length > 2) {
+        button.closest('.option-group').remove();
+        updateMultichoixOptionIndices(optionsContainer);
+    } else {
+        alert('Une question doit avoir au moins 2 options.');
+    }
+}
+
+// Fonction pour mettre à jour les numéros des questions multichoix
+function updateMultichoixQuestionNumbers() {
+    const questions = document.querySelectorAll('.multichoix-question-card');
+    questions.forEach((question, index) => {
+        question.dataset.questionIndex = index;
+        question.querySelector('.card-header h5').textContent = `Question ${index + 1}`;
+        
+        // Mettre à jour les noms des champs pour cette question
+        const optionGroups = question.querySelectorAll('.option-group');
+        optionGroups.forEach((group, optionIndex) => {
+            const checkbox = group.querySelector('input[type="checkbox"]');
+            checkbox.name = `correct_options_${index}[]`;
+            checkbox.value = optionIndex;
+            
+            const textInput = group.querySelector('input[type="text"]');
+            textInput.name = `options_${index}[]`;
+        });
+    });
+}
+
+// Fonction pour mettre à jour les indices des options après suppression
+function updateMultichoixOptionIndices(optionsContainer) {
+    const questionCard = optionsContainer.closest('.multichoix-question-card');
+    const questionIndex = questionCard.dataset.questionIndex;
+    const optionGroups = optionsContainer.querySelectorAll('.option-group');
+    
+    optionGroups.forEach((group, index) => {
+        const checkbox = group.querySelector('input[type="checkbox"]');
+        checkbox.name = `correct_options_${questionIndex}[]`;
+        checkbox.value = index;
+        
+        const textInput = group.querySelector('input[type="text"]');
+        textInput.name = `options_${questionIndex}[]`;
+    });
+}
+
+// Fonction pour supprimer l'image QCM multichoix
+function removeQcmMultichoixImage() {
+    const preview = document.getElementById('qcm_multichoix_image_preview');
+    const input = document.getElementById('qcm_multichoix_image_input');
+    preview.style.display = 'none';
+    input.value = '';
+}
+
+// ===== FONCTIONS FLASHCARDS =====
+
+// Fonction pour ajouter une nouvelle carte flashcard
+function addFlashcard() {
+    const container = document.getElementById('flashcards_container');
+    const cardCount = container.querySelectorAll('.flashcard-item').length;
+    const newIndex = cardCount;
+    
+    const newCardDiv = document.createElement('div');
+    newCardDiv.className = 'card mb-3 flashcard-item';
+    newCardDiv.setAttribute('data-card-index', newIndex);
+    
+    newCardDiv.innerHTML = `
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Carte ${newIndex + 1}</h5>
+            <button type="button" class="btn btn-danger btn-sm" onclick="removeFlashcard(this)">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label">Question</label>
+                    <textarea class="form-control" name="card_questions[]" rows="3" 
+                              placeholder="Entrez la question..." required></textarea>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Réponse correcte</label>
+                    <input type="text" class="form-control" name="card_answers[]" 
+                           placeholder="Réponse attendue..." required>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <label class="form-label">Image (optionnelle)</label>
+                    <input type="file" class="form-control" name="card_images[]" 
+                           accept="image/*" onchange="previewFlashcardImage(this)">
+                </div>
+                <div class="col-md-6">
+                    <div class="image-preview-container"></div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(newCardDiv);
+    updateFlashcardLabels();
+}
+
+// Fonction pour supprimer une carte flashcard
+function removeFlashcard(button) {
+    const flashcardItem = button.closest('.flashcard-item');
+    const container = document.getElementById('flashcards_container');
+    
+    // Ne pas supprimer s'il n'y a qu'une seule carte
+    if (container.querySelectorAll('.flashcard-item').length <= 1) {
+        alert('Vous devez avoir au moins une carte.');
+        return;
+    }
+    
+    flashcardItem.remove();
+    updateFlashcardLabels();
+}
+
+// Fonction pour mettre à jour les labels des cartes flashcard
+function updateFlashcardLabels() {
+    const container = document.getElementById('flashcards_container');
+    const items = container.querySelectorAll('.flashcard-item');
+    
+    items.forEach((item, index) => {
+        const title = item.querySelector('h5');
+        title.textContent = `Carte ${index + 1}`;
+        item.setAttribute('data-card-index', index);
+    });
+}
+
+// Fonction pour prévisualiser l'image d'une carte flashcard
+function previewFlashcardImage(input) {
+    const previewContainer = input.closest('.card-body').querySelector('.image-preview-container');
+    
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            previewContainer.innerHTML = `
+                <div class="position-relative">
+                    <img src="${e.target.result}" class="img-fluid rounded" style="max-height: 150px;">
+                    <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1" 
+                            onclick="removeFlashcardImage(this)">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+        };
+        
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+// Fonction pour supprimer l'image d'une carte flashcard
+function removeFlashcardImage(button) {
+    const cardBody = button.closest('.card-body');
+    const fileInput = cardBody.querySelector('input[type="file"]');
+    const previewContainer = cardBody.querySelector('.image-preview-container');
+    
+    fileInput.value = '';
+    previewContainer.innerHTML = '';
+}
+
+// ===== FONCTIONS MOTS À PLACER =====
+
+// Fonction pour ajouter une phrase (Mots à placer)
+function addWordPlacementSentence() {
+    const container = document.getElementById('word_placement_sentences_container');
+    const sentenceCount = container.querySelectorAll('.mb-3').length + 1;
+    
+    const newSentenceDiv = document.createElement('div');
+    newSentenceDiv.className = 'mb-3';
+    newSentenceDiv.innerHTML = `
+        <label class="form-label">Phrase ${sentenceCount} :</label>
+        <div class="input-group">
+            <input type="text" name="sentences[]" class="form-control" 
+                   placeholder="Exemple: Le chat ___ sur le tapis." 
+                   style="border: 2px solid #17a2b8;">
+            <button type="button" class="btn btn-outline-danger" onclick="removeWordPlacementSentence(this)">
+                <i class="bi bi-dash"></i>
+            </button>
+        </div>
+    `;
+    
+    container.appendChild(newSentenceDiv);
+    updateWordPlacementSentenceLabels();
+}
+
+// Fonction pour supprimer une phrase (Mots à placer)
+function removeWordPlacementSentence(button) {
+    const container = document.getElementById('word_placement_sentences_container');
+    if (container.querySelectorAll('.mb-3').length > 1) {
+        button.closest('.mb-3').remove();
+        updateWordPlacementSentenceLabels();
+    } else {
+        alert('Vous devez garder au moins une phrase.');
+    }
+}
+
+// Fonction pour mettre à jour les labels des phrases (Mots à placer)
+function updateWordPlacementSentenceLabels() {
+    const sentences = document.querySelectorAll('#word_placement_sentences_container .mb-3');
+    sentences.forEach((sentence, index) => {
+        const label = sentence.querySelector('label');
+        label.textContent = `Phrase ${index + 1} :`;
+    });
+}
+
+// Fonction pour ajouter un mot (Mots à placer)
+function addWordPlacementWord() {
+    const container = document.getElementById('word_placement_words_container');
+    const wordCount = container.querySelectorAll('.mb-3').length + 1;
+    
+    const newWordDiv = document.createElement('div');
+    newWordDiv.className = 'mb-3';
+    newWordDiv.innerHTML = `
+        <label class="form-label">Mot ${wordCount} :</label>
+        <div class="input-group">
+            <input type="text" name="words[]" class="form-control" 
+                   placeholder="Exemple: dort" 
+                   style="border: 2px solid #ffc107;">
+            <button type="button" class="btn btn-outline-danger" onclick="removeWordPlacementWord(this)">
+                <i class="bi bi-dash"></i>
+            </button>
+        </div>
+    `;
+    
+    container.appendChild(newWordDiv);
+    updateWordPlacementWordLabels();
+}
+
+// Fonction pour supprimer un mot (Mots à placer)
+function removeWordPlacementWord(button) {
+    const container = document.getElementById('word_placement_words_container');
+    if (container.querySelectorAll('.mb-3').length > 1) {
+        button.closest('.mb-3').remove();
+        updateWordPlacementWordLabels();
+    } else {
+        alert('Vous devez garder au moins un mot.');
+    }
+}
+
+// Fonction pour mettre à jour les labels des mots (Mots à placer)
+function updateWordPlacementWordLabels() {
+    const words = document.querySelectorAll('#word_placement_words_container .mb-3');
+    words.forEach((word, index) => {
+        const label = word.querySelector('label');
+        label.textContent = `Mot ${index + 1} :`;
+    });
+}
+
+// Fonction pour supprimer l'image (Mots à placer)
+function removeWordPlacementImage() {
+    const preview = document.getElementById('word_placement_image_preview');
+    const input = document.querySelector('input[name="word_placement_image"]');
+    preview.style.display = 'none';
+    input.value = '';
+}
+
+</script>
+{% endblock content %}

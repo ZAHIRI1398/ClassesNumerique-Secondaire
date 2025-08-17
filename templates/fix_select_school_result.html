@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Correction de la route select-school{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-success text-white text-center py-4">
+                    <h2 class="mb-0">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Correction appliquée
+                    </h2>
+                </div>
+                <div class="card-body p-4">
+                    <div class="alert alert-success mb-4" role="alert">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <strong>Succès :</strong> La correction a été appliquée avec succès pour la route select-school.
+                    </div>
+
+                    <h4 class="mb-4">Résultats de la correction</h4>
+                    
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">Configuration CSRF</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if results.csrf_enabled %}
+                                <div class="alert alert-success">
+                                    <i class="fas fa-check-circle me-2"></i>
+                                    La protection CSRF est maintenant activée.
+                                </div>
+                            {% else %}
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    La protection CSRF n'a pas pu être activée.
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">État du template</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if results.template_ok %}
+                                <div class="alert alert-success">
+                                    <i class="fas fa-check-circle me-2"></i>
+                                    Le template <code>payment/select_school.html</code> est accessible et fonctionne correctement.
+                                </div>
+                            {% else %}
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    Problème avec le template <code>payment/select_school.html</code>. Vérifiez qu'il existe et qu'il est correctement formaté.
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info" role="alert">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Prochaine étape :</strong> Testez la route <code>/payment/select-school</code> pour vérifier que le problème est résolu.
+                    </div>
+                </div>
+                <div class="card-footer bg-light p-3">
+                    <div class="text-center">
+                        <a href="{{ url_for('fix_select_school.fix_select_school_route') }}" class="btn btn-outline-primary me-2">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Retour au diagnostic
+                        </a>
+                        <a href="{{ url_for('index') }}" class="btn btn-primary">
+                            <i class="fas fa-home me-2"></i>
+                            Accueil
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

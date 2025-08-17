@@ -1,0 +1,148 @@
+{% extends "edit_exercise.html" %}
+
+{% block exercise_content %}
+<div class="mb-4">
+    <h4>Texte à trous</h4>
+    <p class="text-muted">Utilisez ___ (trois underscores) pour marquer les espaces à remplir.</p>
+    
+    <div id="sentences-container">
+        {% if content and content.sentences %}
+            {% for sentence in content.sentences %}
+                <div class="mb-3 sentence-group">
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="sentences[]" value="{{ sentence }}" required placeholder="Entrez une phrase avec des trous (ex: Le chat ___ sur le tapis)">
+                        <button type="button" class="btn btn-danger remove-sentence">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="mb-3 sentence-group">
+                <div class="input-group">
+                    <input type="text" class="form-control" name="sentences[]" required placeholder="Entrez une phrase avec des trous (ex: Le chat ___ sur le tapis)">
+                    <button type="button" class="btn btn-danger remove-sentence">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    
+    <button type="button" class="btn btn-outline-primary" id="add-sentence">
+        <i class="fas fa-plus"></i> Ajouter une phrase
+    </button>
+</div>
+
+<div class="mb-4">
+    <h4>Mots à placer</h4>
+    <p class="text-muted">Ajoutez les mots que les élèves devront placer dans les trous.</p>
+    
+    <div id="words-container">
+        {% if content and content.words %}
+            {% for word in content.words %}
+                <div class="mb-2 word-group">
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="words[]" value="{{ word }}" required placeholder="Entrez un mot">
+                        <button type="button" class="btn btn-danger remove-word">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="mb-2 word-group">
+                <div class="input-group">
+                    <input type="text" class="form-control" name="words[]" required placeholder="Entrez un mot">
+                    <button type="button" class="btn btn-danger remove-word">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    
+    <button type="button" class="btn btn-outline-primary" id="add-word">
+        <i class="fas fa-plus"></i> Ajouter un mot
+    </button>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    function createField(containerSelector, inputName, placeholder) {
+        const container = document.querySelector(containerSelector);
+        if (!container) return;
+
+        const groupDiv = document.createElement('div');
+        groupDiv.className = containerSelector === '#sentences-container' ? 'mb-3 sentence-group' : 'mb-2 word-group';
+
+        const inputGroup = document.createElement('div');
+        inputGroup.className = 'input-group';
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'form-control';
+        input.name = inputName;
+        input.required = true;
+        input.placeholder = placeholder;
+
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'btn btn-danger remove-' + (containerSelector === '#sentences-container' ? 'sentence' : 'word');
+        button.innerHTML = '<i class="fas fa-trash"></i>';
+
+        button.addEventListener('click', function() {
+            const container = this.closest(containerSelector);
+            const groups = container.querySelectorAll(containerSelector === '#sentences-container' ? '.sentence-group' : '.word-group');
+            if (groups.length > 1) {
+                groupDiv.remove();
+            } else {
+                alert('Vous devez avoir au moins ' + (containerSelector === '#sentences-container' ? 'une phrase' : 'un mot'));
+            }
+        });
+
+        inputGroup.appendChild(input);
+        inputGroup.appendChild(button);
+        groupDiv.appendChild(inputGroup);
+        container.appendChild(groupDiv);
+    }
+
+    // Configuration des boutons d'ajout
+    const addButtons = {
+        'add-sentence': {
+            container: '#sentences-container',
+            inputName: 'sentences[]',
+            placeholder: 'Entrez une phrase avec des trous (ex: Le chat ___ sur le tapis)'
+        },
+        'add-word': {
+            container: '#words-container',
+            inputName: 'words[]',
+            placeholder: 'Entrez un mot'
+        }
+    };
+
+    // Ajouter les gestionnaires d'événements pour les boutons d'ajout
+    Object.entries(addButtons).forEach(([buttonId, config]) => {
+        const button = document.getElementById(buttonId);
+        if (button) {
+            button.addEventListener('click', () => {
+                createField(config.container, config.inputName, config.placeholder);
+            });
+        }
+    });
+
+    // Configurer les boutons de suppression existants
+    document.querySelectorAll('.remove-sentence, .remove-word').forEach(button => {
+        button.addEventListener('click', function() {
+            const container = this.closest('#sentences-container, #words-container');
+            const groups = container.querySelectorAll(container.id === 'sentences-container' ? '.sentence-group' : '.word-group');
+            if (groups.length > 1) {
+                this.closest('.sentence-group, .word-group').remove();
+            } else {
+                alert('Vous devez avoir au moins ' + (container.id === 'sentences-container' ? 'une phrase' : 'un mot'));
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

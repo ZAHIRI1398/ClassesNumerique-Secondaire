@@ -1,0 +1,49 @@
+2025-08-15 21:50:08,004 - INFO - === VÉRIFICATION DE LA ROUTE DE SOUMISSION DES EXERCICES ===
+2025-08-15 21:50:08,006 - INFO - Sauvegarde créée: app.py.bak.20250815_215008
+2025-08-15 21:50:08,006 - INFO - 
+=== ANALYSE DE LA ROUTE DE SOUMISSION DES EXERCICES ===
+2025-08-15 21:50:08,009 - INFO - Recherche de la route de soumission des exercices...
+2025-08-15 21:50:08,015 - INFO - Routes potentielles trouvées: 13
+2025-08-15 21:50:08,015 - INFO - Route potentielle 1: answer...
+2025-08-15 21:50:08,015 - INFO - Route potentielle 2: submit...
+2025-08-15 21:50:08,080 - INFO - Route potentielle 3: submit...
+2025-08-15 21:50:08,081 - INFO - Route potentielle 4: submit...
+2025-08-15 21:50:08,081 - INFO - Route potentielle 5: answer...
+2025-08-15 21:50:08,081 - ERROR - Route de soumission des exercices non trouvée.
+2025-08-15 21:50:08,081 - INFO - 
+=== ANALYSE DE LA SOUMISSION DU FORMULAIRE ===
+2025-08-15 21:50:08,107 - INFO - Templates pour les exercices fill_in_blanks trouvés: 17
+2025-08-15 21:50:08,108 - INFO - Analyse du template: templates\basic_test.html
+2025-08-15 21:50:08,108 - WARNING - Formulaire de soumission non trouvé dans templates\basic_test.html.
+2025-08-15 21:50:08,108 - INFO - Analyse du template: templates\create_exercise_in_library.html
+2025-08-15 21:50:08,108 - WARNING - Formulaire de soumission non trouvé dans templates\create_exercise_in_library.html.
+2025-08-15 21:50:08,108 - INFO - Analyse du template: templates\debug_test.html
+2025-08-15 21:50:08,108 - WARNING - Formulaire de soumission non trouvé dans templates\debug_test.html.
+2025-08-15 21:50:08,109 - INFO - Analyse du template: templates\edit_exercise.html
+2025-08-15 21:50:08,109 - WARNING - Formulaire de soumission non trouvé dans templates\edit_exercise.html.
+2025-08-15 21:50:08,109 - INFO - Analyse du template: templates\exercise_library_backup.html
+2025-08-15 21:50:08,109 - WARNING - Formulaire de soumission non trouvé dans templates\exercise_library_backup.html.
+2025-08-15 21:50:08,109 - INFO - Analyse du template: templates\exercise_library_fixed.html
+2025-08-15 21:50:08,109 - WARNING - Formulaire de soumission non trouvé dans templates\exercise_library_fixed.html.
+2025-08-15 21:50:08,109 - INFO - Analyse du template: templates\feedback.html
+2025-08-15 21:50:08,110 - WARNING - Formulaire de soumission non trouvé dans templates\feedback.html.
+2025-08-15 21:50:08,110 - INFO - Analyse du template: templates\test_form.html
+2025-08-15 21:50:08,110 - WARNING - Formulaire de soumission non trouvé dans templates\test_form.html.
+2025-08-15 21:50:08,110 - INFO - Analyse du template: templates\view_exercise.html
+2025-08-15 21:50:08,110 - WARNING - Formulaire de soumission non trouvé dans templates\view_exercise.html.
+2025-08-15 21:50:08,110 - INFO - Analyse du template: templates\debug\form_data.html
+2025-08-15 21:50:08,110 - WARNING - Formulaire de soumission non trouvé dans templates\debug\form_data.html.
+2025-08-15 21:50:08,110 - INFO - Analyse du template: templates\exercise_types\create_exercise.html
+2025-08-15 21:50:08,111 - WARNING - Formulaire de soumission non trouvé dans templates\exercise_types\create_exercise.html.
+2025-08-15 21:50:08,111 - INFO - Analyse du template: templates\exercise_types\create_exercise_simple.html
+2025-08-15 21:50:08,113 - WARNING - Formulaire de soumission non trouvé dans templates\exercise_types\create_exercise_simple.html.
+2025-08-15 21:50:08,113 - INFO - Analyse du template: templates\exercise_types\fill_in_blanks.html
+2025-08-15 21:50:08,113 - WARNING - Formulaire de soumission non trouvé dans templates\exercise_types\fill_in_blanks.html.
+2025-08-15 21:50:08,113 - INFO - Analyse du template: templates\exercise_types\fill_in_blanks_edit.html
+2025-08-15 21:50:08,114 - WARNING - Formulaire de soumission non trouvé dans templates\exercise_types\fill_in_blanks_edit.html.
+2025-08-15 21:50:08,114 - INFO - Analyse du template: templates\teacher\edit_exercise.html
+2025-08-15 21:50:08,114 - WARNING - Formulaire de soumission non trouvé dans templates\teacher\edit_exercise.html.
+2025-08-15 21:50:08,114 - INFO - Analyse du template: templates\teacher\exercise_library.html
+2025-08-15 21:50:08,114 - WARNING - Formulaire de soumission non trouvé dans templates\teacher\exercise_library.html.
+2025-08-15 21:50:08,114 - INFO - Analyse du template: templates\teacher\preview_exercise.html
+2025-08-15 21:50:08,114 - WARNING - Formulaire de soumission non trouvé dans templates\teacher\preview_exercise.html.
