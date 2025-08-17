@@ -6052,3 +6052,5 @@ def debug_form_data():
     
     # Afficher un formulaire de test pour les requêtes GET
     return render_template('debug/form_data.html')
+from integrate_payment_fix import integrate_fix 
+integrate_fix() 
