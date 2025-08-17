@@ -21,7 +21,6 @@
 
                     {% if schools %}
                         <form action="{{ url_for('payment.join_school') }}" method="POST" class="mb-4">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <div class="form-group mb-4">
                                 <label for="school_select" class="form-label fw-bold">Écoles avec abonnement actif :</label>
                                 <select id="school_select" name="school_name" class="form-select form-select-lg mb-3" required>
