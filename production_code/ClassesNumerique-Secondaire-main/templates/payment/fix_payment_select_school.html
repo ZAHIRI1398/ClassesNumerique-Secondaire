@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnostic - Route Select School</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .debug-section {
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .school-card {
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+        .success-indicator {
+            color: #198754;
+            font-weight: bold;
+        }
+        .error-indicator {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .warning-indicator {
+            color: #ffc107;
+            font-weight: bold;
+        }
+        pre {
+            background-color: #f1f1f1;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .fix-button {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5 mb-5">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="mb-4">Diagnostic de la route /payment/select-school</h1>
+                
+                <div class="alert alert-info">
+                    <h4 class="alert-heading">Résumé du diagnostic</h4>
+                    <p>Cette page affiche les résultats du diagnostic de la route <code>/payment/select-school</code> qui génère actuellement une erreur 500.</p>
+                </div>
+
+                <!-- Section écoles avec abonnement -->
+                <div class="debug-section">
+                    <h3>Écoles avec abonnement actif</h3>
+                    {% if schools %}
+                        <p class="success-indicator">✅ {{ schools|length }} école(s) avec abonnement actif trouvée(s)</p>
+                        <div class="row">
+                            {% for school in schools %}
+                            <div class="col-md-6 mb-3">
+                                <div class="school-card">
+                                    <h5>{{ school.school_name }}</h5>
+                                    <p class="mb-1">Nombre d'utilisateurs: {{ school.user_count }}</p>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="error-indicator">❌ Aucune école avec abonnement actif trouvée</p>
+                        <div class="alert alert-warning">
+                            <strong>Problème potentiel:</strong> Les écoles n'ont pas d'abonnement de type 'school' avec statut 'approved'.
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Section vérification du template -->
+                <div class="debug-section">
+                    <h3>Vérification du template</h3>
+                    {% if template_exists %}
+                        <p class="success-indicator">✅ Le template 'payment/select_school.html' existe</p>
+                    {% else %}
+                        <p class="error-indicator">❌ Le template 'payment/select_school.html' est introuvable</p>
+                        <div class="alert alert-danger">
+                            <strong>Problème critique:</strong> Le template requis n'existe pas. Cela peut causer une erreur 500.
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Section vérification des erreurs -->
+                <div class="debug-section">
+                    <h3>Erreurs détectées</h3>
+                    {% if errors %}
+                        <p class="error-indicator">❌ Des erreurs ont été détectées</p>
+                        <pre>{{ errors }}</pre>
+                    {% else %}
+                        <p class="success-indicator">✅ Aucune erreur détectée dans la logique de base</p>
+                    {% endif %}
+                </div>
+
+                <!-- Section détails des écoles -->
+                <div class="debug-section">
+                    <h3>Détails des abonnements des écoles</h3>
+                    {% if school_details %}
+                        <p>Voici les détails de tous les abonnements d'écoles dans la base de données:</p>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-bordered">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>École</th>
+                                        <th>Type d'abonnement</th>
+                                        <th>Statut</th>
+                                        <th>Utilisateurs</th>
+                                        <th>État</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for school in school_details %}
+                                    <tr>
+                                        <td>{{ school.school_name }}</td>
+                                        <td>
+                                            {% if school.subscription_type == 'school' %}
+                                                <span class="badge bg-success">{{ school.subscription_type }}</span>
+                                            {% elif school.subscription_type == 'trial' %}
+                                                <span class="badge bg-warning">{{ school.subscription_type }}</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ school.subscription_type }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if school.subscription_status == 'approved' %}
+                                                <span class="badge bg-success">{{ school.subscription_status }}</span>
+                                            {% elif school.subscription_status == 'pending' %}
+                                                <span class="badge bg-warning">{{ school.subscription_status }}</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ school.subscription_status }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ school.user_count }}</td>
+                                        <td>
+                                            {% if school.subscription_type == 'school' and school.subscription_status == 'approved' %}
+                                                <span class="success-indicator">✅ Valide</span>
+                                            {% else %}
+                                                <span class="error-indicator">❌ Non valide</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="error-indicator">❌ Impossible de récupérer les détails des écoles</p>
+                    {% endif %}
+                </div>
+
+                <!-- Section problèmes potentiels -->
+                <div class="debug-section">
+                    <h3>Problèmes potentiels identifiés</h3>
+                    <div class="alert alert-warning">
+                        <h5 class="alert-heading">Causes possibles de l'erreur 500:</h5>
+                        <ol>
+                            <li><strong>Template manquant ou incorrect:</strong> Le template 'payment/select_school.html' pourrait être absent ou contenir des erreurs.</li>
+                            <li><strong>Format de données incorrect:</strong> Le template attend peut-être un format de données différent de celui fourni par la route.</li>
+                            <li><strong>Erreurs non gérées:</strong> La route actuelle ne gère peut-être pas correctement les exceptions.</li>
+                            <li><strong>Problème d'abonnements:</strong> Les écoles n'ont peut-être pas le bon type ou statut d'abonnement.</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <!-- Section solution proposée -->
+                <div class="debug-section">
+                    <h3>Solution proposée</h3>
+                    <p>Une version corrigée de la route a été créée avec:</p>
+                    <ul>
+                        <li>Gestion d'erreurs améliorée avec try/except</li>
+                        <li>Logs détaillés pour le débogage</li>
+                        <li>Vérification correcte des abonnements d'écoles</li>
+                        <li>Formatage approprié des données pour le template</li>
+                        <li>Redirection sécurisée en cas d'erreur</li>
+                    </ul>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-center fix-button">
+                        <a href="{{ url_for('fix_payment_select_school.fix_select_school') }}" class="btn btn-primary btn-lg">Tester la version corrigée</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
