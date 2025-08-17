@@ -2601,8 +2601,8 @@ def debug_images():
     return render_template('debug_images.html', files=files)
 
 import random
-from diagnose_select_school_route import diagnose_select_school_bp
-from fix_payment_select_school import fix_payment_select_school_bp
+from blueprints.diagnose_select_school_route import diagnose_select_school_bp
+from blueprints.fix_payment_select_school import fix_payment_select_school_bp
 
 
 def generate_word_search_grid(words, max_attempts=3):
