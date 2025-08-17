@@ -2601,6 +2601,9 @@ def debug_images():
     return render_template('debug_images.html', files=files)
 
 import random
+from diagnose_select_school_route import diagnose_select_school_bp
+from fix_payment_select_school import fix_payment_select_school_bp
+
 
 def generate_word_search_grid(words, max_attempts=3):
     """Génère une grille de mots mêlés à partir d'une liste de mots."""
@@ -5989,6 +5992,11 @@ try:
     print("✓ Correction de la route /payment/select-school intégrée avec succès")
 except Exception as e:
     print(f"✗ Erreur lors de l'intégration de la correction pour /payment/select-school: {str(e)}")
+
+# Enregistrement des blueprints pour la correction select-school
+app.register_blueprint(diagnose_select_school_bp)
+app.register_blueprint(fix_payment_select_school_bp)
+
 if __name__ == '__main__':
     with app.app_context():
         # Créer les tables si elles n'existent pas
