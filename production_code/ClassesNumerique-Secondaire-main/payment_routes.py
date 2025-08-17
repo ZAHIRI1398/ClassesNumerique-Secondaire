@@ -33,7 +33,7 @@ def subscribe(subscription_type):
         from models import User
         school_subscription = User.query.filter(
             User.school_name == current_user.school_name,
-            User.subscription_type == 'school',
+            User.subscription_type.in_(['school', 'Trial', 'trial']),
             User.subscription_status == 'approved'
         ).first()
         
@@ -205,10 +205,11 @@ def select_school():
     from sqlalchemy import func
     
     # Trouver toutes les écoles avec au moins un utilisateur ayant un abonnement actif ou en attente
+    # Inclure les types 'school', 'Trial' et 'trial'
     schools_with_subscription = db.session.query(User.school_name, func.count(User.id).label('user_count')).\
         filter(User.school_name != None).\
         filter(User.school_name != '').\
-        filter(User.subscription_type == 'school').\
+        filter(User.subscription_type.in_(['school', 'Trial', 'trial'])).\
         filter(User.subscription_status.in_(['pending', 'paid', 'approved'])).\
         group_by(User.school_name).all()
     
@@ -275,7 +276,7 @@ def join_school():
     
     school_subscription = User.query.filter(
         User.school_name == school_name,
-        User.subscription_type == 'school',
+        User.subscription_type.in_(['school', 'Trial', 'trial']),
         User.subscription_status == 'approved'
     ).first()
     
