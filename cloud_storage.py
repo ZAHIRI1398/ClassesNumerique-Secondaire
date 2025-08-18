@@ -264,6 +264,10 @@ def get_cloudinary_url(image_path):
         if not isinstance(image_path, str):
             try:
                 image_path = str(image_path)
+                try:
+                    current_app.logger.info(f"Conversion du chemin d'image en chaîne: {image_path}")
+                except:
+                    print(f"Conversion du chemin d'image en chaîne: {image_path}")
             except:
                 try:
                     current_app.logger.error(f"Type de chemin d'image non valide: {type(image_path)}")
@@ -271,6 +275,20 @@ def get_cloudinary_url(image_path):
                     print(f"Type de chemin d'image non valide: {type(image_path)}")
                 return None
         
+        # Log du chemin d'image pour débogage
+        try:
+            current_app.logger.debug(f"Traitement du chemin d'image: {image_path}")
+        except:
+            print(f"Traitement du chemin d'image: {image_path}")
+        
+        # Cas spécifique pour static/uploads qui doit être préservé tel quel
+        if image_path.startswith('static/uploads/'):
+            try:
+                current_app.logger.debug(f"Chemin static/uploads détecté: {image_path}")
+            except:
+                print(f"Chemin static/uploads détecté: {image_path}")
+            return f"/{image_path}"
+            
         # Construire l'URL locale selon le format du chemin
         if image_path.startswith('static/'):
             return f"/{image_path}"
@@ -300,7 +318,14 @@ def get_cloudinary_url(image_path):
             print(f"Erreur lors de la génération d'URL: {str(e)}")
         # En cas d'erreur, essayer de retourner le chemin original
         if image_path:
-            if isinstance(image_path, str) and not image_path.startswith('/'):
-                return f"/static/uploads/{image_path}"
+            if isinstance(image_path, str):
+                # Si le chemin commence déjà par static/uploads, le préserver
+                if 'static/uploads' in image_path:
+                    if not image_path.startswith('/'):
+                        return f"/{image_path}"
+                    return image_path
+                # Sinon, ajouter le préfixe standard
+                elif not image_path.startswith('/'):
+                    return f"/static/uploads/{image_path}"
             return image_path
         return None
