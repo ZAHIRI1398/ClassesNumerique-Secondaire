@@ -56,13 +56,22 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.logger.setLevel(logging.DEBUG)
 
-# Configuration de Cloudinary si en production
+# Configuration de Cloudinary si les variables d'environnement sont disponibles
 with app.app_context():
-    if os.environ.get('CLOUDINARY_CLOUD_NAME'):
-        cloud_storage.configure_cloudinary()
-        app.logger.info('Cloudinary configuré pour la production')
-    else:
-        app.logger.info('Mode développement: stockage local des fichiers')
+    try:
+        # Tenter de configurer Cloudinary
+        if os.environ.get('CLOUDINARY_CLOUD_NAME'):
+            if cloud_storage.configure_cloudinary():
+                app.logger.info('Cloudinary configuré avec succès pour la production')
+                cloud_storage.cloudinary_configured = True
+            else:
+                app.logger.warning('Impossible de configurer Cloudinary. Utilisation du stockage local.')
+        else:
+            app.logger.info('Mode développement: stockage local des fichiers')
+    except Exception as e:
+        app.logger.error(f'Erreur lors de la configuration de Cloudinary: {str(e)}')
+        app.logger.info('Fallback: utilisation du stockage local des fichiers')
+        # Continuer l'exécution de l'application même en cas d'erreur
 
 # Configuration selon l'environnement
 config_name = os.environ.get('FLASK_ENV', 'development')
