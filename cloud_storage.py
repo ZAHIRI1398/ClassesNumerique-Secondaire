@@ -257,15 +257,37 @@ def get_cloudinary_url(image_path):
             return None
             
         # Si c'est déjà une URL Cloudinary ou une URL externe, la retourner telle quelle
-        if 'cloudinary.com' in image_path or image_path.startswith('http'):
+        if 'cloudinary.com' in str(image_path) or str(image_path).startswith('http'):
             return image_path
             
+        # Gérer le cas où image_path est un objet et pas une chaîne
+        if not isinstance(image_path, str):
+            try:
+                image_path = str(image_path)
+            except:
+                try:
+                    current_app.logger.error(f"Type de chemin d'image non valide: {type(image_path)}")
+                except:
+                    print(f"Type de chemin d'image non valide: {type(image_path)}")
+                return None
+        
         # Construire l'URL locale selon le format du chemin
         if image_path.startswith('static/'):
             return f"/{image_path}"
+        elif image_path.startswith('/static/'):
+            return image_path  # Déjà au bon format
+        elif image_path.startswith('uploads/'):
+            return f"/static/{image_path}"
         elif '/' in image_path:
-            # Extraire juste le nom du fichier si c'est un chemin complet
-            return f"/static/uploads/{image_path.split('/')[-1]}"
+            # Si c'est un chemin avec des dossiers
+            if 'uploads' in image_path:
+                parts = image_path.split('uploads/')
+                if len(parts) > 1:
+                    return f"/static/uploads/{parts[1]}"
+                else:
+                    return f"/static/uploads/{image_path.split('/')[-1]}"
+            else:
+                return f"/static/uploads/{image_path.split('/')[-1]}"
         else:
             # Si c'est juste un nom de fichier
             return f"/static/uploads/{image_path}"
@@ -275,5 +297,10 @@ def get_cloudinary_url(image_path):
             current_app.logger.error(f"Erreur lors de la génération d'URL: {str(e)}")
         except:
             # Si current_app n'est pas disponible (hors contexte Flask)
-            pass
+            print(f"Erreur lors de la génération d'URL: {str(e)}")
+        # En cas d'erreur, essayer de retourner le chemin original
+        if image_path:
+            if isinstance(image_path, str) and not image_path.startswith('/'):
+                return f"/static/uploads/{image_path}"
+            return image_path
         return None
