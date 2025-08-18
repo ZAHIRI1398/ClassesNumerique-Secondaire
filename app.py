@@ -24,6 +24,7 @@ def get_blank_location(global_blank_index, sentences):
     return -1, -1
 
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, session, current_app, abort, send_file
+from fix_image_paths import register_image_sync_routes
 from flask_login import login_user, login_required, logout_user, current_user
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash
@@ -6058,6 +6059,9 @@ def get_class_statistics(class_obj):
         'students': students_data,
         'total_exercises': total_exercises
     }
+
+# Enregistrer les routes de synchronisation d\'images
+register_image_sync_routes(app)
 
 if __name__ == '__main__':
     app.debug = True
