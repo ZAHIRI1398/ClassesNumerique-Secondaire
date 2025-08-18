@@ -1,12 +1,30 @@
 import os
 import logging
+import importlib.util
 from flask import current_app
+
+# Vérifier si le module cloudinary est disponible sans l'importer directement
+cloudinary_available = importlib.util.find_spec("cloudinary") is not None
+
+# Variable globale pour suivre l'état de configuration de Cloudinary
+cloudinary_configured = False
 
 # Configuration de Cloudinary avec gestion d'erreurs robuste
 def configure_cloudinary():
     """Configure Cloudinary avec les variables d'environnement"""
+    global cloudinary_available, cloudinary_configured
+    
+    # Si le module n'est pas disponible, sortir immédiatement
+    if not cloudinary_available:
+        try:
+            current_app.logger.warning("Module cloudinary non disponible. Utilisation du stockage local.")
+        except:
+            # En cas d'erreur avec current_app (hors contexte Flask)
+            print("Module cloudinary non disponible. Utilisation du stockage local.")
+        return False
+        
     try:
-        # Import conditionnel pour éviter les erreurs si le module n'est pas disponible
+        # Import conditionnel maintenant qu'on sait que le module est disponible
         import cloudinary
         import cloudinary.uploader
         import cloudinary.api
@@ -17,7 +35,10 @@ def configure_cloudinary():
         api_secret = os.environ.get('CLOUDINARY_API_SECRET')
         
         if not all([cloud_name, api_key, api_secret]):
-            current_app.logger.warning("Variables d'environnement Cloudinary manquantes. Utilisation du stockage local.")
+            try:
+                current_app.logger.warning("Variables d'environnement Cloudinary manquantes. Utilisation du stockage local.")
+            except:
+                print("Variables d'environnement Cloudinary manquantes. Utilisation du stockage local.")
             return False
             
         # Configuration de Cloudinary
@@ -27,17 +48,18 @@ def configure_cloudinary():
             api_secret=api_secret,
             secure=True
         )
-        current_app.logger.info("Cloudinary configuré avec succès")
+        try:
+            current_app.logger.info("Cloudinary configuré avec succès")
+        except:
+            print("Cloudinary configuré avec succès")
+        cloudinary_configured = True
         return True
-    except ImportError:
-        current_app.logger.warning("Module cloudinary non disponible. Utilisation du stockage local.")
-        return False
     except Exception as e:
-        current_app.logger.error(f"Erreur lors de la configuration de Cloudinary: {str(e)}")
+        try:
+            current_app.logger.error(f"Erreur lors de la configuration de Cloudinary: {str(e)}")
+        except:
+            print(f"Erreur lors de la configuration de Cloudinary: {str(e)}")
         return False
-
-# Variable globale pour suivre l'état de configuration de Cloudinary
-cloudinary_configured = False
 
 def upload_file(file, folder="uploads"):
     """
@@ -48,58 +70,83 @@ def upload_file(file, folder="uploads"):
         folder: Dossier de destination sur Cloudinary
         
     Returns:
-        URL publique de l'image uploadée
+        str: URL du fichier uploadé (Cloudinary ou local)
     """
-    global cloudinary_configured
+    global cloudinary_configured, cloudinary_available
     
-    # Fonction pour sauvegarder localement
-    def save_locally():
+    if not file:
         try:
-            from werkzeug.utils import secure_filename
-            filename = secure_filename(file.filename)
-            # Générer un nom unique
-            import time
-            timestamp = str(int(time.time()))
-            unique_filename = f"{timestamp}_{filename}"
-            
-            # Sauvegarder localement
-            filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_filename)
-            file.save(filepath)
-            current_app.logger.info(f"Fichier sauvegardé localement: {unique_filename}")
-            return f"static/uploads/{unique_filename}"
-        except Exception as local_error:
-            current_app.logger.error(f"Erreur lors de la sauvegarde locale: {str(local_error)}")
-            return None
+            current_app.logger.error("Aucun fichier fourni pour l'upload")
+        except:
+            print("Aucun fichier fourni pour l'upload")
+        return None
+        
+    # Générer un nom de fichier unique pour éviter les collisions
+    import uuid
+    import datetime
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    unique_filename = f"{timestamp}_{uuid.uuid4().hex}_{file.filename}"
     
     try:
-        # Vérifier si Cloudinary est configuré
-        if not cloudinary_configured and os.environ.get('CLOUDINARY_CLOUD_NAME'):
-            # Tenter de configurer Cloudinary si ce n'est pas déjà fait
+        # Si Cloudinary est disponible et n'est pas configuré, essayer de le configurer
+        if cloudinary_available and not cloudinary_configured:
             cloudinary_configured = configure_cloudinary()
+            
+        # Si Cloudinary est disponible et configuré, upload vers Cloudinary
+        if cloudinary_available and cloudinary_configured:
+            try:
+                # Import conditionnel de cloudinary
+                import cloudinary.uploader
+                
+                # Upload vers Cloudinary
+                result = cloudinary.uploader.upload(
+                    file,
+                    public_id=f"{folder}/{unique_filename}",
+                    overwrite=True,
+                    resource_type="auto"
+                )
+                try:
+                    current_app.logger.info(f"Fichier uploadé vers Cloudinary: {result['secure_url']}")
+                except:
+                    print(f"Fichier uploadé vers Cloudinary: {result['secure_url']}")
+                return result['secure_url']
+            except Exception as e:
+                try:
+                    current_app.logger.error(f"Erreur lors de l'upload vers Cloudinary: {str(e)}")
+                except:
+                    print(f"Erreur lors de l'upload vers Cloudinary: {str(e)}")
+                # Fallback vers stockage local en cas d'erreur
         
-        # Si Cloudinary n'est pas configuré, utiliser le stockage local
-        if not cloudinary_configured:
-            current_app.logger.info("Cloudinary non configuré, utilisation du stockage local")
-            return save_locally()
-        
-        # En production avec Cloudinary configuré
+        # Stockage local si Cloudinary n'est pas disponible ou a échoué
         try:
-            import cloudinary.uploader
-            result = cloudinary.uploader.upload(
-                file,
-                folder=folder,
-                resource_type="auto"
-            )
-            current_app.logger.info(f"Fichier uploadé sur Cloudinary: {result['secure_url']}")
-            return result['secure_url']
-        except Exception as cloud_error:
-            current_app.logger.error(f"Erreur lors de l'upload sur Cloudinary: {str(cloud_error)}")
-            # En cas d'erreur avec Cloudinary, fallback sur stockage local
-            return save_locally()
+            # Créer le dossier s'il n'existe pas
+            local_folder = os.path.join(current_app.static_folder, folder)
+            os.makedirs(local_folder, exist_ok=True)
+            
+            # Sauvegarder le fichier localement
+            local_path = os.path.join(local_folder, unique_filename)
+            file.save(local_path)
+            
+            # Générer l'URL relative pour le fichier local
+            relative_path = f"{folder}/{unique_filename}"
+            try:
+                current_app.logger.info(f"Fichier sauvegardé localement: {relative_path}")
+            except:
+                print(f"Fichier sauvegardé localement: {relative_path}")
+            
+            return relative_path
+        except Exception as e:
+            try:
+                current_app.logger.error(f"Erreur lors de la sauvegarde locale: {str(e)}")
+            except:
+                print(f"Erreur lors de la sauvegarde locale: {str(e)}")
+            return None
     except Exception as e:
-        current_app.logger.error(f"Erreur générale lors de l'upload: {str(e)}")
-        # Tentative de sauvegarde locale en dernier recours
-        return save_locally()
+        try:
+            current_app.logger.error(f"Erreur lors de l'upload du fichier: {str(e)}")
+        except:
+            print(f"Erreur lors de l'upload du fichier: {str(e)}")
+        return None
 
 def delete_file(public_id):
     """
@@ -111,7 +158,7 @@ def delete_file(public_id):
     Returns:
         True si supprimé avec succès, False sinon
     """
-    global cloudinary_configured
+    global cloudinary_configured, cloudinary_available
     
     # Fonction pour supprimer localement
     def delete_locally(path):
@@ -121,28 +168,39 @@ def delete_file(public_id):
                 filepath = os.path.join(current_app.root_path, path)
                 if os.path.exists(filepath):
                     os.remove(filepath)
-                    current_app.logger.info(f"Fichier supprimé localement: {path}")
+                    try:
+                        current_app.logger.info(f"Fichier supprimé localement: {path}")
+                    except:
+                        print(f"Fichier supprimé localement: {path}")
                     return True
                 else:
-                    current_app.logger.warning(f"Fichier local introuvable: {path}")
+                    try:
+                        current_app.logger.warning(f"Fichier local introuvable: {path}")
+                    except:
+                        print(f"Fichier local introuvable: {path}")
             return False
         except Exception as local_error:
-            current_app.logger.error(f"Erreur lors de la suppression locale: {str(local_error)}")
+            try:
+                current_app.logger.error(f"Erreur lors de la suppression locale: {str(local_error)}")
+            except:
+                print(f"Erreur lors de la suppression locale: {str(local_error)}")
             return False
     
     try:
         # Vérifier si c'est une URL Cloudinary
         is_cloudinary_url = public_id and ('cloudinary.com' in public_id or not public_id.startswith('static/'))
         
-        # Vérifier si Cloudinary est configuré
-        if not cloudinary_configured and os.environ.get('CLOUDINARY_CLOUD_NAME'):
+        # Vérifier si Cloudinary est disponible et configuré
+        if cloudinary_available and not cloudinary_configured and os.environ.get('CLOUDINARY_CLOUD_NAME'):
             # Tenter de configurer Cloudinary si ce n'est pas déjà fait
             cloudinary_configured = configure_cloudinary()
         
-        # Si c'est une URL Cloudinary et que Cloudinary est configuré
-        if is_cloudinary_url and cloudinary_configured:
+        # Si c'est une URL Cloudinary et que Cloudinary est disponible et configuré
+        if is_cloudinary_url and cloudinary_available and cloudinary_configured:
             try:
+                # Import conditionnel
                 import cloudinary.uploader
+                
                 # Extraire l'ID public de l'URL Cloudinary si nécessaire
                 if 'cloudinary.com' in public_id:
                     # Format: https://res.cloudinary.com/cloud_name/image/upload/v1234567890/folder/file.jpg
@@ -153,19 +211,34 @@ def delete_file(public_id):
                 result = cloudinary.uploader.destroy(public_id)
                 success = result.get('result') == 'ok'
                 if success:
-                    current_app.logger.info(f"Fichier supprimé de Cloudinary: {public_id}")
+                    try:
+                        current_app.logger.info(f"Fichier supprimé de Cloudinary: {public_id}")
+                    except:
+                        print(f"Fichier supprimé de Cloudinary: {public_id}")
                 else:
-                    current_app.logger.warning(f"Échec de suppression sur Cloudinary: {public_id}")
+                    try:
+                        current_app.logger.warning(f"Échec de suppression sur Cloudinary: {public_id}")
+                    except:
+                        print(f"Échec de suppression sur Cloudinary: {public_id}")
                 return success
             except Exception as cloud_error:
-                current_app.logger.error(f"Erreur lors de la suppression sur Cloudinary: {str(cloud_error)}")
+                try:
+                    current_app.logger.error(f"Erreur lors de la suppression sur Cloudinary: {str(cloud_error)}")
+                except:
+                    print(f"Erreur lors de la suppression sur Cloudinary: {str(cloud_error)}")
                 return False
         else:
             # Suppression locale
-            current_app.logger.info(f"Suppression locale du fichier: {public_id}")
+            try:
+                current_app.logger.info(f"Suppression locale du fichier: {public_id}")
+            except:
+                print(f"Suppression locale du fichier: {public_id}")
             return delete_locally(public_id)
     except Exception as e:
-        current_app.logger.error(f"Erreur générale lors de la suppression: {str(e)}")
+        try:
+            current_app.logger.error(f"Erreur générale lors de la suppression: {str(e)}")
+        except:
+            print(f"Erreur générale lors de la suppression: {str(e)}")
         return False
 
 def get_cloudinary_url(image_path):
