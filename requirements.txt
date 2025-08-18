@@ -10,8 +10,6 @@ email-validator==2.1.0.post1
 python-dotenv==1.0.0
 reportlab==4.0.4
 openpyxl==3.1.2
-pandas==1.5.3
-xlsxwriter==3.0.9
 
 # Production dependencies
 gunicorn==21.2.0

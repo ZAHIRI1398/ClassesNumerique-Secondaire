@@ -1,4 +1,3 @@
-import pandas as pd
 from flask import send_file
 import io
 from reportlab.lib.pagesizes import letter
@@ -7,60 +6,82 @@ from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
 import os
 import tempfile
+import openpyxl
+from openpyxl.styles import Font, Alignment, PatternFill
+from openpyxl.utils import get_column_letter
+from datetime import datetime
 
 def generate_class_excel(class_data):
-    """Génère un fichier Excel avec les statistiques de la classe"""
-    # Créer un DataFrame pour les données des élèves
-    student_data = []
-    for student in class_data['students']:
-        student_data.append({
-            'Nom': student['student'].name or student['student'].username,
-            'Exercices complétés': student['completed_exercises'],
-            'Total exercices': student['total_exercises'],
-            'Score moyen (%)': f"{student['average_score']:.1f}" if student['average_score'] is not None else "N/A",
-            'Progression (%)': f"{(student['completed_exercises'] / student['total_exercises'] * 100):.1f}" if student['total_exercises'] > 0 else "0.0"
-        })
+    """Génère un fichier Excel avec les statistiques de la classe en utilisant directement openpyxl"""
+    # Créer un nouveau classeur Excel
+    wb = openpyxl.Workbook()
+    ws = wb.active
     
-    df = pd.DataFrame(student_data)
+    # Limiter le nom de la feuille à 31 caractères (limite Excel)
+    sheet_name = f"Classe {class_data['class'].name}"
+    if len(sheet_name) > 31:
+        sheet_name = sheet_name[:31]
+    ws.title = sheet_name
+    
+    # Définir les en-têtes
+    headers = ['Nom', 'Exercices complétés', 'Total exercices', 'Score moyen (%)', 'Progression (%)']
+    for col_idx, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_idx)
+        cell.value = header
+        cell.font = Font(bold=True)
+        cell.fill = PatternFill(start_color="DDDDDD", end_color="DDDDDD", fill_type="solid")
+        cell.alignment = Alignment(horizontal='center')
+    
+    # Ajouter les données des élèves
+    for row_idx, student in enumerate(class_data['students'], 2):
+        # Nom
+        ws.cell(row=row_idx, column=1).value = student['student'].name or student['student'].username
+        
+        # Exercices complétés
+        ws.cell(row=row_idx, column=2).value = student['completed_exercises']
+        
+        # Total exercices
+        ws.cell(row=row_idx, column=3).value = student['total_exercises']
+        
+        # Score moyen
+        score_cell = ws.cell(row=row_idx, column=4)
+        if student['average_score'] is not None:
+            score_cell.value = f"{student['average_score']:.1f}"
+        else:
+            score_cell.value = "N/A"
+        
+        # Progression
+        progress_cell = ws.cell(row=row_idx, column=5)
+        if student['total_exercises'] > 0:
+            progress = (student['completed_exercises'] / student['total_exercises']) * 100
+            progress_cell.value = f"{progress:.1f}"
+        else:
+            progress_cell.value = "0.0"
+    
+    # Ajouter des informations générales
+    ws.cell(row=1, column=7).value = "Informations générales"
+    ws.cell(row=1, column=7).font = Font(bold=True)
+    
+    ws.cell(row=2, column=7).value = f"Nombre d'élèves: {len(class_data['students'])}"
+    ws.cell(row=3, column=7).value = f"Total exercices: {class_data['total_exercises']}"
+    ws.cell(row=4, column=7).value = f"Date d'export: {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+    
+    # Ajuster la largeur des colonnes
+    for col_idx in range(1, 6):
+        max_length = 0
+        column = get_column_letter(col_idx)
+        
+        for row_idx in range(1, len(class_data['students']) + 2):
+            cell_value = ws.cell(row=row_idx, column=col_idx).value
+            if cell_value:
+                max_length = max(max_length, len(str(cell_value)))
+        
+        adjusted_width = max_length + 2
+        ws.column_dimensions[column].width = adjusted_width
     
     # Créer un buffer pour stocker le fichier Excel
     output = io.BytesIO()
-    
-    # Créer un writer Excel - version compatible avec pandas 1.5.3
-    writer = pd.ExcelWriter(output, engine='xlsxwriter')
-    
-    # Écrire les données dans une feuille
-    sheet_name = f"Classe {class_data['class'].name}"
-    if len(sheet_name) > 31:  # Excel limite les noms de feuilles à 31 caractères
-        sheet_name = sheet_name[:31]
-    
-    df.to_excel(writer, sheet_name=sheet_name, index=False)
-    
-    # Récupérer la feuille de calcul
-    workbook = writer.book
-    worksheet = writer.sheets[sheet_name]
-    
-    # Ajuster la largeur des colonnes
-    for i, col in enumerate(df.columns):
-        # Utiliser une méthode plus robuste pour calculer la largeur
-        max_len = 0
-        for j in range(len(df)):
-            cell_value = str(df.iloc[j, i])
-            if len(cell_value) > max_len:
-                max_len = len(cell_value)
-        
-        column_width = max(max_len, len(col)) + 2
-        worksheet.set_column(i, i, column_width)
-    
-    # Ajouter un en-tête avec des informations générales
-    worksheet.write(0, 6, "Informations générales")
-    worksheet.write(1, 6, f"Nombre d'élèves: {len(class_data['students'])}")
-    worksheet.write(2, 6, f"Total exercices: {class_data['total_exercises']}")
-    
-    # Sauvegarder le fichier Excel
-    writer.save()
-    
-    # Réinitialiser le pointeur du buffer
+    wb.save(output)
     output.seek(0)
     
     return output
