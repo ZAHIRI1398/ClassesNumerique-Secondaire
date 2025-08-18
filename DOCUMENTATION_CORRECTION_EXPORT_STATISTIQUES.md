@@ -2,6 +2,32 @@
 
 ## Problèmes identifiés et résolus
 
+### 0. Erreur de déploiement avec pandas et xlsxwriter
+
+**Problème :** Le déploiement sur Railway échouait avec des erreurs liées aux dépendances pandas et xlsxwriter.
+
+**Solution :** 
+1. Initialement, nous avons essayé de rétrograder les versions de pandas (2.1.0 → 1.5.3) et xlsxwriter (3.1.2 → 3.0.9) pour assurer la compatibilité.
+2. Finalement, nous avons complètement retiré ces dépendances en réécrivant la fonction d'export Excel pour utiliser directement openpyxl sans pandas.
+
+```python
+# Avant (avec pandas)
+def generate_class_excel(class_data):
+    df = pd.DataFrame(student_data)
+    writer = pd.ExcelWriter(output, engine='xlsxwriter')
+    df.to_excel(writer, sheet_name=sheet_name, index=False)
+    # ...
+    writer.save()
+
+# Après (avec openpyxl directement)
+def generate_class_excel(class_data):
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    # Ajouter les en-têtes et les données manuellement
+    # ...
+    wb.save(output)
+```
+
 ### 1. Erreur `NameError: name 'ClassEnrollment' is not defined`
 
 **Problème :** La fonction `get_class_statistics` dans `app.py` faisait référence à un modèle `ClassEnrollment` qui n'existe pas dans le projet.
@@ -79,9 +105,13 @@ from export_utils import generate_class_pdf, generate_class_excel
 
 Après ces corrections, les fonctionnalités d'export PDF et Excel des statistiques de classe fonctionnent correctement. Les enseignants peuvent maintenant télécharger les statistiques de leurs classes au format PDF ou Excel depuis la page des statistiques.
 
+Les modifications apportées ont également permis de résoudre les problèmes de déploiement sur Railway en simplifiant les dépendances requises.
+
 ## Recommandations pour l'avenir
 
 1. **Cohérence des modèles :** S'assurer que les noms de modèles utilisés dans le code correspondent aux modèles définis dans `models.py`.
 2. **Vérification des imports :** Vérifier que toutes les fonctions et classes utilisées sont correctement importées.
 3. **Tests unitaires :** Ajouter des tests unitaires pour les fonctionnalités d'export afin de détecter rapidement les régressions.
 4. **Documentation :** Maintenir une documentation à jour des fonctionnalités d'export et de leur utilisation.
+5. **Gestion des dépendances :** Privilégier les bibliothèques standards ou légères pour éviter les problèmes de compatibilité lors du déploiement.
+6. **Tests de déploiement :** Tester le déploiement dans un environnement similaire à la production avant de pousser les modifications vers la branche principale.
