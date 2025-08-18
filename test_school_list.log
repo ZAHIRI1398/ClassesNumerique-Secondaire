@@ -1,0 +1,6 @@
+2025-08-17 22:41:17,555 - __main__ - INFO - Nombre d'écoles trouvées: 1
+2025-08-17 22:41:17,556 - __main__ - INFO - Liste des écoles avec abonnement actif:
+2025-08-17 22:41:17,556 - __main__ - INFO - École: École Bruxelles II, Utilisateurs: 1
+2025-08-17 22:41:17,556 - __main__ - WARNING - L'école 'Ecole Bruxelles ll' n'est PAS présente dans la liste.
+2025-08-17 22:41:17,556 - __main__ - INFO - L'école 'École Bruxelles II' est présente dans la liste.
+2025-08-17 22:41:17,560 - __main__ - INFO - École: École Bruxelles II, Utilisateur: responsable@example.com, Type d'abonnement: school, Statut: approved

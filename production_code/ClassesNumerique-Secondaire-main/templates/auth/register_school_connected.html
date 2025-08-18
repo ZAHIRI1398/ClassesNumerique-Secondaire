@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Inscription - École{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Inscription - École</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('register_school') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        {% if not current_user.is_authenticated %}
+                        <!-- Champs pour les nouveaux utilisateurs -->
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Nom complet</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Mot de passe</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+                        {% else %}
+                        <!-- Pour les utilisateurs déjà connectés, on utilise leurs informations existantes -->
+                        <input type="hidden" name="name" value="{{ current_user.name }}">
+                        <input type="hidden" name="email" value="{{ current_user.email }}">
+                        <input type="hidden" name="use_existing_account" value="true">
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> Vous êtes connecté en tant que <strong>{{ current_user.name }}</strong>. 
+                            Vous allez associer votre compte à une école.
+                        </div>
+                        {% endif %}
+                        
+                        <div class="mb-3">
+                            <label for="school_name" class="form-label">Nom de l'établissement</label>
+                            <input type="text" class="form-control" id="school_name" name="school_name" 
+                                   placeholder="Ex: École Saint Bernadette, Collège Notre-Dame..." 
+                                   required>
+                            <div class="form-text">
+                                <i class="fas fa-school text-primary"></i>
+                                Nom officiel de votre établissement scolaire (abonnement 80€/an)
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                {% if current_user.is_authenticated %}
+                                Associer mon compte à cette école
+                                {% else %}
+                                S'inscrire
+                                {% endif %}
+                            </button>
+                        </div>
+                    </form>
+                    
+                    {% if not current_user.is_authenticated %}
+                    <div class="text-center mt-3">
+                        <p>Déjà inscrit ? <a href="{{ url_for('login') }}">Se connecter</a></p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

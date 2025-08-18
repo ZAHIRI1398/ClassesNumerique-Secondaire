@@ -14,7 +14,7 @@
                 <div class="card-body">
                     {% if exercise.image_path %}
                     <div class="text-center mb-3">
-                        <img src="{{ url_for('uploaded_file', filename=exercise.image_path.split('/')[-1]) }}" 
+                        <img src="{{ cloud_storage.get_cloudinary_url(exercise.image_path) }}" 
                              alt="Image de l'exercice" class="img-fluid" style="max-height: 400px;">
                     </div>
                     {% endif %}
@@ -25,7 +25,7 @@
                             <div class="image-container border rounded p-3" style="position: relative !important; min-height: 500px; background-color: #f8f9fa; overflow: visible !important; display: block !important; width: 100%;">
                                 {% if content and content.main_image %}
                                 <div style="position: relative !important; display: inline-block !important; width: 100%;">
-                                    <img id="main-image" src="{{ url_for('static', filename='uploads/' + content.main_image.split('/')[-1]) }}" 
+                                    <img id="main-image" src="{{ cloud_storage.get_cloudinary_url(content.main_image) }}" 
                                          alt="Image principale" class="img-fluid" style="max-height: 450px; width: 100%; display: block;"
                                          onload="adjustZonePositions()">
                                      
@@ -37,25 +37,7 @@
                                                  data-expected-label="{{ zone.label }}"
                                                  data-original-x="{{ zone.x }}"
                                                  data-original-y="{{ zone.y }}"
-                                                 style="position: absolute !important; 
-                                                        left: {{ zone.x }}px !important; 
-                                                        top: {{ zone.y }}px !important;
-                                                        background-color: rgba(255, 255, 255, 0.95) !important; 
-                                                        border: 2px dashed #007bff !important; 
-                                                        border-radius: 6px !important; 
-                                                        cursor: pointer !important; 
-                                                        width: 110px !important; 
-                                                        height: 45px !important; 
-                                                        z-index: 100 !important;
-                                                        pointer-events: auto !important; 
-                                                        text-align: center !important;
-                                                        box-shadow: 0 3px 10px rgba(0,0,0,0.3) !important;
-                                                        display: flex !important;
-                                                        align-items: center !important;
-                                                        justify-content: center !important;
-                                                        font-size: 12px !important;
-                                                        color: #666 !important;
-                                                        font-style: italic !important;">
+                                                 style="position: absolute !important; left: {{ zone.x }}px !important; top: {{ zone.y }}px !important; background-color: rgba(255, 255, 255, 0.95) !important; border: 2px dashed #007bff !important; border-radius: 6px !important; cursor: pointer !important; width: 110px !important; height: 45px !important; z-index: 100 !important; pointer-events: auto !important; text-align: center !important; box-shadow: 0 3px 10px rgba(0,0,0,0.3) !important; display: flex !important; align-items: center !important; justify-content: center !important; font-size: 12px !important; color: #666 !important; font-style: italic !important;">
                                                 Déposer ici
                                             </div>
                                         {% endfor %}

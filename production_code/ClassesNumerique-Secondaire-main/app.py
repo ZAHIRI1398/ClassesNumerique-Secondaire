@@ -113,11 +113,11 @@ def debug_all_fill_in_blanks():
                         words = content['available_words']
                     
                     # Vérifier la cohérence
-                    coherence = "✓" if total_blanks == len(words) else "✗"
+                    coherence = "✓" if total_blanks == len(words) else "[ECHEC]"
                     coherence_color = "green" if total_blanks == len(words) else "red"
                     
                     # Image
-                    has_image = "✓" if ex.image_path else "✗"
+                    has_image = "✓" if ex.image_path else "[ECHEC]"
                     image_color = "green" if ex.image_path else "gray"
                     
                     results.append(f"<tr>")
@@ -170,11 +170,11 @@ def debug_all_fill_in_blanks():
                         words = content['available_words']
                     
                     # Vérifier la cohérence
-                    coherence = "✓" if total_blanks == len(words) else "✗"
+                    coherence = "✓" if total_blanks == len(words) else "[ECHEC]"
                     coherence_color = "green" if total_blanks == len(words) else "red"
                     
                     # Image
-                    has_image = "✓" if ex.image_path else "✗"
+                    has_image = "✓" if ex.image_path else "[ECHEC]"
                     image_color = "green" if ex.image_path else "gray"
                     
                     results.append(f"<tr>")
@@ -229,7 +229,7 @@ def debug_all_fill_in_blanks():
         if score == 100:
             results.append("<p style='color: green;'>✓ Test sentences réussi!</p>")
         else:
-            results.append("<p style='color: red;'>✗ Test sentences échoué!</p>")
+            results.append("<p style='color: red;'>[ECHEC] Test sentences échoué!</p>")
     except Exception as e:
         results.append(f"<p style='color: red;'>Erreur test sentences: {str(e)}</p>")
     
@@ -265,7 +265,7 @@ def debug_all_fill_in_blanks():
         if score == 100:
             results.append("<p style='color: green;'>✓ Test text réussi!</p>")
         else:
-            results.append("<p style='color: red;'>✗ Test text échoué!</p>")
+            results.append("<p style='color: red;'>[ECHEC] Test text échoué!</p>")
     except Exception as e:
         results.append(f"<p style='color: red;'>Erreur test text: {str(e)}</p>")
     
@@ -551,7 +551,7 @@ def login():
                         user.approved_by = None  # Pas d'ID admin spécifique pour l'auto-approbation
                         user.approval_date = datetime.utcnow()
                         db.session.commit()
-                        app.logger.info("✅ mr.zahiri@gmail.com auto-approuvé en tant qu'enseignant-admin")
+                        app.logger.info("[OK] mr.zahiri@gmail.com auto-approuvé en tant qu'enseignant-admin")
                     except Exception as e:
                         app.logger.error(f"Erreur lors de l'auto-approbation: {e}")
                         # Continuer quand même la connexion
@@ -3707,9 +3707,9 @@ def force_admin_setup():
             aziz_user.approval_date = datetime.utcnow()
             db.session.commit()
             
-        return f"✅ Comptes approuvés ! <br>✅ mr.zahiri@gmail.com (enseignant)<br>✅ jemathsia@example.com (enseignant)<br><a href='/login'>Se connecter</a>"
+        return f"[OK] Comptes approuvés ! <br>[OK] mr.zahiri@gmail.com (enseignant)<br>[OK] jemathsia@example.com (enseignant)<br><a href='/login'>Se connecter</a>"
     except Exception as e:
-        return f"❌ Erreur: {e}"
+        return f"[ERREUR] Erreur: {e}"
 
 @app.route('/create-test-exercises')
 def create_test_exercises():
@@ -3724,7 +3724,7 @@ def create_test_exercises():
             teacher = User.query.filter_by(email='jemathsia@example.com').first()
         
         if not teacher:
-            return "❌ Aucun enseignant trouvé"
+            return "[ERREUR] Aucun enseignant trouvé"
         
         # Créer des exercices de test
         exercises_data = [
@@ -3766,10 +3766,10 @@ def create_test_exercises():
         
         db.session.commit()
         
-        return f"✅ {created_count} exercices de test créés ! <br><a href='/exercise/library'>Voir la bibliothèque</a>"
+        return f"[OK] {created_count} exercices de test créés ! <br><a href='/exercise/library'>Voir la bibliothèque</a>"
         
     except Exception as e:
-        return f"❌ Erreur lors de la création: {e}"
+        return f"[ERREUR] Erreur lors de la création: {e}"
 
 @app.route('/debug-edit-exercise/<int:exercise_id>')
 def debug_edit_exercise(exercise_id):
@@ -3796,7 +3796,7 @@ def debug_edit_exercise(exercise_id):
         return html
         
     except Exception as e:
-        return f"❌ Erreur: {e}"
+        return f"[ERREUR] Erreur: {e}"
 
 @app.route('/debug-update-exercise/<int:exercise_id>', methods=['GET', 'POST'])
 def debug_update_exercise(exercise_id):
@@ -3813,12 +3813,12 @@ def debug_update_exercise(exercise_id):
         if new_content:
             exercise.content = new_content
             db.session.commit()
-            return f"✅ Exercice mis à jour ! <br><a href='/exercise/{exercise_id}'>Voir l'exercice</a> | <a href='/exercise/library'>Bibliothèque</a>"
+            return f"[OK] Exercice mis à jour ! <br><a href='/exercise/{exercise_id}'>Voir l'exercice</a> | <a href='/exercise/library'>Bibliothèque</a>"
         else:
-            return f"❌ Aucun contenu fourni. <a href='/debug-edit-exercise/{exercise_id}'>Retour</a>"
+            return f"[ERREUR] Aucun contenu fourni. <a href='/debug-edit-exercise/{exercise_id}'>Retour</a>"
         
     except Exception as e:
-        return f"❌ Erreur lors de la sauvegarde: {e}"
+        return f"[ERREUR] Erreur lors de la sauvegarde: {e}"
 
 @app.route('/exercise/<int:exercise_id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -5387,53 +5387,53 @@ def debug_railway():
                 ORDER BY column_name
             """))
             columns = result.fetchall()
-            debug_info.append(f"✅ Table user a {len(columns)} colonnes")
+            debug_info.append(f"[OK] Table user a {len(columns)} colonnes")
             for col in columns:
                 debug_info.append(f"  - {col[0]} ({col[1]})")
         except Exception as e:
-            debug_info.append(f"❌ Structure table user ERREUR: {str(e)}")
+            debug_info.append(f"[ERREUR] Structure table user ERREUR: {str(e)}")
         
         # Test 3: Import des modèles
         try:
             from models import User, Exercise
-            debug_info.append("✅ Import modeles OK")
+            debug_info.append("[OK] Import modeles OK")
         except Exception as e:
-            debug_info.append(f"❌ Import modeles ERREUR: {str(e)}")
+            debug_info.append(f"[ERREUR] Import modeles ERREUR: {str(e)}")
         
         # Test 4: Variables d'environnement
         import os
-        debug_info.append(f"✅ FLASK_ENV: {os.environ.get('FLASK_ENV', 'non defini')}")
-        debug_info.append(f"✅ DATABASE_URL: {'defini' if os.environ.get('DATABASE_URL') else 'non defini'}")
+        debug_info.append(f"[OK] FLASK_ENV: {os.environ.get('FLASK_ENV', 'non defini')}")
+        debug_info.append(f"[OK] DATABASE_URL: {'defini' if os.environ.get('DATABASE_URL') else 'non defini'}")
         
         # Test 5: Flask-Login
         try:
             from flask_login import current_user
-            debug_info.append(f"✅ Flask-Login import OK")
-            debug_info.append(f"✅ current_user accessible: {hasattr(current_user, 'is_authenticated')}")
-            debug_info.append(f"✅ current_user.is_authenticated: {current_user.is_authenticated}")
+            debug_info.append(f"[OK] Flask-Login import OK")
+            debug_info.append(f"[OK] current_user accessible: {hasattr(current_user, 'is_authenticated')}")
+            debug_info.append(f"[OK] current_user.is_authenticated: {current_user.is_authenticated}")
         except Exception as e:
-            debug_info.append(f"❌ Flask-Login ERREUR: {str(e)}")
+            debug_info.append(f"[ERREUR] Flask-Login ERREUR: {str(e)}")
         
         # Test 6: Test route index directement
         try:
             debug_info.append("=== TEST ROUTE INDEX ===")
             if current_user.is_authenticated:
-                debug_info.append(f"✅ Utilisateur connecte: {current_user.email}")
-                debug_info.append(f"✅ Role: {current_user.role}")
+                debug_info.append(f"[OK] Utilisateur connecte: {current_user.email}")
+                debug_info.append(f"[OK] Role: {current_user.role}")
             else:
-                debug_info.append("✅ Utilisateur non connecte - devrait afficher login.html")
+                debug_info.append("[OK] Utilisateur non connecte - devrait afficher login.html")
         except Exception as e:
-            debug_info.append(f"❌ Test route index ERREUR: {str(e)}")
+            debug_info.append(f"[ERREUR] Test route index ERREUR: {str(e)}")
         
         return "<br>".join(debug_info)
         
     except Exception as e:
-        return f"❌ Erreur diagnostic: {str(e)}"
+        return f"[ERREUR] Erreur diagnostic: {str(e)}"
 
 @app.route('/test-simple')
 def test_simple():
     """Route ultra-simple pour tester si Flask fonctionne"""
-    return "✅ Flask fonctionne parfaitement sur Railway !"
+    return "[OK] Flask fonctionne parfaitement sur Railway !"
 
 @app.route('/debug-fill-in-blanks-railway')
 def debug_fill_in_blanks_railway():
@@ -5536,7 +5536,7 @@ def debug_fill_in_blanks_railway():
         return "<br>".join(debug_info)
         
     except Exception as e:
-        return f"<h2>❌ Erreur diagnostic:</h2><p>{str(e)}</p>"
+        return f"<h2>[ERREUR] Erreur diagnostic:</h2><p>{str(e)}</p>"
 
 
 
@@ -5640,7 +5640,7 @@ def init_production():
         # Vérifier si un admin existe déjà
         existing_admin = User.query.filter_by(role='admin').first()
         if existing_admin:
-            return f"<h2>✅ Admin déjà existant</h2><p>Email: {existing_admin.email}</p><p><a href='/login'>Se connecter</a></p>"
+            return f"<h2>[OK] Admin déjà existant</h2><p>Email: {existing_admin.email}</p><p><a href='/login'>Se connecter</a></p>"
         
         # Créer le compte admin
         admin_user = User(
@@ -5672,7 +5672,7 @@ def init_production():
         """
         
     except Exception as e:
-        return f"<h2>❌ Erreur d'initialisation</h2><p>{str(e)}</p><p><a href='/'>Retour</a></p>"
+        return f"<h2>[ERREUR] Erreur d'initialisation</h2><p>{str(e)}</p><p><a href='/'>Retour</a></p>"
 
 @app.route('/admin/reject/<int:user_id>', methods=['POST'])
 @login_required
@@ -5834,7 +5834,7 @@ def fix_fill_in_blanks_words():
                     results.append("<p style='color: blue;'>ℹ Exercice déjà avec mots</p>")
                     
             except Exception as e:
-                results.append(f"<p style='color: red;'>✗ Erreur: {e}</p>")
+                results.append(f"<p style='color: red;'>[ECHEC] Erreur: {e}</p>")
         
         # Sauvegarder les changements
         if fixed_count > 0:
@@ -5872,7 +5872,7 @@ def fix_production_issues():
                 os.makedirs(static_dir)
                 results.append("<p style='color: green;'>✓ Dossier static créé</p>")
             except Exception as e:
-                results.append(f"<p style='color: red;'>✗ Erreur création static: {e}</p>")
+                results.append(f"<p style='color: red;'>[ECHEC] Erreur création static: {e}</p>")
         else:
             results.append("<p style='color: green;'>✓ Dossier static existe</p>")
         
@@ -5886,7 +5886,7 @@ def fix_production_issues():
                     f.write("# Dossier uploads pour les images des exercices\n")
                 results.append("<p style='color: green;'>✓ Dossier uploads créé avec .gitkeep</p>")
             except Exception as e:
-                results.append(f"<p style='color: red;'>✗ Erreur création uploads: {e}</p>")
+                results.append(f"<p style='color: red;'>[ECHEC] Erreur création uploads: {e}</p>")
         else:
             files = os.listdir(uploads_dir)
             results.append(f"<p style='color: green;'>✓ Dossier uploads existe ({len(files)} fichiers)</p>")
@@ -5931,7 +5931,7 @@ def fix_production_issues():
                     if os.path.exists(image_full_path):
                         results.append(f"<p style='color: green;'>✓ Image existe: {ex.image_path}</p>")
                     else:
-                        results.append(f"<p style='color: red;'>✗ Image manquante: {ex.image_path}</p>")
+                        results.append(f"<p style='color: red;'>[ECHEC] Image manquante: {ex.image_path}</p>")
                 
             except Exception as e:
                 results.append(f"<p style='color: red;'>Erreur analyse: {e}</p>")
@@ -5967,7 +5967,7 @@ def fix_production_issues():
         if score == 100:
             results.append("<p style='color: green;'>✓ Logique de scoring corrigée fonctionne</p>")
         else:
-            results.append("<p style='color: red;'>✗ Problème avec la logique de scoring</p>")
+            results.append("<p style='color: red;'>[ECHEC] Problème avec la logique de scoring</p>")
         
         results.append("<h2>4. RÉSUMÉ</h2>")
         results.append("<p>Diagnostic terminé. Vérifiez les points ci-dessus.</p>")
@@ -5991,10 +5991,10 @@ try:
     integrate_select_school_fix(app)
     print("✓ Correction de la route /payment/select-school intégrée avec succès")
 except Exception as e:
-    print(f"✗ Erreur lors de l'intégration de la correction pour /payment/select-school: {str(e)}")
+    print(f"[ECHEC] Erreur lors de l'intégration de la correction pour /payment/select-school: {str(e)}")
 
 # Enregistrement des blueprints pour la correction select-school
-app.register_blueprint(diagnose_select_school_bp)
+# Blueprint déjà enregistré: app.register_blueprint(diagnose_select_school_bp)
 app.register_blueprint(fix_payment_select_school_bp)
 
 if __name__ == '__main__':

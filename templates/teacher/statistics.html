@@ -128,15 +128,7 @@
                                     <td>
                                         {% set progress_percent = (student_data.completed_exercises / student_data.total_exercises * 100) if student_data.total_exercises > 0 else 0 %}
                                         <div class="progress" style="width: 100px;">
-                                            <div class="progress-bar 
-                                                {% if progress_percent >= 80 %}bg-success
-                                                {% elif progress_percent >= 60 %}bg-warning
-                                                {% else %}bg-danger{% endif %}" 
-                                                role="progressbar" 
-                                                style="width: {{ progress_percent }}%"
-                                                aria-valuenow="{{ progress_percent }}" 
-                                                aria-valuemin="0" 
-                                                aria-valuemax="100">
+                                            <div class="progress-bar {% if progress_percent >= 80 %}bg-success{% elif progress_percent >= 60 %}bg-warning{% else %}bg-danger{% endif %}" role="progressbar" style="width: {{ progress_percent }}%" aria-valuenow="{{ progress_percent }}" aria-valuemin="0" aria-valuemax="100">
                                                 {{ "%.0f"|format(progress_percent) }}%
                                             </div>
                                         </div>

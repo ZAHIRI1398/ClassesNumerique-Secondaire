@@ -3,7 +3,7 @@ Script de correction pour la route /payment/select-school qui génère une erreu
 """
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from flask_login import login_required, current_user
-from .models import User, db
+from models import User, db
 from sqlalchemy import func
 from datetime import datetime
 

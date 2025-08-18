@@ -1,0 +1,15 @@
+2025-08-17 22:44:07,839 - app - INFO - Configuration de développement chargée
+2025-08-17 22:44:07,919 - app - WARNING - Les fonctions d'inscription d'école n'ont pas été trouvées. L'intégration n'a pas pu être effectuée.
+2025-08-17 22:44:14,403 - fix_subscription - INFO - [OK] Correction integree avec succes
+2025-08-17 22:44:14,502 - __main__ - INFO - === DÉBUT DU TEST DU BOUTON ÉCOLE ===
+2025-08-17 22:44:14,517 - __main__ - INFO - [OK] Le template login.html contient le bouton École
+2025-08-17 22:44:14,523 - __main__ - INFO - [OK] La route register_school est définie dans app.py
+2025-08-17 22:44:14,671 - __main__ - INFO - [INFO] Nombre d'écoles avec abonnement actif: 1
+2025-08-17 22:44:14,671 - __main__ - INFO - [INFO] École: École Bruxelles II, Utilisateurs: 6
+2025-08-17 22:44:14,671 - __main__ - INFO - [OK] L'école 'École Bruxelles II' est présente dans la liste
+2025-08-17 22:44:14,671 - __main__ - INFO - [OK] Le template templates/payment/select_school.html existe
+2025-08-17 22:44:14,671 - __main__ - INFO - [OK] Le template templates/auth/register_school_connected.html existe
+2025-08-17 22:44:14,672 - __main__ - INFO - [OK] Le template templates/auth/register_school_simplified.html existe
+2025-08-17 22:44:14,672 - __main__ - INFO - [OK] Le blueprint fix_payment_select_school.py existe
+2025-08-17 22:44:14,672 - __main__ - INFO - [OK] Le blueprint fix_payment_select_school_bp est défini
+2025-08-17 22:44:14,672 - __main__ - INFO - === FIN DU TEST DU BOUTON ÉCOLE ===

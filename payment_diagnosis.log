@@ -1,0 +1,14 @@
+2025-08-17 19:48:50,368 - __main__ - INFO - === DÉBUT DU DIAGNOSTIC DU SYSTÈME DE PAIEMENT ===
+2025-08-17 19:48:50,368 - __main__ - INFO - 
+1. VÉRIFICATION DES ROUTES DE PAIEMENT
+2025-08-17 19:48:50,372 - __main__ - INFO - 
+2. VÉRIFICATION DU TEMPLATE SELECT_SCHOOL.HTML
+2025-08-17 19:48:50,375 - __main__ - INFO - 
+3. VÉRIFICATION DE LA ROUTE SUBSCRIBE
+2025-08-17 19:48:50,375 - __main__ - INFO - URL de souscription: /payment/subscribe/school
+2025-08-17 19:48:50,376 - __main__ - INFO - 
+4. VÉRIFICATION DE L'INTÉGRATION AVEC LE MODULE D'INSCRIPTION D'ÉCOLE
+2025-08-17 19:48:50,424 - __main__ - INFO - 
+=== FIN DU DIAGNOSTIC DU SYSTÈME DE PAIEMENT ===
+2025-08-17 19:48:50,425 - __main__ - INFO - 
+Consultez le fichier payment_diagnosis.log pour plus de détails.

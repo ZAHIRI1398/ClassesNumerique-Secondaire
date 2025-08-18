@@ -243,7 +243,7 @@
             {% if exercise.image_path %}
             <div class="card image-display-placement mb-4">
                 <div class="card-body text-center p-4">
-                    <img src="{{ url_for('uploaded_file', filename=exercise.image_path.split('/')[-1]) }}" 
+                    <img src="{{ cloud_storage.get_cloudinary_url(exercise.image_path) }}" 
                          alt="Image de l'exercice" 
                          class="img-fluid rounded shadow" 
                          style="max-height: 400px;">

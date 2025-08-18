@@ -172,7 +172,7 @@
                     <!-- Image de la carte -->
                     <div id="card-image-container" class="mb-4">
                         {% if content.cards[0].image %}
-                        <img src="{{ url_for('static', filename=content.cards[0].image.replace('static/', '')) }}" 
+                        <img src="{{ cloud_storage.get_cloudinary_url(content.cards[0].image) }}" 
                              alt="Image de la carte" class="img-fluid rounded" 
                              style="max-height: 300px;" id="card-image">
                         {% endif %}
@@ -243,7 +243,8 @@ function updateCard() {
     
     // Mettre à jour l'image
     if (card.image) {
-        cardImage.src = `/static/${card.image.replace('static/', '')}`;
+        // Utiliser l'URL Cloudinary via une route dédiée
+        cardImage.src = `/get_cloudinary_url?image_path=${encodeURIComponent(card.image)}`;
         cardImageContainer.style.display = 'block';
     } else {
         cardImageContainer.style.display = 'none';

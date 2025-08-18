@@ -3,7 +3,7 @@ Script de diagnostic pour la route /payment/select-school qui génère une erreu
 """
 from flask import Blueprint, render_template, current_app, jsonify
 from flask_login import login_required, current_user
-from .models import User, db
+from models import User, db  # Import depuis le module racine, pas depuis le package blueprints
 from sqlalchemy import func
 from functools import wraps
 import os

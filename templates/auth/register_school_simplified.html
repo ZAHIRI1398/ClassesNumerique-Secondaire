@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Inscription d'École{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-school me-2"></i>Inscription d'un Établissement Scolaire</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('school_registration_mod.register_school_simplified') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <!-- Les informations du responsable sont déjà connues car l'utilisateur est connecté -->
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> Vous êtes connecté en tant que <strong>{{ current_user.name }}</strong> ({{ current_user.email }})
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="school_name" class="form-label">Nom de l'établissement</label>
+                            <input type="text" class="form-control" id="school_name" name="school_name" 
+                                   placeholder="Ex: École Saint Bernadette, Collège Notre-Dame..." 
+                                   required>
+                            <div class="form-text">
+                                <i class="fas fa-school text-primary"></i>
+                                Nom officiel de votre établissement scolaire
+                            </div>
+                        </div>
+                        
+                        <!-- Pas besoin de mot de passe car l'utilisateur est déjà connecté -->
+                        
+                        <!-- Information sur l'abonnement -->
+                        <div class="alert alert-warning mb-3">
+                            <i class="fas fa-info-circle me-2"></i> Après la création de votre école, vous serez redirigé vers la page de paiement pour activer l'abonnement.
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-school me-2"></i>Inscrire mon établissement
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div class="text-center mt-3">
+                        <p>Déjà inscrit ? <a href="{{ url_for('login') }}">Se connecter</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

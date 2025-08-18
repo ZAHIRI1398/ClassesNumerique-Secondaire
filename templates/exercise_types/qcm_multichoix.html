@@ -105,7 +105,7 @@
             {% if content.image %}
             <div class="card mb-4 image-card">
                 <div class="card-body text-center p-4">
-                    <img src="{{ url_for('static', filename=content.image.replace('static/', '')) }}" 
+                    <img src="{{ cloud_storage.get_cloudinary_url(content.image) }}" 
                          alt="Image d'illustration" class="img-fluid rounded shadow" style="max-height: 400px;">
                 </div>
             </div>

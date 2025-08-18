@@ -305,7 +305,7 @@
                             <div class="pair-item" data-index="{{ loop.index0 }}" onclick="selectLeft(this)">
                                 <div class="pair-content">
                                     {% if item.type == 'image' %}
-                                        <img src="{{ item.content }}" alt="Image" style="max-width: 100px; max-height: 100px; object-fit: contain;">
+                                        <img src="{{ cloud_storage.get_cloudinary_url(item.content) }}" alt="Image" style="max-width: 100px; max-height: 100px; object-fit: contain;">
                                     {% else %}
                                         <span class="pair-text">{{ item.content if item.content else item }}</span>
                                     {% endif %}
@@ -318,7 +318,7 @@
                             <div class="pair-item" data-index="{{ loop.index0 }}" onclick="selectLeft(this)">
                                 <div class="pair-content">
                                     {% if pair.left.type == 'image' %}
-                                        <img src="{{ pair.left.content }}" alt="Image" style="max-width: 100px; max-height: 100px; object-fit: contain;">
+                                        <img src="{{ cloud_storage.get_cloudinary_url(pair.left.content) }}" alt="Image" style="max-width: 100px; max-height: 100px; object-fit: contain;">
                                     {% else %}
                                         <span class="pair-text">{{ pair.left.content }}</span>
                                     {% endif %}
@@ -342,7 +342,7 @@
                                 <div class="pair-content">
                                     <div class="number-badge">{{ loop.index }}</div>
                                     {% if item.type == 'image' %}
-                                        <img src="{{ item.content }}" alt="Image" style="max-width: 100px; max-height: 100px; object-fit: contain;">
+                                        <img src="{{ cloud_storage.get_cloudinary_url(item.content) }}" alt="Image" style="max-width: 100px; max-height: 100px; object-fit: contain;">
                                     {% else %}
                                         <span class="pair-text">{{ item.content if item.content else item }}</span>
                                     {% endif %}
@@ -360,7 +360,7 @@
                                 <div class="pair-content">
                                     <div class="number-badge">{{ loop.index }}</div>
                                     {% if item.type == 'image' %}
-                                        <img src="{{ item.content }}" alt="Image" style="max-width: 100px; max-height: 100px; object-fit: contain;">
+                                        <img src="{{ cloud_storage.get_cloudinary_url(item.content) }}" alt="Image" style="max-width: 100px; max-height: 100px; object-fit: contain;">
                                     {% else %}
                                         <span class="pair-text">{{ item.content }}</span>
                                     {% endif %}

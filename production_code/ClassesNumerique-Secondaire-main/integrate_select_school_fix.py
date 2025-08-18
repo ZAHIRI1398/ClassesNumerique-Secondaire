@@ -23,7 +23,7 @@ def integrate_select_school_fix(app):
         app.register_blueprint(fix_payment_select_school_bp)
         app.register_blueprint(diagnose_select_school_bp)
         
-        print("✅ Les blueprints de diagnostic et de correction ont été intégrés avec succès!")
+        print("[OK] Les blueprints de diagnostic et de correction ont été intégrés avec succès!")
         
         # Ajouter une route de redirection pour faciliter l'accès
         @app.route('/fix-select-school')
@@ -34,10 +34,10 @@ def integrate_select_school_fix(app):
                 flash('Vous devez être connecté en tant qu\'administrateur pour accéder à cette page.', 'error')
                 return redirect(url_for('index'))
         
-        print("✅ Route de redirection /fix-select-school ajoutée!")
+        print("[OK] Route de redirection /fix-select-school ajoutée!")
         return True
     except Exception as e:
-        print(f"❌ Erreur lors de l'intégration des blueprints: {str(e)}")
+        print(f"[ERREUR] Erreur lors de l'intégration des blueprints: {str(e)}")
         return False
 
 if __name__ == "__main__":

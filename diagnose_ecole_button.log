@@ -1,0 +1,23 @@
+2025-08-17 22:53:39,308 - __main__ - INFO - === DÉBUT DU DIAGNOSTIC DU BOUTON ÉCOLE ===
+2025-08-17 22:53:39,308 - __main__ - INFO - OK: Le template templates\login.html existe.
+2025-08-17 22:53:39,309 - __main__ - INFO - OK: Le code du bouton École est présent dans le template.
+2025-08-17 22:53:39,309 - __main__ - INFO - Ligne 439: <a href="{{ url_for('register_school') }}" class="btn-custom btn-outline-custom w-100">
+2025-08-17 22:53:39,310 - __main__ - INFO - Ligne 440: <i class="fas fa-school me-2"></i> École
+2025-08-17 22:53:39,310 - __main__ - INFO - Ligne 461: <a href="{{ url_for('register_school') }}" class="btn-custom btn-outline-custom w-100">
+2025-08-17 22:53:39,310 - __main__ - INFO - Ligne 462: <i class="fas fa-school me-2"></i> École
+2025-08-17 22:53:39,318 - __main__ - INFO - OK: La route register_school est définie dans app.py
+2025-08-17 22:53:39,338 - __main__ - INFO - OK: Le bouton École est présent dans le rendu du template.
+2025-08-17 22:53:39,352 - __main__ - ERROR - ERREUR: Erreur lors de la génération de l'URL pour register_school: Could not build url for endpoint 'register_school'. Did you mean 'test' instead?
+2025-08-17 22:53:39,352 - __main__ - INFO - INFO: Vérification de la compatibilité navigateur:
+2025-08-17 22:53:39,352 - __main__ - INFO -   - Assurez-vous que JavaScript est activé dans votre navigateur
+2025-08-17 22:53:39,352 - __main__ - INFO -   - Essayez de vider le cache du navigateur (Ctrl+F5 ou Cmd+Shift+R)
+2025-08-17 22:53:39,352 - __main__ - INFO -   - Testez avec un autre navigateur (Chrome, Firefox, Edge)
+2025-08-17 22:53:39,352 - __main__ - INFO - 
+=== RÉSUMÉ DU DIAGNOSTIC ===
+2025-08-17 22:53:39,353 - __main__ - INFO - Template login.html: OK
+2025-08-17 22:53:39,353 - __main__ - INFO - Route register_school: OK
+2025-08-17 22:53:39,353 - __main__ - INFO - Rendu du template: OK
+2025-08-17 22:53:39,353 - __main__ - INFO - Configuration Flask: PROBLÈME
+2025-08-17 22:53:39,353 - __main__ - INFO - 
+Certains tests ont échoué. Veuillez corriger les problèmes identifiés.
+2025-08-17 22:53:39,353 - __main__ - INFO - === FIN DU DIAGNOSTIC DU BOUTON ÉCOLE ===

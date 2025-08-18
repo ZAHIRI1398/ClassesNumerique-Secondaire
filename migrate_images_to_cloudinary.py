@@ -18,9 +18,11 @@ def create_app():
     
     # Charger la configuration depuis config.py
     try:
-        app.config.from_pyfile('config.py')
-    except:
-        print("Erreur: Impossible de charger config.py")
+        from config import config
+        app.config.from_object(config['development'])
+        print("[OK] Configuration chargée avec succès")
+    except Exception as e:
+        print(f"[ERREUR] Impossible de charger la configuration: {str(e)}")
         sys.exit(1)
     
     # Initialiser la base de données
@@ -46,7 +48,7 @@ def migrate_images_to_cloudinary(dry_run=True, batch_size=10, sleep_time=1):
             print("Vérifiez vos variables d'environnement CLOUDINARY_*")
             sys.exit(1)
         
-        print("✅ Cloudinary configuré avec succès")
+        print("[OK] Cloudinary configure avec succes")
         
         # Récupérer tous les exercices avec des images locales
         exercises = Exercise.query.filter(Exercise.image_path.isnot(None)).all()
@@ -90,7 +92,7 @@ def migrate_images_to_cloudinary(dry_run=True, batch_size=10, sleep_time=1):
                 img['exercise_id'],
                 img['title'][:30] + '...' if len(img['title']) > 30 else img['title'],
                 img['image_path'],
-                '✅' if img['file_exists'] else '❌'
+                'OK' if img['file_exists'] else 'MANQUANT'
             ])
         
         print("\nAperçu des images à migrer:")
@@ -100,7 +102,7 @@ def migrate_images_to_cloudinary(dry_run=True, batch_size=10, sleep_time=1):
             print(f"... et {len(local_images) - 10} autres images")
         
         if dry_run:
-            print("\n⚠️ Mode simulation activé, aucune modification ne sera effectuée")
+            print("\n[SIMULATION] Mode simulation active, aucune modification ne sera effectuee")
             print("Pour effectuer la migration réelle, exécutez avec --no-dry-run")
             return
         
@@ -120,7 +122,7 @@ def migrate_images_to_cloudinary(dry_run=True, batch_size=10, sleep_time=1):
             
             for img in batch:
                 if not img['file_exists']:
-                    print(f"❌ Image manquante: {img['local_path']}")
+                    print(f"[ERREUR] Image manquante: {img['local_path']}")
                     failed += 1
                     results.append({
                         'exercise_id': img['exercise_id'],
@@ -136,7 +138,7 @@ def migrate_images_to_cloudinary(dry_run=True, batch_size=10, sleep_time=1):
                         cloudinary_url = cloud_storage.upload_to_cloudinary(f, folder='uploads')
                         
                         if not cloudinary_url:
-                            print(f"❌ Échec d'upload pour l'exercice #{img['exercise_id']}")
+                            print(f"[ERREUR] Echec d'upload pour l'exercice #{img['exercise_id']}")
                             failed += 1
                             results.append({
                                 'exercise_id': img['exercise_id'],
@@ -151,7 +153,7 @@ def migrate_images_to_cloudinary(dry_run=True, batch_size=10, sleep_time=1):
                         exercise.image_path = cloudinary_url
                         db.session.commit()
                         
-                        print(f"✅ Exercice #{img['exercise_id']} migré: {old_path} → {cloudinary_url}")
+                        print(f"[OK] Exercice #{img['exercise_id']} migre: {old_path} -> {cloudinary_url}")
                         successful += 1
                         results.append({
                             'exercise_id': img['exercise_id'],
@@ -161,7 +163,7 @@ def migrate_images_to_cloudinary(dry_run=True, batch_size=10, sleep_time=1):
                         })
                         
                 except Exception as e:
-                    print(f"❌ Erreur pour l'exercice #{img['exercise_id']}: {str(e)}")
+                    print(f"[ERREUR] Erreur pour l'exercice #{img['exercise_id']}: {str(e)}")
                     failed += 1
                     results.append({
                         'exercise_id': img['exercise_id'],

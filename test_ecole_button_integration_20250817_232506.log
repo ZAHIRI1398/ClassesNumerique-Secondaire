@@ -1,0 +1,10 @@
+2025-08-17 23:25:06,376 - __main__ - INFO - === DÉBUT DU TEST D'INTÉGRATION DU BOUTON ÉCOLE ===
+2025-08-17 23:25:07,277 - __main__ - INFO - [OK] Module d'inscription d'école importé et initialisé avec succès.
+2025-08-17 23:25:07,360 - test_ecole_button_integration - WARNING - Les fonctions d'inscription d'école n'ont pas été trouvées. L'intégration n'a pas pu être effectuée.
+2025-08-17 23:25:07,360 - __main__ - INFO - [OK] Module de paiement d'école intégré avec succès.
+2025-08-17 23:25:07,364 - __main__ - INFO - [OK] URL pour register_school: /register/school
+2025-08-17 23:25:07,365 - __main__ - INFO - [OK] URL pour register_school_simplified: /register-school-simplified
+2025-08-17 23:25:07,392 - __main__ - INFO - [OK] URL pour register_school_connected: /register-school-connected
+2025-08-17 23:25:07,392 - __main__ - INFO - [OK] URL pour register_school_to_payment: /register-school-to-payment
+2025-08-17 23:25:07,414 - __main__ - INFO - [OK] Le template login.html contient une référence à register_school
+2025-08-17 23:25:07,414 - __main__ - INFO - === FIN DU TEST D'INTÉGRATION DU BOUTON ÉCOLE ===

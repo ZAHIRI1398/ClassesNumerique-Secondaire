@@ -48,7 +48,7 @@
                             {% if exercise.image_path %}
                             <div class="current-image mb-3">
                                 <p class="text-muted mb-2">Image actuelle :</p>
-                                <img src="{{ url_for('static', filename='uploads/' + exercise.image_path) }}" 
+                                <img src="{{ cloud_storage.get_cloudinary_url(exercise.image_path) }}" 
                                      alt="Image actuelle" 
                                      style="max-width: 300px; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
                                 <div class="mt-2">

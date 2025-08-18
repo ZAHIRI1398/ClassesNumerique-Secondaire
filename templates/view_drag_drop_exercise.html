@@ -14,7 +14,7 @@
             {% endif %}
 
             {% if exercise.image_path %}
-            <img src="{{ url_for('static', filename=exercise.image_path) }}" alt="Image de l'exercice" class="img-fluid mb-3">
+            <img src="{{ cloud_storage.get_cloudinary_url(exercise.image_path) }}" alt="Image de l'exercice" class="img-fluid mb-3">
             {% endif %}
 
             <form method="POST" action="{{ url_for('submit_answer', exercise_id=exercise.id) }}" id="dragDropForm">

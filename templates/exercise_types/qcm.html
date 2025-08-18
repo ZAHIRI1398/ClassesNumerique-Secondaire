@@ -149,7 +149,7 @@
     <div class="mb-4 text-center">
         <div class="card image-display-card">
             <div class="card-body p-4">
-                <img src="{{ url_for('uploaded_file', filename=content.image.split('/')[-1]) }}" 
+                <img src="{{ cloud_storage.get_cloudinary_url(content.image) }}" 
                      alt="Image d'illustration" 
                      class="img-fluid rounded shadow" 
                      style="max-width: 100%; max-height: 400px; object-fit: contain;"
@@ -251,7 +251,7 @@
         <!-- Affichage de l'image si elle existe -->
         {% if exercise.image_path %}
         <div class="exercise-image" style="text-align: center; margin: 1.5rem 0;">
-            <img src="{{ url_for('uploaded_file', filename=exercise.image_path.split('/')[-1]) }}" 
+            <img src="{{ cloud_storage.get_cloudinary_url(exercise.image_path) }}" 
                  alt="Image de l'exercice" 
                  style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
         </div>
