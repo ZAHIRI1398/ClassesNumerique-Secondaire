@@ -256,10 +256,6 @@ def get_cloudinary_url(image_path):
         if not image_path:
             return None
             
-        # Si c'est déjà une URL Cloudinary ou une URL externe, la retourner telle quelle
-        if 'cloudinary.com' in str(image_path) or str(image_path).startswith('http'):
-            return image_path
-            
         # Gérer le cas où image_path est un objet et pas une chaîne
         if not isinstance(image_path, str):
             try:
@@ -277,47 +273,92 @@ def get_cloudinary_url(image_path):
         
         # Log du chemin d'image pour débogage
         try:
-            current_app.logger.debug(f"Traitement du chemin d'image: {image_path}")
+            current_app.logger.debug(f"[IMAGE_PATH_DEBUG] Traitement du chemin d'image: {image_path}")
         except:
-            print(f"Traitement du chemin d'image: {image_path}")
+            print(f"[IMAGE_PATH_DEBUG] Traitement du chemin d'image: {image_path}")
         
-        # SIMPLIFICATION: Normalisation des chemins en 3 étapes simples
+        # RÈGLE 1: Si c'est déjà une URL Cloudinary ou une URL externe, la retourner telle quelle
+        if 'cloudinary.com' in image_path or image_path.startswith('http'):
+            try:
+                current_app.logger.debug(f"[IMAGE_PATH_DEBUG] URL externe ou Cloudinary détectée: {image_path}")
+            except:
+                print(f"[IMAGE_PATH_DEBUG] URL externe ou Cloudinary détectée: {image_path}")
+            return image_path
         
-        # 1. Si le chemin commence déjà par /static/, c'est parfait
+        # RÈGLE 2: Éviter les chemins dupliqués comme /static/uploads/static/uploads/...
+        if '/static/uploads/static/uploads/' in image_path:
+            # Cas spécifique de duplication exacte
+            filename = image_path.split('/static/uploads/static/uploads/')[-1]
+            try:
+                current_app.logger.debug(f"[IMAGE_PATH_DEBUG] Correction duplication exacte: {filename}")
+            except:
+                print(f"[IMAGE_PATH_DEBUG] Correction duplication exacte: {filename}")
+            return f"/static/uploads/{filename}"
+        elif '/static/uploads/' in image_path:
+            # Extraire la dernière partie après le dernier /static/uploads/
+            parts = image_path.split('/static/uploads/')
+            # Si nous avons plusieurs occurrences de /static/uploads/, prendre le dernier segment
+            if len(parts) > 1:
+                filename = parts[-1]
+                
+                # Éviter les chemins vides
+                if not filename:
+                    filename = image_path.split('/')[-1]
+                    
+                try:
+                    current_app.logger.debug(f"[IMAGE_PATH_DEBUG] Chemin normalisé depuis /static/uploads/: {filename}")
+                except:
+                    print(f"[IMAGE_PATH_DEBUG] Chemin normalisé depuis /static/uploads/: {filename}")
+                    
+                return f"/static/uploads/{filename}"
+        
+        # RÈGLE 3: Gestion des chemins commençant par /static/ ou static/
         if image_path.startswith('/static/'):
+            try:
+                current_app.logger.debug(f"[IMAGE_PATH_DEBUG] Chemin /static/ déjà formaté correctement: {image_path}")
+            except:
+                print(f"[IMAGE_PATH_DEBUG] Chemin /static/ déjà formaté correctement: {image_path}")
             return image_path
             
-        # 2. Si le chemin commence par static/ (sans slash), ajouter le slash
         if image_path.startswith('static/'):
-            return f"/{image_path}"
-            
-        # 3. Pour tous les autres cas, extraire le nom de fichier et utiliser /static/uploads/
+            normalized_path = f"/{image_path}"
+            try:
+                current_app.logger.debug(f"[IMAGE_PATH_DEBUG] Ajout du / initial: {normalized_path}")
+            except:
+                print(f"[IMAGE_PATH_DEBUG] Ajout du / initial: {normalized_path}")
+            return normalized_path
+        
+        # RÈGLE 4: Pour les chemins relatifs ou noms de fichiers simples
         # Extraire le nom de fichier (dernière partie après /)
         filename = image_path.split('/')[-1]
         
         # Si le nom de fichier est vide (cas rare), utiliser le chemin complet
         if not filename:
             filename = image_path
+        
+        normalized_path = f"/static/uploads/{filename}"
+        try:
+            current_app.logger.debug(f"[IMAGE_PATH_DEBUG] Chemin normalisé avec nom de fichier: {normalized_path}")
+        except:
+            print(f"[IMAGE_PATH_DEBUG] Chemin normalisé avec nom de fichier: {normalized_path}")
             
-        # Retourner le chemin normalisé
-        return f"/static/uploads/{filename}"
+        return normalized_path
         
     except Exception as e:
         # En cas d'erreur, logger et essayer de retourner un chemin utilisable
         try:
-            current_app.logger.error(f"Erreur lors de la génération d'URL: {str(e)}")
+            current_app.logger.error(f"[IMAGE_PATH_ERROR] Erreur lors de la génération d'URL: {str(e)}")
         except:
-            print(f"Erreur lors de la génération d'URL: {str(e)}")
+            print(f"[IMAGE_PATH_ERROR] Erreur lors de la génération d'URL: {str(e)}")
             
-        # Tenter de récupérer un chemin utilisable
-        if image_path:
-            if isinstance(image_path, str):
-                # Si le chemin contient déjà static/uploads, le normaliser
-                if 'static/uploads' in image_path:
-                    if image_path.startswith('/'):
-                        return image_path
-                    return f"/{image_path}"
-                # Sinon, supposer que c'est un nom de fichier simple
-                return f"/static/uploads/{image_path.split('/')[-1]}"
-            return image_path
-        return None
+        # Tentative de récupération en cas d'erreur
+        if image_path and isinstance(image_path, str):
+            # Si c'est une URL externe ou Cloudinary, la retourner telle quelle
+            if 'cloudinary.com' in image_path or image_path.startswith('http'):
+                return image_path
+                
+            # Pour les autres cas, extraire le nom de fichier et utiliser /static/uploads/
+            filename = image_path.split('/')[-1]
+            return f"/static/uploads/{filename}"
+        
+        return image_path
