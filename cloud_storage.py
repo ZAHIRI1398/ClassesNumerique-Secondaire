@@ -281,51 +281,43 @@ def get_cloudinary_url(image_path):
         except:
             print(f"Traitement du chemin d'image: {image_path}")
         
-        # Cas spécifique pour static/uploads qui doit être préservé tel quel
-        if image_path.startswith('static/uploads/'):
-            try:
-                current_app.logger.debug(f"Chemin static/uploads détecté: {image_path}")
-            except:
-                print(f"Chemin static/uploads détecté: {image_path}")
-            return f"/{image_path}"
+        # SIMPLIFICATION: Normalisation des chemins en 3 étapes simples
+        
+        # 1. Si le chemin commence déjà par /static/, c'est parfait
+        if image_path.startswith('/static/'):
+            return image_path
             
-        # Construire l'URL locale selon le format du chemin
+        # 2. Si le chemin commence par static/ (sans slash), ajouter le slash
         if image_path.startswith('static/'):
             return f"/{image_path}"
-        elif image_path.startswith('/static/'):
-            return image_path  # Déjà au bon format
-        elif image_path.startswith('uploads/'):
-            return f"/static/{image_path}"
-        elif '/' in image_path:
-            # Si c'est un chemin avec des dossiers
-            if 'uploads' in image_path:
-                parts = image_path.split('uploads/')
-                if len(parts) > 1:
-                    return f"/static/uploads/{parts[1]}"
-                else:
-                    return f"/static/uploads/{image_path.split('/')[-1]}"
-            else:
-                return f"/static/uploads/{image_path.split('/')[-1]}"
-        else:
-            # Si c'est juste un nom de fichier
-            return f"/static/uploads/{image_path}"
+            
+        # 3. Pour tous les autres cas, extraire le nom de fichier et utiliser /static/uploads/
+        # Extraire le nom de fichier (dernière partie après /)
+        filename = image_path.split('/')[-1]
+        
+        # Si le nom de fichier est vide (cas rare), utiliser le chemin complet
+        if not filename:
+            filename = image_path
+            
+        # Retourner le chemin normalisé
+        return f"/static/uploads/{filename}"
+        
     except Exception as e:
-        # En cas d'erreur, logger et retourner None
+        # En cas d'erreur, logger et essayer de retourner un chemin utilisable
         try:
             current_app.logger.error(f"Erreur lors de la génération d'URL: {str(e)}")
         except:
-            # Si current_app n'est pas disponible (hors contexte Flask)
             print(f"Erreur lors de la génération d'URL: {str(e)}")
-        # En cas d'erreur, essayer de retourner le chemin original
+            
+        # Tenter de récupérer un chemin utilisable
         if image_path:
             if isinstance(image_path, str):
-                # Si le chemin commence déjà par static/uploads, le préserver
+                # Si le chemin contient déjà static/uploads, le normaliser
                 if 'static/uploads' in image_path:
-                    if not image_path.startswith('/'):
-                        return f"/{image_path}"
-                    return image_path
-                # Sinon, ajouter le préfixe standard
-                elif not image_path.startswith('/'):
-                    return f"/static/uploads/{image_path}"
+                    if image_path.startswith('/'):
+                        return image_path
+                    return f"/{image_path}"
+                # Sinon, supposer que c'est un nom de fichier simple
+                return f"/static/uploads/{image_path.split('/')[-1]}"
             return image_path
         return None
