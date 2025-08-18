@@ -19,7 +19,7 @@ def get_blank_location(global_blank_index, sentences):
         blank_count += blanks_in_sentence
     return -1, -1
 
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, session, current_app, abort
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, session, current_app, abort, send_file
 from flask_login import login_user, login_required, logout_user, current_user
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash
@@ -33,6 +33,7 @@ from models import User, Class, Course, Exercise, ExerciseAttempt, CourseFile, s
 from payment_routes import payment_bp
 from forms import ExerciseForm
 from modified_submit import bp as exercise_bp
+from export_utils import generate_class_pdf, generate_class_excel
 
 
 
@@ -4923,6 +4924,8 @@ def edit_exercise(exercise_id):
 
 # ===== ROUTES STATISTIQUES ET EXPORT =====
 
+from export_utils import generate_class_excel, generate_class_pdf
+
 @app.route('/teacher/statistics')
 @login_required
 def teacher_statistics():
@@ -4979,232 +4982,7 @@ def teacher_statistics():
     
     return render_template('teacher/statistics.html', classes_stats=classes_stats)
 
-@app.route('/teacher/export/pdf/<int:class_id>')
-@login_required
-def export_class_pdf(class_id):
-    """Export des statistiques d'une classe en PDF"""
-    if not current_user.is_teacher:
-        flash('Accès refusé. Vous devez être enseignant.', 'error')
-        return redirect(url_for('dashboard'))
-    
-    # Vérifier que la classe appartient à l'enseignant
-    class_obj = Class.query.filter_by(id=class_id, teacher_id=current_user.id).first()
-    if not class_obj:
-        flash('Classe non trouvée.', 'error')
-        return redirect(url_for('teacher_statistics'))
-    
-    from reportlab.lib.pagesizes import letter, A4
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib import colors
-    from reportlab.lib.units import inch
-    from io import BytesIO
-    from datetime import datetime
-    
-    # Créer le buffer pour le PDF
-    buffer = BytesIO()
-    
-    # Créer le document PDF
-    doc = SimpleDocTemplate(buffer, pagesize=A4)
-    styles = getSampleStyleSheet()
-    story = []
-    
-    # Titre
-    title_style = ParagraphStyle(
-        'CustomTitle',
-        parent=styles['Heading1'],
-        fontSize=18,
-        spaceAfter=30,
-        alignment=1  # Centré
-    )
-    story.append(Paragraph(f'Statistiques de la classe : {class_obj.name}', title_style))
-    story.append(Spacer(1, 20))
-    
-    # Informations générales
-    info_style = styles['Normal']
-    story.append(Paragraph(f'<b>Enseignant :</b> {current_user.name}', info_style))
-    story.append(Paragraph(f'<b>Date d\'export :</b> {datetime.now().strftime("%d/%m/%Y à %H:%M")}', info_style))
-    story.append(Paragraph(f'<b>Nombre d\'élèves :</b> {len(class_obj.students)}', info_style))
-    story.append(Spacer(1, 20))
-    
-    # Récupérer tous les exercices de la classe
-    all_exercises = []
-    for course in class_obj.courses:
-        all_exercises.extend(course.exercises)
-    
-    story.append(Paragraph(f'<b>Nombre d\'exercices :</b> {len(all_exercises)}', info_style))
-    story.append(Spacer(1, 30))
-    
-    # Tableau des résultats
-    story.append(Paragraph('<b>Résultats par élève</b>', styles['Heading2']))
-    story.append(Spacer(1, 10))
-    
-    # Données du tableau
-    data = [['Élève', 'Exercices complétés', 'Score moyen (%)', 'Progression']]
-    
-    for student in class_obj.students:
-        # Compter les exercices complétés
-        completed_exercises = ExerciseAttempt.query.filter_by(
-            student_id=student.id
-        ).join(Exercise).filter(
-            Exercise.id.in_([ex.id for ex in all_exercises])
-        ).count()
-        
-        # Calculer le score moyen
-        attempts = ExerciseAttempt.query.filter_by(
-            student_id=student.id
-        ).join(Exercise).filter(
-            Exercise.id.in_([ex.id for ex in all_exercises])
-        ).all()
-        
-        if attempts:
-            average_score = sum(attempt.score or 0 for attempt in attempts) / len(attempts)
-            score_text = f'{average_score:.1f}%'
-        else:
-            score_text = '-'
-        
-        # Calculer la progression
-        if len(all_exercises) > 0:
-            progression = f'{completed_exercises}/{len(all_exercises)}'
-        else:
-            progression = '0/0'
-        
-        data.append([
-            student.name or student.username,
-            str(completed_exercises),
-            score_text,
-            progression
-        ])
-    
-    # Créer le tableau
-    table = Table(data)
-    table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 12),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black)
-    ]))
-    
-    story.append(table)
-    
-    # Construire le PDF
-    doc.build(story)
-    
-    # Préparer la réponse
-    buffer.seek(0)
-    filename = f'statistiques_{class_obj.name}_{datetime.now().strftime("%Y%m%d_%H%M")}.pdf'
-    
-    from flask import make_response
-    response = make_response(buffer.getvalue())
-    response.headers['Content-Type'] = 'application/pdf'
-    response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
-    
-    return response
-
-@app.route('/teacher/export/excel/<int:class_id>')
-@login_required
-def export_class_excel(class_id):
-    """Export des statistiques d'une classe en Excel"""
-    if not current_user.is_teacher:
-        flash('Accès refusé. Vous devez être enseignant.', 'error')
-        return redirect(url_for('dashboard'))
-    
-    # Vérifier que la classe appartient à l'enseignant
-    class_obj = Class.query.filter_by(id=class_id, teacher_id=current_user.id).first()
-    if not class_obj:
-        flash('Classe non trouvée.', 'error')
-        return redirect(url_for('teacher_statistics'))
-    
-    from openpyxl import Workbook
-    from openpyxl.styles import Font, PatternFill, Alignment
-    from io import BytesIO
-    from datetime import datetime
-    
-    # Créer le workbook Excel
-    wb = Workbook()
-    ws = wb.active
-    ws.title = f'Statistiques {class_obj.name}'
-    
-    # Style pour les en-têtes
-    header_font = Font(bold=True, color='FFFFFF')
-    header_fill = PatternFill(start_color='366092', end_color='366092', fill_type='solid')
-    center_alignment = Alignment(horizontal='center', vertical='center')
-    
-    # Informations générales
-    ws['A1'] = f'Statistiques de la classe : {class_obj.name}'
-    ws['A1'].font = Font(bold=True, size=16)
-    ws.merge_cells('A1:D1')
-    
-    ws['A3'] = f'Enseignant : {current_user.name}'
-    ws['A4'] = f'Date d\'export : {datetime.now().strftime("%d/%m/%Y à %H:%M")}'
-    ws['A5'] = f'Nombre d\'élèves : {len(class_obj.students)}'
-    
-    # Récupérer tous les exercices de la classe
-    all_exercises = []
-    for course in class_obj.courses:
-        all_exercises.extend(course.exercises)
-    
-    ws['A6'] = f'Nombre d\'exercices : {len(all_exercises)}'
-    
-    # En-têtes du tableau
-    headers = ['Élève', 'Exercices complétés', 'Score moyen (%)', 'Progression']
-    for col, header in enumerate(headers, 1):
-        cell = ws.cell(row=8, column=col, value=header)
-        cell.font = header_font
-        cell.fill = header_fill
-        cell.alignment = center_alignment
-    
-    # Données des étudiants
-    for row, student in enumerate(class_obj.students, 9):
-        # Compter les exercices complétés
-        completed_exercises = ExerciseAttempt.query.filter_by(
-            student_id=student.id
-        ).join(Exercise).filter(
-            Exercise.id.in_([ex.id for ex in all_exercises])
-        ).count()
-        
-        # Calculer le score moyen
-        attempts = ExerciseAttempt.query.filter_by(
-            student_id=student.id
-        ).join(Exercise).filter(
-            Exercise.id.in_([ex.id for ex in all_exercises])
-        ).all()
-        
-        if attempts:
-            average_score = sum(attempt.score or 0 for attempt in attempts) / len(attempts)
-        else:
-            average_score = None
-        
-        # Remplir les cellules
-        ws.cell(row=row, column=1, value=student.name or student.username)
-        ws.cell(row=row, column=2, value=completed_exercises)
-        ws.cell(row=row, column=3, value=f'{average_score:.1f}' if average_score is not None else '-')
-        ws.cell(row=row, column=4, value=f'{completed_exercises}/{len(all_exercises)}')
-        
-        # Centrer les données
-        for col in range(1, 5):
-            ws.cell(row=row, column=col).alignment = center_alignment
-    
-    # Ajuster la largeur des colonnes
-    ws.column_dimensions['A'].width = 20
-    ws.column_dimensions['B'].width = 18
-    ws.column_dimensions['C'].width = 15
-    ws.column_dimensions['D'].width = 15
-    
-    # Créer le buffer pour Excel
-    buffer = BytesIO()
-    wb.save(buffer)
-    buffer.seek(0)
-    
-    # Préparer la réponse
-    filename = f'statistiques_{class_obj.name}_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
-    
-    from flask import make_response
-    response = make_response(buffer.getvalue())
+# Fin de la route teacher_statistics
 
 # ===== ROUTE D'ÉDITION D'EXERCICE SUPPRIMÉE =====
 # Cette route était en conflit avec la route robuste /exercise/edit_exercise/<int:exercise_id>
@@ -6166,6 +5944,90 @@ def fix_production_issues():
     except Exception as e:
         return f"<h1>ERREUR</h1><p>Erreur lors du diagnostic: {str(e)}</p><pre>{traceback.format_exc()}</pre>"
 
+
+@app.route('/class/<int:class_id>/export/pdf')
+@login_required
+@teacher_required
+def export_class_pdf(class_id):
+    """Exporter les statistiques d'une classe en PDF"""
+    # Vérifier que la classe appartient à l'enseignant connecté
+    class_obj = Class.query.filter_by(id=class_id, teacher_id=current_user.id).first_or_404()
+    
+    # Récupérer les données de la classe pour l'export
+    class_data = get_class_statistics(class_obj)
+    
+    # Générer le PDF
+    pdf_buffer = generate_class_pdf(class_data)
+    
+    # Envoyer le fichier PDF
+    return send_file(
+        pdf_buffer,
+        as_attachment=True,
+        download_name=f"statistiques_classe_{class_obj.name}_{datetime.now().strftime('%Y%m%d')}.pdf",
+        mimetype='application/pdf'
+    )
+
+@app.route('/class/<int:class_id>/export/excel')
+@login_required
+@teacher_required
+def export_class_excel(class_id):
+    """Exporter les statistiques d'une classe en Excel"""
+    # Vérifier que la classe appartient à l'enseignant connecté
+    class_obj = Class.query.filter_by(id=class_id, teacher_id=current_user.id).first_or_404()
+    
+    # Récupérer les données de la classe pour l'export
+    class_data = get_class_statistics(class_obj)
+    
+    # Générer le fichier Excel
+    excel_buffer = generate_class_excel(class_data)
+    
+    # Envoyer le fichier Excel
+    return send_file(
+        excel_buffer,
+        as_attachment=True,
+        download_name=f"statistiques_classe_{class_obj.name}_{datetime.now().strftime('%Y%m%d')}.xlsx",
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+
+# Fonction utilitaire pour récupérer les statistiques d'une classe
+def get_class_statistics(class_obj):
+    """Récupère les statistiques d'une classe pour l'export"""
+    students = User.query.filter_by(role='student').join(student_class_association, User.id == student_class_association.c.student_id).filter(student_class_association.c.class_id == class_obj.id).all()
+    
+    # Récupérer tous les exercices des cours de la classe
+    class_courses = Course.query.filter_by(class_id=class_obj.id).all()
+    class_exercises = []
+    for course in class_courses:
+        class_exercises.extend(course.exercises)
+    total_exercises = len(class_exercises)
+    
+    # Données des élèves
+    students_data = []
+    for student in students:
+        # Récupérer les tentatives de l'élève pour les exercices des cours de cette classe
+        attempts = []
+        for course in class_courses:
+            course_attempts = ExerciseAttempt.query.filter_by(student_id=student.id, course_id=course.id).all()
+            attempts.extend(course_attempts)
+        
+        # Calculer le score moyen
+        scores = [attempt.score for attempt in attempts if attempt.score is not None]
+        avg_score = sum(scores) / len(scores) if scores else None
+        
+        # Ajouter les données de l'élève
+        students_data.append({
+            'student': student,
+            'completed_exercises': len(attempts),
+            'total_exercises': total_exercises,
+            'average_score': avg_score
+        })
+    
+    # Retourner les données formatées
+    return {
+        'class': class_obj,
+        'students': students_data,
+        'total_exercises': total_exercises
+    }
 
 if __name__ == '__main__':
     app.debug = True
