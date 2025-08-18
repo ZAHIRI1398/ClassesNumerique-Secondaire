@@ -26,23 +26,39 @@ def generate_class_excel(class_data):
     # Créer un buffer pour stocker le fichier Excel
     output = io.BytesIO()
     
-    # Créer un writer Excel
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        # Écrire les données dans une feuille
-        df.to_excel(writer, sheet_name=f"Classe {class_data['class'].name}", index=False)
+    # Créer un writer Excel - version compatible avec pandas 1.5.3
+    writer = pd.ExcelWriter(output, engine='xlsxwriter')
+    
+    # Écrire les données dans une feuille
+    sheet_name = f"Classe {class_data['class'].name}"
+    if len(sheet_name) > 31:  # Excel limite les noms de feuilles à 31 caractères
+        sheet_name = sheet_name[:31]
+    
+    df.to_excel(writer, sheet_name=sheet_name, index=False)
+    
+    # Récupérer la feuille de calcul
+    workbook = writer.book
+    worksheet = writer.sheets[sheet_name]
+    
+    # Ajuster la largeur des colonnes
+    for i, col in enumerate(df.columns):
+        # Utiliser une méthode plus robuste pour calculer la largeur
+        max_len = 0
+        for j in range(len(df)):
+            cell_value = str(df.iloc[j, i])
+            if len(cell_value) > max_len:
+                max_len = len(cell_value)
         
-        # Récupérer la feuille de calcul
-        worksheet = writer.sheets[f"Classe {class_data['class'].name}"]
-        
-        # Ajuster la largeur des colonnes
-        for i, col in enumerate(df.columns):
-            column_width = max(df[col].astype(str).map(len).max(), len(col)) + 2
-            worksheet.set_column(i, i, column_width)
-        
-        # Ajouter un en-tête avec des informations générales
-        worksheet.write(0, 6, "Informations générales")
-        worksheet.write(1, 6, f"Nombre d'élèves: {len(class_data['students'])}")
-        worksheet.write(2, 6, f"Total exercices: {class_data['total_exercises']}")
+        column_width = max(max_len, len(col)) + 2
+        worksheet.set_column(i, i, column_width)
+    
+    # Ajouter un en-tête avec des informations générales
+    worksheet.write(0, 6, "Informations générales")
+    worksheet.write(1, 6, f"Nombre d'élèves: {len(class_data['students'])}")
+    worksheet.write(2, 6, f"Total exercices: {class_data['total_exercises']}")
+    
+    # Sauvegarder le fichier Excel
+    writer.save()
     
     # Réinitialiser le pointeur du buffer
     output.seek(0)
