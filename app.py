@@ -1,11 +1,14 @@
 import os
 import json
+import time
 import random
 import string
 import logging
-import unicodedata
-from datetime import datetime, timedelta
+import datetime
+import traceback
 from functools import wraps
+from logging.handlers import RotatingFileHandler
+import cloud_storage
 
 def get_blank_location(global_blank_index, sentences):
     """Détermine à quelle phrase et à quel indice dans cette phrase correspond un indice global de blanc"""
@@ -53,6 +56,14 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.logger.setLevel(logging.DEBUG)
 
+# Configuration de Cloudinary si en production
+with app.app_context():
+    if os.environ.get('CLOUDINARY_CLOUD_NAME'):
+        cloud_storage.configure_cloudinary()
+        app.logger.info('Cloudinary configuré pour la production')
+    else:
+        app.logger.info('Mode développement: stockage local des fichiers')
+
 # Configuration selon l'environnement
 config_name = os.environ.get('FLASK_ENV', 'development')
 if config_name == 'production':
@@ -67,6 +78,11 @@ else:
 # Initialisation des extensions
 from extensions import init_extensions
 init_extensions(app)
+
+# Rendre cloud_storage disponible dans tous les templates
+@app.context_processor
+def inject_cloud_storage():
+    return dict(cloud_storage=cloud_storage)
 
 
 # Route de diagnostic pour tous les exercices fill_in_blanks
@@ -4059,15 +4075,15 @@ def edit_exercise(exercise_id):
             exercise.description = request.form.get('description', exercise.description)
             exercise.subject = request.form.get('subject', exercise.subject)
             
-            # Gestion de l'upload d'image
+            # Gestion de l'image si présente
             if 'exercise_image' in request.files:
                 file = request.files['exercise_image']
                 if file and file.filename != '' and allowed_file(file.filename):
-                    filename = generate_unique_filename(file.filename)
-                    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                    file.save(filepath)
-                    exercise.image_path = f'static/uploads/{filename}'
-                    app.logger.info(f"[EDIT_DEBUG] Image sauvegardée: {exercise.image_path}")
+                    # Utiliser Cloudinary pour l'upload en production, stockage local en dev
+                    image_url = cloud_storage.upload_file(file, folder="exercises")
+                    if image_url:
+                        exercise.image_path = image_url
+                        app.logger.info(f"[EDIT_DEBUG] Image sauvegardée: {exercise.image_path}")
             
             # Traitement spécifique par type d'exercice
             if exercise.exercise_type == 'qcm':
@@ -4188,20 +4204,12 @@ def edit_exercise(exercise_id):
                 if 'qcm_multichoix_image' in request.files:
                     image_file = request.files['qcm_multichoix_image']
                     if image_file and image_file.filename != '' and allowed_file(image_file.filename):
-                        filename = secure_filename(image_file.filename)
-                        unique_filename = generate_unique_filename(filename)
-                        
-                        # Créer le dossier uploads s'il n'existe pas
-                        upload_folder = os.path.join(current_app.root_path, 'static', 'uploads')
-                        os.makedirs(upload_folder, exist_ok=True)
-                        
-                        # Sauvegarder l'image
-                        image_path = os.path.join(upload_folder, unique_filename)
-                        image_file.save(image_path)
-                        
-                        # Ajouter le chemin de l'image au contenu
-                        content['image'] = f'static/uploads/{unique_filename}'
-                        current_app.logger.info(f'[QCM_MULTICHOIX_EDIT_DEBUG] Nouvelle image sauvegardée: {content["image"]}')
+                        # Utiliser Cloudinary pour l'upload en production, stockage local en dev
+                        image_url = cloud_storage.upload_file(image_file, folder="exercises/qcm_multichoix")
+                        if image_url:
+                            # Ajouter le chemin de l'image au contenu
+                            content['image'] = image_url
+                            current_app.logger.info(f'[QCM_MULTICHOIX_EDIT_DEBUG] Nouvelle image sauvegardée: {content["image"]}')
                     else:
                         # Conserver l'image existante
                         if 'image' in current_content:
@@ -4318,11 +4326,11 @@ def edit_exercise(exercise_id):
                     file = request.files['image']
                     if file and file.filename:
                         filename = secure_filename(file.filename)
-                        timestamp = str(int(time.time()))
-                        filename = f"{timestamp}_{filename}"
-                        filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-                        file.save(filepath)
-                        exercise.image_path = f"uploads/{filename}"
+                        # Utiliser Cloudinary pour l'upload en production, stockage local en dev
+                        image_url = cloud_storage.upload_file(file, folder="exercises")
+                        if image_url:
+                            exercise.image_path = image_url
+                            current_app.logger.info(f"[WORD_PLACEMENT_DEBUG] Image sauvegardée: {exercise.image_path}")
                 
                 exercise.content = json.dumps(content, ensure_ascii=False)
                 print(f'[WORD_PLACEMENT_EDIT_DEBUG] Contenu sauvegardé: {len(sentences)} phrases, {len(words)} mots, {len(answers)} réponses')
@@ -4497,11 +4505,10 @@ def edit_exercise(exercise_id):
                 if 'main_image' in request.files:
                     file = request.files['main_image']
                     if file and file.filename != '' and allowed_file(file.filename):
-                        filename = generate_unique_filename(file.filename)
-                        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                        file.save(filepath)
-                        main_image = f'static/uploads/{filename}'
-                        current_app.logger.info(f"[IMAGE_LABELING_EDIT_DEBUG] Nouvelle image principale: {main_image}")
+                        # Utiliser Cloudinary pour l'upload en production, stockage local en dev
+                        main_image = cloud_storage.upload_file(file, folder="exercises")
+                        if main_image:
+                            current_app.logger.info(f"[IMAGE_LABELING_EDIT_DEBUG] Nouvelle image principale: {main_image}")
                 
                 # Validation
                 if not labels:
@@ -4574,11 +4581,11 @@ def edit_exercise(exercise_id):
                     if i < len(card_images) and card_images[i] and card_images[i].filename != '':
                         image_file = card_images[i]
                         if allowed_file(image_file.filename):
-                            filename = generate_unique_filename(image_file.filename)
-                            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                            image_file.save(filepath)
-                            card_data['image'] = f'uploads/{filename}'
-                            current_app.logger.info(f'[FLASHCARDS_EDIT_DEBUG] Nouvelle image carte {i+1}: {filename}')
+                            # Utiliser Cloudinary pour l'upload en production, stockage local en dev
+                            image_url = cloud_storage.upload_file(image_file, folder="flashcards")
+                            if image_url:
+                                card_data['image'] = image_url
+                                current_app.logger.info(f'[FLASHCARDS_EDIT_DEBUG] Nouvelle image carte {i+1}: {image_url}')
                     
                     cards_data.append(card_data)
                     current_app.logger.info(f'[FLASHCARDS_EDIT_DEBUG] Carte {i+1}: "{question[:30]}..." -> "{answer}"')
@@ -4614,11 +4621,10 @@ def edit_exercise(exercise_id):
                         if f'pair_left_image_{pair_id}' in request.files:
                             file = request.files[f'pair_left_image_{pair_id}']
                             if file and file.filename and allowed_file(file.filename):
-                                filename = secure_filename(file.filename)
-                                unique_filename = generate_unique_filename(filename)
-                                file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_filename)
-                                file.save(file_path)
-                                left_content = f'/static/uploads/{unique_filename}'
+                                # Utiliser Cloudinary pour l'upload en production, stockage local en dev
+                                left_content = cloud_storage.upload_file(file, folder="pairs")
+                                if not left_content:
+                                    current_app.logger.error(f'[PAIRS_EDIT_DEBUG] Erreur upload image gauche {pair_id}')
                         if not left_content:
                             left_content = request.form.get(f'pair_left_{pair_id}', '').strip()
                     else:
@@ -4629,11 +4635,10 @@ def edit_exercise(exercise_id):
                         if f'pair_right_image_{pair_id}' in request.files:
                             file = request.files[f'pair_right_image_{pair_id}']
                             if file and file.filename and allowed_file(file.filename):
-                                filename = secure_filename(file.filename)
-                                unique_filename = generate_unique_filename(filename)
-                                file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_filename)
-                                file.save(file_path)
-                                right_content = f'/static/uploads/{unique_filename}'
+                                # Utiliser Cloudinary pour l'upload en production, stockage local en dev
+                                right_content = cloud_storage.upload_file(file, folder="pairs")
+                                if not right_content:
+                                    current_app.logger.error(f'[PAIRS_EDIT_DEBUG] Erreur upload image droite {pair_id}')
                         if not right_content:
                             right_content = request.form.get(f'pair_right_{pair_id}', '').strip()
                     else:
@@ -4686,13 +4691,11 @@ def edit_exercise(exercise_id):
                                 filename = secure_filename(file.filename)
                                 unique_filename = generate_unique_filename(filename)
                                 
-                                # Créer le dossier audio s'il n'existe pas
-                                audio_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'audio')
-                                os.makedirs(audio_folder, exist_ok=True)
-                                
-                                file_path = os.path.join(audio_folder, unique_filename)
-                                file.save(file_path)
-                                audio_file = f'/static/uploads/audio/{unique_filename}'
+                                # Utiliser Cloudinary pour l'upload en production, stockage local en dev
+                                audio_file = cloud_storage.upload_file(file, folder="audio", resource_type="auto")
+                                if not audio_file:
+                                    current_app.logger.error(f'[AUDIO_EDIT_DEBUG] Erreur upload audio {i+1}')
+                                    audio_file = None
                             else:
                                 flash(f'Le fichier audio {i+1} doit être au format MP3, WAV, OGG ou M4A.', 'error')
                                 return render_template('edit_exercise.html', exercise=exercise)
@@ -4737,11 +4740,13 @@ def edit_exercise(exercise_id):
                 if 'legend_main_image' in request.files:
                     image_file = request.files['legend_main_image']
                     if image_file and image_file.filename != '' and allowed_file(image_file.filename):
-                        filename = secure_filename(image_file.filename)
-                        unique_filename = generate_unique_filename(filename)
-                        file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_filename)
-                        image_file.save(file_path)
-                        main_image_path = f'/static/uploads/{unique_filename}'
+                        # Utiliser Cloudinary pour l'upload en production, stockage local en dev
+                        main_image_path = cloud_storage.upload_file(image_file, folder="legend")
+                        if not main_image_path:
+                            current_app.logger.error(f'[LEGEND_EDIT_DEBUG] Erreur upload image principale')
+                            # Garder l'ancienne image si l'upload échoue
+                            existing_content = exercise.get_content()
+                            main_image_path = existing_content.get('main_image')
                 
                 # Si pas de nouvelle image, garder l'ancienne
                 if not main_image_path:
@@ -6038,6 +6043,19 @@ if __name__ == '__main__':
     app.run(debug=True)
 
 
+
+@app.route('/get_cloudinary_url')
+def get_cloudinary_url():
+    # Route pour obtenir l'URL Cloudinary d'une image depuis JavaScript
+    image_path = request.args.get('image_path')
+    if not image_path:
+        return jsonify({'error': 'Paramètre image_path manquant'}), 400
+        
+    # Utiliser la fonction cloud_storage.get_cloudinary_url pour obtenir l'URL
+    cloudinary_url = cloud_storage.get_cloudinary_url(image_path)
+    
+    # Rediriger vers l'URL obtenue
+    return redirect(cloudinary_url)
 
 @app.route('/debug-form-data', methods=['GET', 'POST'])
 @login_required

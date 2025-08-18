@@ -68,7 +68,7 @@
                     {% for i in range(exercise_content.items_left|length) %}
                     <div class="item-container" data-side="left" data-index="{{ i }}">
                         {% if exercise_content.items_left_images[i] %}
-                        <img src="{{ url_for('static', filename='uploads/' + exercise_content.items_left_images[i]) }}" 
+                        <img src="{{ cloud_storage.get_cloudinary_url(exercise_content.items_left_images[i]) }}" 
                              class="item-image" alt="Image {{ i+1 }}">
                         {% endif %}
                         <div class="item-text">{{ exercise_content.items_left[i] }}</div>
@@ -84,7 +84,7 @@
                         {% for i in shuffled_indices %}
                         <div class="item-container" data-side="right" data-index="{{ i }}">
                             {% if exercise_content.items_right_images[i] %}
-                            <img src="{{ url_for('static', filename='uploads/' + exercise_content.items_right_images[i]) }}" 
+                            <img src="{{ cloud_storage.get_cloudinary_url(exercise_content.items_right_images[i]) }}" 
                                  class="item-image" alt="Image {{ i+1 }}">
                             {% endif %}
                             <div class="item-text">{{ exercise_content.items_right[i] }}</div>

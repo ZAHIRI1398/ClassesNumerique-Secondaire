@@ -181,7 +181,7 @@
                                                     <input type="file" class="form-control" name="card_images[]" 
                                                            accept="image/*" onchange="previewImage(this)">
                                                     {% if card.image %}
-                                                        <img src="{{ url_for('static', filename=card.image.replace('static/', '')) }}" 
+                                                        <img src="{{ cloud_storage.get_cloudinary_url(card.image) }}" 
                                                              alt="Image actuelle" class="image-preview">
                                                         <input type="hidden" name="existing_card_images[]" value="{{ card.image }}">
                                                     {% else %}
