@@ -138,7 +138,13 @@
                     {% if exercise.get_content().get('main_image') %}
                     <div class="mt-2">
                         <p>Image actuelle: {{ exercise.get_content().get('main_image') }}</p>
-                        <img src="{{ url_for('static', filename='uploads/' + exercise.get_content().get('main_image')) }}" alt="Image actuelle" style="max-width: 200px; max-height: 200px;">
+                        <img src="{{ cloud_storage.get_cloudinary_url(exercise.get_content().get('main_image')) }}" alt="Image actuelle" class="img-fluid rounded shadow" style="max-width: 300px; max-height: 200px;">
+                    </div>
+                    {% endif %}
+                    {% if exercise.image_path and not exercise.get_content().get('main_image') %}
+                    <div class="mt-2">
+                        <p>Image de l'exercice:</p>
+                        <img src="{{ cloud_storage.get_cloudinary_url(exercise.image_path) }}" alt="Image de l'exercice" class="img-fluid rounded shadow" style="max-width: 300px; max-height: 200px;">
                     </div>
                     {% endif %}
                 </div>
@@ -150,7 +156,9 @@
                     
                     <div class="legend-image-container" id="image_container">
                         {% if exercise.get_content().get('main_image') %}
-                        <img src="{{ url_for('static', filename='uploads/' + exercise.get_content().get('main_image')) }}" alt="Image à légender" class="legend-image" id="legend_image">
+                        <img src="{{ cloud_storage.get_cloudinary_url(exercise.get_content().get('main_image')) }}" alt="Image à légender" class="legend-image" id="legend_image">
+                        {% elif exercise.image_path %}
+                        <img src="{{ cloud_storage.get_cloudinary_url(exercise.image_path) }}" alt="Image à légender" class="legend-image" id="legend_image">
                         {% else %}
                         <div class="alert alert-warning">Veuillez d'abord télécharger une image.</div>
                         {% endif %}
@@ -434,10 +442,11 @@
     
     // Fonction pour afficher les points existants
     function displayExistingPoints() {
+        // Points pré-existants
         {% if exercise.get_content().get('zones') %}
-        {% for zone in exercise.get_content().get('zones') %}
-        addPointToImage({{ loop.index0 }}, {{ zone.x }}, {{ zone.y }});
-        {% endfor %}
+            {% for zone in exercise.get_content().get('zones') %}
+                addPointToImage({{ loop.index0 }}, {{ zone.x }}, {{ zone.y }});
+            {% endfor %}
         {% endif %}
     }
     
