@@ -949,7 +949,7 @@ def teacher_dashboard():
         return redirect(url_for('index'))
     
     classes = Class.query.filter_by(teacher_id=current_user.id).all()
-    return render_template('teacher_dashboard.html', classes=classes)
+    return render_template('teacher/dashboard.html', classes=classes)
 
 
 
