@@ -9,6 +9,7 @@ import traceback
 from functools import wraps
 from logging.handlers import RotatingFileHandler
 import cloud_storage
+from fix_image_display import register_image_fix_routes
 
 def get_blank_location(global_blank_index, sentences):
     """Détermine à quelle phrase et à quel indice dans cette phrase correspond un indice global de blanc"""
@@ -55,6 +56,9 @@ logger = logging.getLogger(__name__)
 # Création de l'application Flask
 app = Flask(__name__)
 app.logger.setLevel(logging.DEBUG)
+
+# Enregistrer les routes de diagnostic et correction d'images
+register_image_fix_routes(app)
 
 # Configuration de Cloudinary si les variables d'environnement sont disponibles
 with app.app_context():
@@ -4751,16 +4755,25 @@ def edit_exercise(exercise_id):
                     if image_file and image_file.filename != '' and allowed_file(image_file.filename):
                         # Utiliser Cloudinary pour l'upload en production, stockage local en dev
                         main_image_path = cloud_storage.upload_file(image_file, folder="legend")
-                        if not main_image_path:
+                        if main_image_path:
+                            # Synchroniser avec exercise.image_path pour assurer la cohérence
+                            exercise.image_path = main_image_path
+                            current_app.logger.info(f'[LEGEND_EDIT_DEBUG] Image principale uploadée et synchronisée: {main_image_path}')
+                        else:
                             current_app.logger.error(f'[LEGEND_EDIT_DEBUG] Erreur upload image principale')
                             # Garder l'ancienne image si l'upload échoue
                             existing_content = exercise.get_content()
                             main_image_path = existing_content.get('main_image')
                 
-                # Si pas de nouvelle image, garder l'ancienne
+                # Si pas de nouvelle image, garder l'ancienne ou utiliser exercise.image_path
                 if not main_image_path:
                     existing_content = exercise.get_content()
                     main_image_path = existing_content.get('main_image')
+                    
+                    # Si toujours pas d'image principale mais qu'il y a exercise.image_path, l'utiliser
+                    if not main_image_path and exercise.image_path:
+                        main_image_path = exercise.image_path
+                        current_app.logger.info(f'[LEGEND_EDIT_DEBUG] Utilisation de exercise.image_path comme image principale: {main_image_path}')
                 
                 # Récupérer les zones et légendes
                 zones = []
@@ -4921,10 +4934,13 @@ def edit_exercise(exercise_id):
                         'elements': elements
                     }
                 current_app.logger.info(f'[LEGEND_EDIT_DEBUG] Contenu sauvegardé avec succès - Mode: {legend_mode}, Image: {main_image_path}')
+                
+                # Synchroniser exercise.image_path avec main_image_path si nécessaire
+                if main_image_path and (not exercise.image_path or exercise.image_path != main_image_path):
+                    exercise.image_path = main_image_path
+                    current_app.logger.info(f'[LEGEND_EDIT_DEBUG] Image path synchronisé: {exercise.image_path}')
             
             # Mettre à jour l'exercice en base (les champs de base sont déjà mis à jour au début de la fonction POST)
-            # exercise.title, exercise.description, exercise.subject sont déjà mis à jour aux lignes 2751-2753
-            # exercise.image_path est mis à jour lors de l'upload d'image aux lignes 2756-2763
             
             db.session.commit()
             
