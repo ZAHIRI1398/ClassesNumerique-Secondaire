@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planification Annuelle pour Enseignants</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo-container">
+                <img id="school-logo" src="default-logo.png" alt="Logo de l'école">
+                <button id="change-logo" class="btn">Changer le logo</button>
+                <input type="file" id="logo-upload" accept="image/*" style="display: none;">
+            </div>
+            <h1>Planification Annuelle</h1>
+        </header>
+        
+        <div class="teacher-info">
+            <div class="info-field">
+                <label for="teacher-name">Enseignant(e):</label>
+                <input type="text" id="teacher-name" placeholder="Nom de l'enseignant(e)">
+            </div>
+            <div class="info-field">
+                <label for="class-name">Classe:</label>
+                <input type="text" id="class-name" placeholder="Nom de la classe">
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="add-course" class="btn">Ajouter un cours</button>
+            <button id="print-pdf" class="btn btn-primary">Exporter en PDF</button>
+        </div>
+
+        <div id="planning-container">
+            <!-- Modèle de tableau de planification -->
+            <div class="course-planning" id="course-template">
+                <div class="course-header">
+                    <input type="text" class="course-title" placeholder="Nom du cours">
+                    <span class="course-code">(Code)</span>
+                </div>
+                
+                <table class="planning-table">
+                    <thead>
+                        <tr>
+                            <th>Leçon</th>
+                            <th>Temps</th>
+                            <th>Objectif de cours</th>
+                            <th>Objectifs</th>
+                            <th>Niveau de compétence</th>
+                            <th>Lignes d'apprentissage</th>
+                            <th>Apprentissage terminé</th>
+                            <th>Tâche/Devoir/Test</th>
+                            <th>Remarques personnelles</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Les lignes seront ajoutées dynamiquement -->
+                    </tbody>
+                </table>
+                
+                <div class="course-controls">
+                    <button class="add-row btn">Ajouter une leçon</button>
+                    <button class="add-part btn">Ajouter une période</button>
+                    <button class="remove-course btn btn-danger">Supprimer ce cours</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

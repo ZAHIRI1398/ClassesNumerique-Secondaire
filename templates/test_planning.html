@@ -1,0 +1,49 @@
+{% extends "base_with_planning.html" %}
+
+{% block title %}Test Planification Annuelle{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-body">
+            <h2 class="card-title">Test d'intégration de la planification annuelle</h2>
+            <p class="card-text">Cette page est utilisée pour tester l'intégration de la planification annuelle dans le projet principal.</p>
+            <p class="card-text">Cliquez sur le lien "Planification annuelle" dans la barre de navigation pour ouvrir la modal.</p>
+            
+            <div class="mt-4">
+                <h4>Instructions de test :</h4>
+                <ol>
+                    <li>Vérifiez que le lien "Planification annuelle" apparaît dans la barre de navigation</li>
+                    <li>Cliquez sur ce lien pour ouvrir la modal</li>
+                    <li>Vérifiez que la planification annuelle se charge correctement dans l'iframe</li>
+                    <li>Testez les fonctionnalités de la planification (ajout de cours, périodes, etc.)</li>
+                    <li>Fermez la modal en cliquant sur la croix ou en dehors de la fenêtre</li>
+                </ol>
+            </div>
+            
+            <div class="mt-4">
+                <button id="test-open-planning" class="btn btn-primary">
+                    <i class="fas fa-calendar-alt"></i> Ouvrir la planification (test alternatif)
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Bouton de test alternatif pour ouvrir la modal
+        const testButton = document.getElementById('test-open-planning');
+        const planningModal = document.getElementById('planning-modal');
+        
+        if (testButton && planningModal) {
+            testButton.addEventListener('click', function() {
+                planningModal.style.display = 'block';
+                document.body.style.overflow = 'hidden';
+            });
+        }
+    });
+</script>
+{% endblock %}

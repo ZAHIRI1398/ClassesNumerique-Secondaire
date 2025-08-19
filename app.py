@@ -10,6 +10,7 @@ from functools import wraps
 from logging.handlers import RotatingFileHandler
 import cloud_storage
 from fix_image_display import register_image_fix_routes
+from teacher_classes_route import register_teacher_classes_route
 
 def get_blank_location(global_blank_index, sentences):
     """Détermine à quelle phrase et à quel indice dans cette phrase correspond un indice global de blanc"""
@@ -39,7 +40,7 @@ from payment_routes import payment_bp
 from forms import ExerciseForm
 from modified_submit import bp as exercise_bp
 from export_utils import generate_class_pdf, generate_class_excel
-
+from test_planning_route import register_test_planning_route
 
 
 
@@ -60,6 +61,12 @@ app.logger.setLevel(logging.DEBUG)
 
 # Enregistrer les routes de diagnostic et correction d'images
 register_image_fix_routes(app)
+
+# Enregistrer la route de test pour la planification annuelle
+register_test_planning_route(app)
+
+# Enregistrer la route pour les classes de l'enseignant
+register_teacher_classes_route(app)
 
 # Configuration de Cloudinary si les variables d'environnement sont disponibles
 with app.app_context():
