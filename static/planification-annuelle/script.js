@@ -251,8 +251,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Exportation en PDF
     const printPdfBtn = document.getElementById('print-pdf');
     printPdfBtn.addEventListener('click', async function() {
-        // Utiliser html2canvas et jsPDF pour générer un PDF
-        const { jsPDF } = window.jspdf;
+        // Vérifier que jsPDF est disponible
+        if (!window.jspdf || !window.html2canvas) {
+            alert('Les bibliothèques nécessaires pour l\'exportation PDF ne sont pas chargées correctement.');
+            return;
+        }
         
         const planningContainer = document.getElementById('planning-container');
         const coursePlanning = planningContainer.querySelectorAll('.course-planning');
@@ -263,7 +266,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Créer un nouveau document PDF
-        const doc = new jsPDF('l', 'mm', 'a4'); // landscape orientation
+        const doc = new window.jspdf.jsPDF('l', 'mm', 'a4'); // landscape orientation
         let pageHeight = doc.internal.pageSize.height;
         let pageWidth = doc.internal.pageSize.width;
         let yPosition = 20;
