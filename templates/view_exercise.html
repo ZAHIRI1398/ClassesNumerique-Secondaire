@@ -45,6 +45,25 @@
                     {% endif %}
 
                     {% if exercise.exercise_type == 'qcm' %}
+                        <!-- DEBUG: Affichage de l'image d'exercice QCM depuis content.image -->
+                        <div class="alert alert-info mb-3">
+                            <strong>DEBUG:</strong><br>
+                            content exists: {{ content is defined and content }}<br>
+                            content.image: {{ content.image if content and content.image else 'None' }}<br>
+                            exercise.image_path: {{ exercise.image_path if exercise.image_path else 'None' }}
+                        </div>
+                        {% if content and content.image %}
+                        <div class="card mb-4" style="border: 3px solid red;">
+                            <div class="card-body text-center">
+                                <h5 class="text-danger">IMAGE QCM TROUVÉE</h5>
+                                <img src="{{ content.image }}" 
+                                     alt="Image de l'exercice" 
+                                     class="img-fluid rounded shadow-sm"
+                                     style="max-width: 100%; max-height: 400px; border: 2px solid green;">
+                            </div>
+                        </div>
+                        {% endif %}
+                        
                         <form method="POST" action="{{ url_for('exercise.submit_answer', exercise_id=exercise.id) }}" id="exerciseForm">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                             {% include 'exercise_types/qcm_preview.html' %}

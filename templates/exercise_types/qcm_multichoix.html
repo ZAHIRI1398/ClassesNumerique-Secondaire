@@ -102,10 +102,10 @@
             </div>
 
             <!-- Image d'illustration si présente -->
-            {% if content.image %}
+            {% if exercise.image_path %}
             <div class="card mb-4 image-card">
                 <div class="card-body text-center p-4">
-                    <img src="{{ cloud_storage.get_cloudinary_url(content.image) }}" 
+                    <img src="{{ cloud_storage.get_cloudinary_url(exercise.image_path) }}" 
                          alt="Image d'illustration" class="img-fluid rounded shadow" style="max-height: 400px;">
                 </div>
             </div>
