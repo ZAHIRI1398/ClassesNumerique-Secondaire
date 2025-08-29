@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block title %}Correction des chemins d'images des flashcards{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Correction des chemins d'images des flashcards</h1>
+    
+    <div class="alert alert-info">
+        <p><strong>Cette page permet de corriger automatiquement les chemins d'images des flashcards.</strong></p>
+        <p>Les chemins d'images sont vérifiés et corrigés pour pointer vers des fichiers existants.</p>
+    </div>
+    
+    {% if results %}
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h3 class="mb-0">{{ results|length }} chemins d'images corrigés</h3>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Exercice</th>
+                                <th>Ancien chemin</th>
+                                <th>Nouveau chemin</th>
+                                <th>Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for result in results %}
+                                <tr>
+                                    <td>
+                                        {% if result.type == 'exercise_image' %}
+                                            Image d'exercice
+                                        {% else %}
+                                            Image de carte #{{ result.card_index + 1 }}
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ result.exercise_id }} - {{ result.title }}</td>
+                                    <td><code>{{ result.old_path }}</code></td>
+                                    <td><code>{{ result.new_path }}</code></td>
+                                    <td>
+                                        {% if result.success %}
+                                            <span class="badge bg-success">Corrigé</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Échec</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="alert alert-success">
+            <p><strong>Correction terminée !</strong></p>
+            <p>Les chemins d'images des flashcards ont été corrigés avec succès.</p>
+            <p>Vous pouvez maintenant vérifier que les images s'affichent correctement dans les exercices.</p>
+        </div>
+        
+        <div class="d-flex justify-content-between">
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">Retour au tableau de bord</a>
+            <a href="{{ url_for('fix_flashcard_images_route') }}" class="btn btn-primary">Relancer la correction</a>
+        </div>
+    {% else %}
+        <div class="alert alert-warning">
+            <p><strong>Aucune correction nécessaire.</strong></p>
+            <p>Tous les chemins d'images des flashcards sont déjà corrects.</p>
+        </div>
+        
+        <div class="d-flex justify-content-between">
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">Retour au tableau de bord</a>
+            <a href="{{ url_for('fix_flashcard_images_route') }}" class="btn btn-primary">Relancer la vérification</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,40 @@
+{
+  "id": 32,
+  "title": "Exercice3:Nombres d\u00e9cimaux - Appariement",
+  "description": "Associez chaque nombre d\u00e9cimal \u00e0 son \u00e9criture en lettres.",
+  "exercise_type": "pairs",
+  "image_path": "/static/uploads/pairs/decimal_numbers_pairs.png",
+  "content": {
+    "image": "/static/uploads/pairs/decimal_numbers_pairs.png",
+    "left_items": [
+      "3,14",
+      "0,5",
+      "2,08",
+      "0,25"
+    ],
+    "right_items": [
+      "trois unit\u00e9s et quatorze centi\u00e8mes",
+      "cinq dixi\u00e8mes",
+      "deux unit\u00e9s et huit centi\u00e8mes",
+      "vingt-cinq centi\u00e8mes"
+    ],
+    "correct_pairs": [
+      [
+        0,
+        0
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        3,
+        3
+      ]
+    ]
+  }
+}

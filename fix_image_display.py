@@ -5,7 +5,7 @@ from pathlib import Path
 from models import Exercise
 
 # Création du blueprint pour les routes de diagnostic et correction d'images
-image_fix_bp = Blueprint('image_fix', __name__)
+image_fix_bp = Blueprint('image_fix_display', __name__, url_prefix='/image-fix')
 
 @image_fix_bp.route('/fix-uploads-directory')
 def fix_uploads_directory():
@@ -236,5 +236,9 @@ def create_placeholder_images():
 
 # Fonction pour intégrer le blueprint dans l'application
 def register_image_fix_routes(app):
-    app.register_blueprint(image_fix_bp)
-    app.logger.info("Routes de diagnostic et correction d'images enregistrées")
+    # Vérifier si le blueprint est déjà enregistré
+    if 'image_fix_display' not in [bp.name for bp in app.blueprints.values()]:
+        app.register_blueprint(image_fix_bp)
+        app.logger.info("Routes de diagnostic et correction d'images enregistrées")
+    else:
+        app.logger.info("Routes de diagnostic d'images déjà enregistrées")

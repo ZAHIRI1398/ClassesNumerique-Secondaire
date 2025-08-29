@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "edit_exercise.html" %}
 
 {% block title %}Modifier l'exercice de légende - {{ exercise.title }}{% endblock %}
 
@@ -131,23 +131,7 @@
                     <small class="form-text text-muted">Instructions pour l'élève. Si vide, des instructions par défaut seront utilisées.</small>
                 </div>
                 
-                <!-- Image principale -->
-                <div class="mb-4">
-                    <label for="legend_main_image" class="form-label">Image principale</label>
-                    <input type="file" class="form-control" id="legend_main_image" name="legend_main_image" accept="image/*">
-                    {% if exercise.get_content().get('main_image') %}
-                    <div class="mt-2">
-                        <p>Image actuelle: {{ exercise.get_content().get('main_image') }}</p>
-                        <img src="{{ cloud_storage.get_cloudinary_url(exercise.get_content().get('main_image')) }}" alt="Image actuelle" class="img-fluid rounded shadow" style="max-width: 300px; max-height: 200px;">
-                    </div>
-                    {% endif %}
-                    {% if exercise.image_path and not exercise.get_content().get('main_image') %}
-                    <div class="mt-2">
-                        <p>Image de l'exercice:</p>
-                        <img src="{{ cloud_storage.get_cloudinary_url(exercise.image_path) }}" alt="Image de l'exercice" class="img-fluid rounded shadow" style="max-width: 300px; max-height: 200px;">
-                    </div>
-                    {% endif %}
-                </div>
+                <!-- La section d'upload d'image a été supprimée car elle est déjà présente dans le template parent edit_exercise.html -->
                 
                 <!-- Section pour le mode classique -->
                 <div id="classic_section" class="mb-4">
@@ -156,9 +140,17 @@
                     
                     <div class="legend-image-container" id="image_container">
                         {% if exercise.get_content().get('main_image') %}
-                        <img src="{{ cloud_storage.get_cloudinary_url(exercise.get_content().get('main_image')) }}" alt="Image à légender" class="legend-image" id="legend_image">
+                        <img src="{{ get_cloudinary_url(exercise.get_content().get('main_image')) }}" 
+                             alt="Image à légender" 
+                             class="legend-image" 
+                             id="legend_image"
+                             onerror="this.onerror=null; this.src='/static/img/image-not-found.png';">
                         {% elif exercise.image_path %}
-                        <img src="{{ cloud_storage.get_cloudinary_url(exercise.image_path) }}" alt="Image à légender" class="legend-image" id="legend_image">
+                        <img src="{{ get_cloudinary_url(exercise.image_path) }}" 
+                             alt="Image à légender" 
+                             class="legend-image" 
+                             id="legend_image"
+                             onerror="this.onerror=null; this.src='/static/img/image-not-found.png';">
                         {% else %}
                         <div class="alert alert-warning">Veuillez d'abord télécharger une image.</div>
                         {% endif %}
@@ -310,11 +302,18 @@
 {% block scripts %}
 {{ super() }}
 <script>
-    // Variables globales
-    let zoneCounter = {{ (exercise.get_content().get('zones', [])|length) or 0 }};
-    let gridElementCounter = {{ (exercise.get_content().get('grid_elements', [])|length) or 0 }};
-    let spatialElementCounter = {{ (exercise.get_content().get('elements', [])|length) or 0 }};
-    let spatialZoneCounter = {{ (exercise.get_content().get('zones', [])|length) or 0 }};
+    // Variables globales initialisées à partir des données Jinja2
+    // Utilisation de variables intermédiaires pour éviter les erreurs de lint
+    const initialZoneCount = {{ (exercise.get_content().get('zones', [])|length) or 0 }};
+    const initialGridElementCount = {{ (exercise.get_content().get('grid_elements', [])|length) or 0 }};
+    const initialSpatialElementCount = {{ (exercise.get_content().get('elements', [])|length) or 0 }};
+    const initialSpatialZoneCount = {{ (exercise.get_content().get('zones', [])|length) or 0 }};
+    
+    // Assignation aux variables utilisées dans le script
+    let zoneCounter = initialZoneCount;
+    let gridElementCounter = initialGridElementCount;
+    let spatialElementCounter = initialSpatialElementCount;
+    let spatialZoneCounter = initialSpatialZoneCount;
     
     // Fonction pour ajouter un point sur l'image
     document.addEventListener('DOMContentLoaded', function() {
@@ -442,12 +441,22 @@
     
     // Fonction pour afficher les points existants
     function displayExistingPoints() {
-        // Points pré-existants
+        // Points pré-existants chargés via JavaScript pour éviter les erreurs de lint
+        const existingZones = [];
         {% if exercise.get_content().get('zones') %}
             {% for zone in exercise.get_content().get('zones') %}
-                addPointToImage({{ loop.index0 }}, {{ zone.x }}, {{ zone.y }});
+                existingZones.push({
+                    index: {{ loop.index0 }},
+                    x: {{ zone.x|float }},
+                    y: {{ zone.y|float }}
+                });
             {% endfor %}
         {% endif %}
+        
+        // Ajouter les points à partir du tableau JavaScript
+        existingZones.forEach(function(zone) {
+            addPointToImage(zone.index, zone.x, zone.y);
+        });
     }
     
     // Fonction pour générer la grille
@@ -568,5 +577,29 @@
             zone.remove();
         }
     }
+    
+    // Bouton de suppression d'image principale pour legend
+    document.addEventListener('DOMContentLoaded', function() {
+        const removeLegendImageBtn = document.getElementById('remove-legend-image-btn');
+        if (removeLegendImageBtn) {
+            removeLegendImageBtn.addEventListener('click', function() {
+                if (confirm('Êtes-vous sûr de vouloir supprimer l\'image principale ?')) {
+                    // Cacher l'image et son conteneur
+                    const imageContainer = document.getElementById('current-main-image-container');
+                    if (imageContainer) {
+                        imageContainer.style.display = 'none';
+                    }
+                    
+                    // Marquer l'image pour suppression
+                    const removeInput = document.getElementById('remove_main_image');
+                    if (removeInput) {
+                        removeInput.value = 'true';
+                    }
+                    
+                    console.log('[LEGEND_EDIT] Image principale marquée pour suppression');
+                }
+            });
+        }
+    });
 </script>
 {% endblock %}

@@ -1,0 +1,45 @@
+{
+  "id": 37,
+  "title": "Test paire Complet",
+  "description": "T145",
+  "exercise_type": "pairs",
+  "image_path": "/static/uploads/pairs/pairs_exercise_37.png",
+  "content": {
+    "pairs": [
+      {
+        "id": "2",
+        "left": {
+          "content": "/static/exercises/1756237416_dznfok.png",
+          "type": "image"
+        },
+        "right": {
+          "content": "scal\u00e8ne obtusangle",
+          "type": "text"
+        }
+      },
+      {
+        "id": "1",
+        "left": {
+          "content": "/static/exercises/1756237416_f0x2y9.png",
+          "type": "image"
+        },
+        "right": {
+          "content": "Un triangle isoc\u00e8le",
+          "type": "text"
+        }
+      },
+      {
+        "id": "3",
+        "left": {
+          "content": "/static/exercises/1756237416_d3jgf2.png",
+          "type": "image"
+        },
+        "right": {
+          "content": "\u00e9quilateral",
+          "type": "text"
+        }
+      }
+    ],
+    "image": "/static/uploads/pairs/pairs_exercise_37.png"
+  }
+}

@@ -31,7 +31,7 @@ class DevelopmentConfig(Config):
     """Configuration de développement"""
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'sqlite:///classe_numerique.db'
+        'sqlite:///' + os.path.join(os.path.abspath(os.path.dirname(__file__)), 'instance', 'app.db')
     
     # Configuration des cookies de session pour le développement local
     SESSION_COOKIE_SECURE = False  # Permet l'utilisation en HTTP

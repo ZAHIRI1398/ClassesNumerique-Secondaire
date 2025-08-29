@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}Correction des chemins d'images - Exercices Légende{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+    .status-ok {
+        color: #28a745;
+    }
+    .status-warning {
+        color: #ffc107;
+    }
+    .status-error {
+        color: #dc3545;
+    }
+    .status-fixed {
+        color: #17a2b8;
+    }
+    .status-ignored {
+        color: #6c757d;
+    }
+    .path-display {
+        font-family: monospace;
+        word-break: break-all;
+        max-width: 300px;
+    }
+    .image-preview {
+        max-width: 100px;
+        max-height: 100px;
+        object-fit: contain;
+    }
+    .fixed-item {
+        background-color: #d4edda;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Accueil</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}">Administration</a></li>
+            <li class="breadcrumb-item active">Correction des chemins d'images - Légendes</li>
+        </ol>
+    </nav>
+
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h2 class="card-title mb-0">Correction des chemins d'images - Exercices Légende</h2>
+        </div>
+        <div class="card-body">
+            <p class="lead">Cet outil permet de corriger automatiquement les problèmes de chemins d'images dans les exercices de type légende.</p>
+            
+            <div class="alert alert-info">
+                <h5 class="alert-heading">Fonctionnalités</h5>
+                <ul>
+                    <li>Synchronisation entre <code>exercise.image_path</code> et <code>content['main_image']</code></li>
+                    <li>Normalisation des chemins au format <code>/static/uploads/legend/filename.jpg</code></li>
+                    <li>Copie des images si nécessaire pour assurer leur disponibilité</li>
+                    <li>Création automatique d'un backup de la base de données avant modification</li>
+                </ul>
+            </div>
+
+            <form method="POST" class="mb-4">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-magic"></i> Corriger automatiquement les chemins d'images
+                </button>
+            </form>
+
+            {% if fixed_exercises %}
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h3 class="card-title mb-0">Résultats de la correction</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Titre</th>
+                                    <th>Statut</th>
+                                    <th>Ancien chemin principal</th>
+                                    <th>Ancien chemin secondaire</th>
+                                    <th>Nouveau chemin</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for exercise in fixed_exercises %}
+                                <tr class="{% if exercise.status == 'fixed' %}fixed-item{% endif %}">
+                                    <td>{{ exercise.id }}</td>
+                                    <td>{{ exercise.title }}</td>
+                                    <td>
+                                        {% if exercise.status == 'fixed' %}
+                                        <span class="badge bg-success">Corrigé</span>
+                                        {% elif exercise.status == 'ignored' %}
+                                        <span class="badge bg-secondary">Ignoré</span>
+                                        {% elif exercise.status == 'ok' %}
+                                        <span class="badge bg-info">Déjà correct</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="path-display">{{ exercise.main_image or 'Non défini' }}</td>
+                                    <td class="path-display">{{ exercise.image_path or 'Non défini' }}</td>
+                                    <td class="path-display">{{ exercise.new_path or '-' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h3 class="card-title mb-0">État actuel des exercices de type légende</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Titre</th>
+                                    <th>Statut</th>
+                                    <th>Image principale</th>
+                                    <th>Chemin image</th>
+                                    <th>Aperçu</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for exercise in exercises_status %}
+                                <tr>
+                                    <td>{{ exercise.id }}</td>
+                                    <td>{{ exercise.title }}</td>
+                                    <td>
+                                        {% if exercise.status == 'ok' %}
+                                        <span class="badge bg-success status-ok">Correct</span>
+                                        {% elif exercise.status == 'warning' %}
+                                        <span class="badge bg-warning status-warning">Attention</span>
+                                        {% elif exercise.status == 'error' %}
+                                        <span class="badge bg-danger status-error">Erreur</span>
+                                        {% endif %}
+                                        <br>
+                                        <small>{{ exercise.message }}</small>
+                                    </td>
+                                    <td class="path-display">{{ exercise.main_image or 'Non défini' }}</td>
+                                    <td class="path-display">{{ exercise.image_path or 'Non défini' }}</td>
+                                    <td>
+                                        {% if exercise.main_image %}
+                                        <img src="{{ get_cloudinary_url(exercise.main_image) }}" alt="Aperçu" class="image-preview" onerror="this.onerror=null; this.src='/static/img/image-not-found.png';">
+                                        {% elif exercise.image_path %}
+                                        <img src="{{ get_cloudinary_url(exercise.image_path) }}" alt="Aperçu" class="image-preview" onerror="this.onerror=null; this.src='/static/img/image-not-found.png';">
+                                        {% else %}
+                                        <span class="text-muted">Pas d'image</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

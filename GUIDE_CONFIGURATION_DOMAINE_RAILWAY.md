@@ -32,32 +32,68 @@ Railway va maintenant générer les informations DNS nécessaires pour configure
 
 Après avoir ajouté votre domaine sur Railway, vous devrez configurer les enregistrements DNS chez votre registrar. Railway vous fournira deux types d'informations :
 
-### Option 1 : Configuration CNAME (recommandée)
+### Configuration spécifique pour classesnumeriques.be chez OVH
+
+1. Connectez-vous à votre [espace client OVH](https://www.ovh.com/auth/)
+2. Accédez à la section "Domaines" puis sélectionnez "classesnumeriques.be"
+3. Cliquez sur l'onglet "Zone DNS"
+4. Ajoutez les enregistrements suivants :
+
+#### Enregistrement CNAME pour le sous-domaine www
+
+```
+Type: CNAME
+Sous-domaine: www
+Cible: web-production-9a047.up.railway.app.
+TTL: Automatique
+```
+
+#### Enregistrement A pour le domaine racine
+
+```
+Type: A
+Sous-domaine: @ (ou laissez vide)
+Cible: 76.76.21.21
+TTL: Automatique
+```
+
+5. Cliquez sur "Appliquer la configuration"
+
+### Options générales pour d'autres registrars
+
+#### Option 1 : Configuration CNAME (recommandée)
 
 1. Connectez-vous au panneau de gestion de votre registrar
 2. Accédez à la section de gestion DNS
 3. Ajoutez un enregistrement CNAME avec :
-   - **Nom/Host** : @ ou www (selon que vous voulez configurer le domaine racine ou le sous-domaine www)
-   - **Valeur/Target** : l'URL fournie par Railway (généralement quelque chose comme `yourapp.up.railway.app`)
+   - **Nom/Host** : www (pour le sous-domaine www)
+   - **Valeur/Target** : l'URL fournie par Railway (par exemple `web-production-9a047.up.railway.app`)
    - **TTL** : Auto ou 3600
 
-### Option 2 : Configuration ALIAS/ANAME (pour domaine racine)
+#### Option 2 : Configuration A Record (pour domaine racine)
 
-Certains registrars ne permettent pas d'utiliser un CNAME pour le domaine racine. Dans ce cas :
-
-1. Utilisez un enregistrement ALIAS ou ANAME (si disponible)
-2. Pointez-le vers l'URL fournie par Railway
-
-### Option 3 : Configuration A Record (alternative)
-
-Si votre registrar ne supporte ni CNAME pour le domaine racine ni ALIAS/ANAME :
+Pour le domaine racine, utilisez un enregistrement A :
 
 1. Ajoutez un enregistrement A avec :
    - **Nom/Host** : @ (pour le domaine racine)
-   - **Valeur** : les adresses IP fournies par Railway
+   - **Valeur** : 76.76.21.21 (adresse IP fournie par Railway)
    - **TTL** : Auto ou 3600
 
 ## 4. Vérification et attente de propagation
+
+### Vérification spécifique pour classesnumeriques.be
+
+1. Après avoir configuré les enregistrements DNS chez OVH, vous pouvez vérifier la propagation avec ces commandes :
+
+```bash
+nslookup classesnumeriques.be
+nslookup www.classesnumeriques.be
+```
+
+2. Vérifiez que l'enregistrement A pointe vers 76.76.21.21
+3. Vérifiez que l'enregistrement CNAME pointe vers web-production-9a047.up.railway.app
+
+### Processus général
 
 1. Une fois les enregistrements DNS configurés, retournez sur Railway
 2. Railway vérifiera automatiquement la configuration DNS

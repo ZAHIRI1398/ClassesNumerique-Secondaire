@@ -1,0 +1,362 @@
+{% extends "base.html" %}
+
+{% block title %}Exercice de paires{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h1>{{ exercise.title }}</h1>
+            <p class="lead">{{ exercise.description }}</p>
+            
+            {% if exercise.image_path %}
+            <div class="text-center mb-4">
+                <img src="{{ exercise.image_path }}?v={{ timestamp }}" 
+                     class="img-fluid rounded exercise-image" 
+                     alt="Image principale de l'exercice"
+                     onerror="this.onerror=null; this.src='/static/img/placeholder.png'; console.error('Erreur de chargement de l\'image: {{ exercise.image_path }}');">
+            </div>
+            {% endif %}
+            
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> Associez les éléments de la colonne de gauche avec ceux de la colonne de droite.
+            </div>
+            
+            {% if error %}
+            <div class="alert alert-danger">
+                {{ error }}
+            </div>
+            {% endif %}
+            
+            {% if success %}
+            <div class="alert alert-success">
+                {{ success }}
+            </div>
+            {% endif %}
+            
+            <form method="POST" id="pairsForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="row">
+                    <!-- Colonne de gauche -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0">Éléments de gauche</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="list-group" id="leftItems">
+                                    {% for item in left_items %}
+                                        <div class="list-group-item d-flex align-items-center" data-id="{{ loop.index0 }}">
+                                            {% if item.type == 'text' %}
+                                                <span class="item-content">{{ item.content }}</span>
+                                            {% elif item.type == 'image' %}
+                                                <div class="image-container text-center w-100">
+                                                    <img src="{{ item.content }}?v={{ timestamp }}" 
+                                                         class="img-fluid pairs-image" 
+                                                         alt="Image de paire"
+                                                         onerror="handleImageError(this, '{{ item.content }}')">
+                                                </div>
+                                            {% endif %}
+                                            <div class="ml-auto">
+                                                <select name="left_to_right[{{ loop.index0 }}]" class="form-control pair-select" required>
+                                                    <option value="">Choisir...</option>
+                                                    {% for i in range(right_items|length) %}
+                                                        <option value="{{ i }}">{{ i + 1 }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Colonne de droite -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0">Éléments de droite</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="list-group" id="rightItems">
+                                    {% for item in right_items %}
+                                        <div class="list-group-item" data-id="{{ loop.index0 }}">
+                                            <div class="d-flex align-items-center">
+                                                <span class="badge badge-primary mr-2">{{ loop.index }}</span>
+                                                {% if item.type == 'text' %}
+                                                    <span class="item-content">{{ item.content }}</span>
+                                                {% elif item.type == 'image' %}
+                                                    <div class="image-container text-center w-100">
+                                                        <img src="{{ item.content }}?v={{ timestamp }}" 
+                                                             class="img-fluid pairs-image" 
+                                                             alt="Image de paire"
+                                                             onerror="handleImageError(this, '{{ item.content }}')">
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-check-circle"></i> Valider mes réponses
+                    </button>
+                </div>
+            </form>
+            
+            {% if show_results %}
+            <div class="mt-4">
+                <h3>Résultats</h3>
+                <div class="alert {% if score == max_score %}alert-success{% else %}alert-warning{% endif %}">
+                    <h4>Score: {{ score }} / {{ max_score }}</h4>
+                    <div class="progress mt-2">
+                        <div class="progress-bar {% if score == max_score %}bg-success{% else %}bg-warning{% endif %}" 
+                             role="progressbar" 
+                             style="width: {{ (score / max_score) * 100 }}%" 
+                             aria-valuenow="{{ score }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="{{ max_score }}">
+                            {{ (score / max_score) * 100 }}%
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">Détail des réponses</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Élément de gauche</th>
+                                        <th>Votre réponse</th>
+                                        <th>Réponse correcte</th>
+                                        <th>Résultat</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for result in results %}
+                                    <tr class="{% if result.correct %}table-success{% else %}table-danger{% endif %}">
+                                        <td>
+                                            {% if left_items[result.left_index].type == 'text' %}
+                                                {{ left_items[result.left_index].content }}
+                                            {% elif left_items[result.left_index].type == 'image' %}
+                                                <div class="image-container text-center">
+                                                    <img src="{{ left_items[result.left_index].content }}?v={{ timestamp }}" 
+                                                         class="img-fluid pairs-image-small" 
+                                                         alt="Image de paire"
+                                                         onerror="handleImageError(this, '{{ left_items[result.left_index].content }}')">
+                                                </div>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if right_items[result.user_right_index].type == 'text' %}
+                                                {{ right_items[result.user_right_index].content }}
+                                            {% elif right_items[result.user_right_index].type == 'image' %}
+                                                <div class="image-container text-center">
+                                                    <img src="{{ right_items[result.user_right_index].content }}?v={{ timestamp }}" 
+                                                         class="img-fluid pairs-image-small" 
+                                                         alt="Image de paire"
+                                                         onerror="handleImageError(this, '{{ right_items[result.user_right_index].content }}')">
+                                                </div>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if right_items[result.correct_right_index].type == 'text' %}
+                                                {{ right_items[result.correct_right_index].content }}
+                                            {% elif right_items[result.correct_right_index].type == 'image' %}
+                                                <div class="image-container text-center">
+                                                    <img src="{{ right_items[result.correct_right_index].content }}?v={{ timestamp }}" 
+                                                         class="img-fluid pairs-image-small" 
+                                                         alt="Image de paire"
+                                                         onerror="handleImageError(this, '{{ right_items[result.correct_right_index].content }}')">
+                                                </div>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            {% if result.correct %}
+                                                <i class="fas fa-check-circle text-success fa-2x"></i>
+                                            {% else %}
+                                                <i class="fas fa-times-circle text-danger fa-2x"></i>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .pairs-image {
+        max-height: 150px;
+        max-width: 100%;
+        object-fit: contain;
+        margin: 10px auto;
+    }
+    
+    .pairs-image-small {
+        max-height: 100px;
+        max-width: 100%;
+        object-fit: contain;
+    }
+    
+    .image-container {
+        min-height: 100px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .list-group-item {
+        margin-bottom: 10px;
+        border-radius: 5px;
+    }
+    
+    .item-content {
+        font-size: 1.1rem;
+    }
+    
+    .pair-select {
+        width: 80px;
+    }
+    
+    .image-error {
+        border: 2px dashed #dc3545;
+        padding: 10px;
+        color: #dc3545;
+        background-color: #f8d7da;
+    }
+</style>
+
+<script>
+    // Fonction pour gérer les erreurs de chargement d'images
+    function handleImageError(img, originalSrc) {
+        console.error('Erreur de chargement de l\'image:', originalSrc);
+        
+        // Essayer d'abord avec un chemin alternatif
+        const filename = originalSrc.split('/').pop();
+        
+        if (originalSrc.includes('/static/uploads/')) {
+            // Essayer avec /static/exercises/
+            img.src = `/static/exercises/${filename}`;
+            img.onerror = function() {
+                // Si ça échoue encore, essayer avec /static/
+                img.src = `/static/${filename}`;
+                img.onerror = function() {
+                    // Si tout échoue, afficher un placeholder
+                    replaceWithPlaceholder(img, originalSrc);
+                };
+            };
+        } else if (originalSrc.includes('/static/exercises/')) {
+            // Essayer avec /static/uploads/
+            img.src = `/static/uploads/${filename}`;
+            img.onerror = function() {
+                // Si ça échoue encore, essayer avec /static/
+                img.src = `/static/${filename}`;
+                img.onerror = function() {
+                    // Si tout échoue, afficher un placeholder
+                    replaceWithPlaceholder(img, originalSrc);
+                };
+            };
+        } else {
+            // Essayer avec /static/uploads/
+            img.src = `/static/uploads/${filename}`;
+            img.onerror = function() {
+                // Si ça échoue, afficher un placeholder
+                replaceWithPlaceholder(img, originalSrc);
+            };
+        }
+    }
+    
+    // Fonction pour remplacer une image par un placeholder
+    function replaceWithPlaceholder(img, originalSrc) {
+        // Créer un div pour remplacer l'image
+        const container = document.createElement('div');
+        container.className = 'image-error p-2 text-center';
+        container.innerHTML = `
+            <i class="fas fa-exclamation-triangle mb-2"></i>
+            <div>Image non disponible</div>
+            <small>${originalSrc.split('/').pop()}</small>
+        `;
+        
+        // Remplacer l'image par le div
+        img.parentNode.replaceChild(container, img);
+    }
+    
+    // Fonction pour vérifier si toutes les paires sont sélectionnées
+    function validateForm() {
+        const selects = document.querySelectorAll('.pair-select');
+        let isValid = true;
+        
+        selects.forEach(select => {
+            if (!select.value) {
+                select.classList.add('is-invalid');
+                isValid = false;
+            } else {
+                select.classList.remove('is-invalid');
+            }
+        });
+        
+        if (!isValid) {
+            alert('Veuillez associer tous les éléments de gauche avec un élément de droite.');
+        }
+        
+        return isValid;
+    }
+    
+    // Initialisation du formulaire
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('pairsForm');
+        
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                if (!validateForm()) {
+                    e.preventDefault();
+                }
+            });
+        }
+        
+        // Ajouter des événements de changement pour les selects
+        const selects = document.querySelectorAll('.pair-select');
+        selects.forEach(select => {
+            select.addEventListener('change', function() {
+                // Vérifier si la valeur est déjà sélectionnée ailleurs
+                const selectedValue = this.value;
+                if (selectedValue) {
+                    let duplicateFound = false;
+                    
+                    selects.forEach(otherSelect => {
+                        if (otherSelect !== this && otherSelect.value === selectedValue) {
+                            duplicateFound = true;
+                        }
+                    });
+                    
+                    if (duplicateFound) {
+                        alert(`Attention: L'élément ${parseInt(selectedValue) + 1} est déjà associé à un autre élément.`);
+                    }
+                }
+                
+                // Enlever la classe is-invalid si une valeur est sélectionnée
+                if (this.value) {
+                    this.classList.remove('is-invalid');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

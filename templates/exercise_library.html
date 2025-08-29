@@ -152,34 +152,35 @@
                     {% endfor %}
                 </div>
             {% else %}
-                <!-- Aucun résultat trouvé avec les filtres -->
+                <!-- Aucun exercice trouvé -->
                 <div class="row">
                     <div class="col-12">
-                        <div class="text-center py-5">
-                            <div class="mb-4">
-                                <i class="fas fa-search-minus fa-4x text-warning opacity-50"></i>
-                            </div>
-                            <h4 class="text-muted mb-3">Aucun exercice trouvé</h4>
-                            <p class="text-muted mb-4">
-                                Aucun exercice ne correspond à vos critères de recherche.<br>
-                                Essayez de modifier vos filtres ou votre terme de recherche.
-                            </p>
-                            <div class="d-flex justify-content-center gap-2">
-                                <a href="{{ url_for('exercise.exercise_library') }}" class="btn btn-outline-primary">
-                                    <i class="fas fa-redo"></i> Réinitialiser les filtres
-                                </a>
-                                {% if current_user.is_teacher %}
-                                    <a href="{{ url_for('exercise.create_exercise') }}" class="btn btn-primary">
-                                        <i class="fas fa-plus"></i> Créer un exercice
-                                    </a>
-                                {% endif %}
-                            </div>
+                        <div class="alert alert-warning text-center">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Aucun exercice trouvé</strong>
+                            {% if search_query or selected_type or selected_subject %}
+                                <p class="mb-0 mt-2">
+                                    Essayez de modifier vos critères de recherche ou 
+                                    <a href="{{ url_for('exercise.exercise_library') }}" class="alert-link">supprimez les filtres</a>
+                                </p>
+                            {% else %}
+                                <p class="mb-0 mt-2">
+                                    Commencez par créer votre premier exercice !
+                                </p>
+                            {% endif %}
                         </div>
+                        {% if current_user.is_teacher and not has_filters %}
+                            <div class="text-center">
+                                <a href="{{ url_for('exercise.create_exercise') }}" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i> Créer un nouvel exercice
+                                </a>
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
             {% endif %}
 
-            {% if current_user.is_teacher %}
+            {% if current_user.is_teacher and (exercises or has_filters) %}
                 <div class="text-center mt-4">
                     <a href="{{ url_for('exercise.create_exercise') }}" class="btn btn-primary btn-lg">
                         <i class="fas fa-plus"></i> Créer un nouvel exercice

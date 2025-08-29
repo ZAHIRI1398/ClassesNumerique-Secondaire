@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Édition d'exercice de test</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .image-preview {
+            max-width: 300px;
+            max-height: 200px;
+            margin-top: 10px;
+            border: 1px solid #ddd;
+            padding: 5px;
+        }
+        .image-preview img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1>Édition d'exercice de test</h1>
+        
+        <div class="mb-4">
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">Retour à la liste</a>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5>Édition de "{{ exercise.title }}"</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Titre</label>
+                        <input type="text" class="form-control" id="title" name="title" value="{{ exercise.title }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3">{{ exercise.description }}</textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Image actuelle</label>
+                        <div class="image-preview">
+                            {% if exercise.image_path %}
+                                <img src="{{ cloud_storage.get_cloudinary_url(exercise.image_path) }}" alt="Image actuelle">
+                            {% elif content.image %}
+                                <img src="{{ cloud_storage.get_cloudinary_url(content.image) }}" alt="Image actuelle">
+                            {% else %}
+                                <div class="text-center p-4 bg-light">
+                                    <em>Pas d'image</em>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="exercise_image" class="form-label">Nouvelle image</label>
+                        <input type="file" class="form-control" id="exercise_image" name="exercise_image">
+                        <div class="form-text">Formats acceptés: JPG, PNG, GIF, SVG</div>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="remove_exercise_image" name="remove_exercise_image" value="true">
+                        <label class="form-check-label" for="remove_exercise_image">Supprimer l'image actuelle</label>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h5>Informations de débogage</h5>
+                        <div class="card">
+                            <div class="card-body">
+                                <h6>État des images:</h6>
+                                <ul>
+                                    <li><strong>exercise.image_path:</strong> 
+                                        {% if exercise.image_path %}
+                                        <code>{{ exercise.image_path }}</code>
+                                        {% else %}
+                                        <span class="text-danger">Non défini</span>
+                                        {% endif %}
+                                    </li>
+                                    <li><strong>content['image']:</strong> 
+                                        {% if content.image %}
+                                        <code>{{ content.image }}</code>
+                                        {% else %}
+                                        <span class="text-danger">Non défini</span>
+                                        {% endif %}
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Script pour désactiver l'upload d'image si la case "Supprimer l'image" est cochée
+        document.getElementById('remove_exercise_image').addEventListener('change', function() {
+            document.getElementById('exercise_image').disabled = this.checked;
+        });
+    </script>
+</body>
+</html>

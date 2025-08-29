@@ -464,15 +464,40 @@ def sanitize_filename(filename):
     filename = ''.join(c for c in filename if c.isalnum() or c in '._-')
     return filename
 
-def generate_unique_filename(original_filename):
-    # Séparer le nom de fichier et l'extension
-    name, ext = os.path.splitext(original_filename)
-    # Générer un timestamp
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    # Générer une chaîne aléatoire
-    random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
-    # Combiner le tout
-    return f"{name}_{timestamp}_{random_string}{ext}"
+def generate_unique_filename(filename):
+    """Générer un nom de fichier unique avec timestamp"""
+    timestamp = str(int(time.time()))
+    name, ext = os.path.splitext(filename)
+    # Générer un ID aléatoire court
+    random_id = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
+    return f"{timestamp}_{random_id}{ext}"
+
+def safe_file_save(file, filepath):
+    """Sauvegarder un fichier de manière sécurisée avec vérification de taille"""
+    try:
+        # Créer le répertoire parent s'il n'existe pas
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        
+        # Sauvegarder le fichier
+        file.save(filepath)
+        
+        # Vérifier que le fichier a été sauvegardé correctement
+        if os.path.exists(filepath) and os.path.getsize(filepath) > 0:
+            current_app.logger.info(f"[UPLOAD_SUCCESS] Fichier sauvegardé: {filepath} ({os.path.getsize(filepath)} bytes)")
+            return True
+        else:
+            current_app.logger.error(f"[UPLOAD_ERROR] Fichier vide ou non sauvegardé: {filepath}")
+            # Supprimer le fichier vide s'il existe
+            if os.path.exists(filepath):
+                os.remove(filepath)
+            return False
+    except Exception as e:
+        current_app.logger.error(f"[UPLOAD_ERROR] Erreur lors de la sauvegarde: {str(e)}")
+        return False
+
+def generate_consistent_image_path(filename):
+    """Générer un chemin d'image cohérent"""
+    return f'/static/uploads/{filename}'
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -3820,6 +3845,35 @@ def debug_update_exercise(exercise_id):
     except Exception as e:
         return f"[ERREUR] Erreur lors de la sauvegarde: {e}"
 
+@app.route('/test_upload', methods=['GET', 'POST'])
+def test_upload():
+    """Page de test pour l'upload d'images"""
+    if request.method == 'POST':
+        if 'test_image' not in request.files:
+            flash('Aucun fichier sélectionné', 'error')
+            return redirect(request.url)
+        
+        file = request.files['test_image']
+        if file.filename == '':
+            flash('Aucun fichier sélectionné', 'error')
+            return redirect(request.url)
+        
+        if file and allowed_file(file.filename):
+            filename = generate_unique_filename(file.filename)
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            
+            # Utiliser la fonction sécurisée
+            if safe_file_save(file, filepath):
+                image_path = generate_consistent_image_path(filename)
+                flash(f'Image uploadée avec succès: {image_path}', 'success')
+                return render_template('test_upload.html', uploaded_image=image_path)
+            else:
+                flash('Erreur lors de l\'upload de l\'image', 'error')
+        else:
+            flash('Type de fichier non autorisé', 'error')
+    
+    return render_template('test_upload.html')
+
 @app.route('/exercise/<int:exercise_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_exercise(exercise_id):
@@ -3881,9 +3935,11 @@ def edit_exercise(exercise_id):
                 if file and file.filename != '' and allowed_file(file.filename):
                     filename = generate_unique_filename(file.filename)
                     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                    file.save(filepath)
-                    exercise.image_path = f'static/uploads/{filename}'
-                    app.logger.info(f"[EDIT_DEBUG] Image sauvegardée: {exercise.image_path}")
+                    if safe_file_save(file, filepath):
+                        exercise.image_path = generate_consistent_image_path(filename)
+                        app.logger.info(f"[EDIT_DEBUG] Image sauvegardée: {exercise.image_path}")
+                    else:
+                        flash('Erreur lors de l\'upload de l\'image', 'error')
             
             # Traitement spécifique par type d'exercice
             if exercise.exercise_type == 'qcm':
@@ -4382,22 +4438,59 @@ def edit_exercise(exercise_id):
                     }
                     
                     # Gestion de l'image pour cette carte
-                    # D'abord, conserver l'image existante si elle existe
-                    if i < len(existing_images) and existing_images[i]:
-                        card_data['image'] = existing_images[i]
+                    # D'abord, conserver l'image existante si elle existe et qu'aucune nouvelle image n'est fournie
+                    if i < len(existing_images) and existing_images[i] and \
+                       (i >= len(card_images) or not card_images[i] or card_images[i].filename == ''):
+                        # Nettoyer le chemin de l'image existante pour s'assurer qu'il est relatif
+                        clean_path = existing_images[i].replace('static/', '')
+                        if clean_path.startswith('uploads/'):
+                            card_data['image'] = clean_path
+                        else:
+                            card_data['image'] = f'uploads/{os.path.basename(clean_path)}'
+                        current_app.logger.info(f'[FLASHCARDS_EDIT_DEBUG] Conservation image existante: {card_data["image"]}')
                     
-                    # Ensuite, remplacer par une nouvelle image si uploadée
+                    # Ensuite, traiter la nouvelle image si elle est fournie
                     if i < len(card_images) and card_images[i] and card_images[i].filename != '':
                         image_file = card_images[i]
                         if allowed_file(image_file.filename):
+                            # Supprimer l'ancienne image si elle existe
+                            if card_data['image'] and os.path.exists(os.path.join('static', card_data['image'])):
+                                try:
+                                    os.remove(os.path.join('static', card_data['image']))
+                                    current_app.logger.info(f'[FLASHCARDS_EDIT_DEBUG] Ancienne image supprimée: {card_data["image"]}')
+                                except Exception as e:
+                                    current_app.logger.error(f'[FLASHCARDS_EDIT_DEBUG] Erreur suppression ancienne image: {e}')
+                            
+                            # Enregistrer la nouvelle image
                             filename = generate_unique_filename(image_file.filename)
-                            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                            filepath = os.path.join('static', 'uploads', filename)
+                            
+                            # S'assurer que le répertoire existe
+                            os.makedirs(os.path.dirname(filepath), exist_ok=True)
+                            
                             image_file.save(filepath)
                             card_data['image'] = f'uploads/{filename}'
-                            current_app.logger.info(f'[FLASHCARDS_EDIT_DEBUG] Nouvelle image carte {i+1}: {filename}')
+                            current_app.logger.info(f'[FLASHCARDS_EDIT_DEBUG] Nouvelle image enregistrée: {card_data["image"]}')
                     
                     cards_data.append(card_data)
-                    current_app.logger.info(f'[FLASHCARDS_EDIT_DEBUG] Carte {i+1}: "{question[:30]}..." -> "{answer}"')
+                    current_app.logger.info(f'[FLASHCARDS_EDIT_DEBUG] Carte {i+1}: "{question[:30]}..." -> "{answer}" (Image: {card_data["image"]})')
+                
+                # Nettoyer les images orphelines si des cartes ont été supprimées
+                if exercise.content:
+                    try:
+                        old_content = json.loads(exercise.content)
+                        if 'cards' in old_content:
+                            for old_card in old_content['cards']:
+                                if 'image' in old_card and old_card['image']:
+                                    old_image_path = os.path.join('static', old_card['image'])
+                                    if os.path.exists(old_image_path) and not any(card.get('image') == old_card['image'] for card in cards_data):
+                                        try:
+                                            os.remove(old_image_path)
+                                            current_app.logger.info(f'[FLASHCARDS_EDIT_DEBUG] Image orpheline supprimée: {old_card["image"]}')
+                                        except Exception as e:
+                                            current_app.logger.error(f'[FLASHCARDS_EDIT_DEBUG] Erreur suppression image orpheline: {e}')
+                    except Exception as e:
+                        current_app.logger.error(f'[FLASHCARDS_EDIT_DEBUG] Erreur nettoyage images orphelines: {e}')
                 
                 # Mettre à jour le contenu
                 content = {

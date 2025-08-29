@@ -1,0 +1,8 @@
+2025-08-24 23:05:01,069 - fix_legend_image_paths - INFO - Backup de la base de données créé: instance/backup_legend_fix_20250824_230501.db
+2025-08-24 23:05:37,868 - fix_legend_image_paths - INFO - Base de données trouvée: C:\Users\JeMat\OneDrive\classenumerique20250801\instance\app.db
+2025-08-24 23:05:37,888 - fix_legend_image_paths - INFO - Backup de la base de données créé: instance/backup_legend_fix_20250824_230537.db
+2025-08-24 23:05:37,894 - fix_legend_image_paths - INFO - Trouvé 1 exercices de type légende
+2025-08-24 23:05:37,894 - fix_legend_image_paths - INFO - Traitement de l'exercice #11: Test Legend Exercise
+2025-08-24 23:05:37,894 - fix_legend_image_paths - WARNING - Exercice #11: Aucune image définie, ignoré
+2025-08-24 23:05:37,894 - fix_legend_image_paths - INFO - Aucune correction nécessaire
+2025-08-24 23:05:37,894 - fix_legend_image_paths - INFO - Correction terminée: 0 exercices corrigés

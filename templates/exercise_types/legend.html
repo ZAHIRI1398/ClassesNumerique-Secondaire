@@ -1,0 +1,514 @@
+{% extends "base.html" %}
+
+{% block title %}{{ exercise.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">{{ exercise.title }}</h4>
+                    <p class="mb-0 mt-2">{{ exercise.description }}</p>
+                </div>
+                <div class="card-body">
+                    <!-- Instructions -->
+                    <div class="alert alert-info mb-4">
+                        {% if content.instructions %}
+                            {{ content.instructions }}
+                        {% else %}
+                            {% if content.mode == 'grid' %}
+                                Déplacez les éléments vers les bonnes cases du quadrillage.
+                            {% elif content.mode == 'spatial' %}
+                                Placez les éléments dans les bonnes zones définies.
+                            {% else %}
+                                Placez les légendes aux bons endroits sur l'image.
+                            {% endif %}
+                        {% endif %}
+                    </div>
+
+                    <!-- Mode classique (points sur image) -->
+                    {% if content.mode != 'grid' and content.mode != 'spatial' %}
+                    <div id="classic-mode">
+                        <div class="row">
+                            <!-- Zone d'image avec points de légende -->
+                            <div class="col-md-8">
+                                <div class="legend-image-container" style="position: relative; margin-bottom: 20px;">
+                                    {% if content.main_image %}
+                                    <img id="main-image" src="{{ get_cloudinary_url(content.main_image) }}?v={{ range(1000000, 9999999) | random }}" 
+                                         alt="Image à légender" 
+                                         class="img-fluid legend-image" 
+                                         style="max-width: 100%;"
+                                         onload="adjustPointPositions()"
+                                         onerror="this.onerror=null; this.src='{{ content.main_image.replace('/static/uploads/', '/static/exercises/') }}?v={{ range(1000000, 9999999) | random }}'; this.onerror=function(){this.src='/static/img/image-not-found.png';}">
+                                    {% elif exercise.image_path %}
+                                    <img id="main-image" src="{{ get_cloudinary_url(exercise.image_path) }}?v={{ range(1000000, 9999999) | random }}" 
+                                         alt="Image à légender" 
+                                         class="img-fluid legend-image" 
+                                         style="max-width: 100%;"
+                                         onload="adjustPointPositions()"
+                                         onerror="this.onerror=null; this.src='{{ exercise.image_path.replace('/static/uploads/', '/static/exercises/') }}?v={{ range(1000000, 9999999) | random }}'; this.onerror=function(){this.src='/static/img/image-not-found.png';}">
+                                    {% else %}
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle"></i> Image non disponible
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <!-- Points de légende sur l'image -->
+                                    {% if content.zones %}
+                                        {% for zone in content.zones %}
+                                        <div class="legend-point drop-zone" 
+                                             id="point-{{ loop.index }}"
+                                             data-zone-id="{{ loop.index }}"
+                                             data-expected-legend="{{ zone.legend }}"
+                                             data-original-x="{{ zone.x }}"
+                                             data-original-y="{{ zone.y }}"
+                                             style="position: absolute; left: {{ zone.x * 100 }}%; top: {{ zone.y * 100 }}%; width: 25px; height: 25px; background-color: rgba(255, 0, 0, 0.7); border-radius: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; cursor: pointer; z-index: 100;">
+                                            {{ loop.index }}
+                                        </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- Légendes à associer -->
+                            <div class="col-md-4">
+                                <h5 class="mb-3">Légendes :</h5>
+                                <div id="legends-container" class="d-flex flex-column gap-2">
+                                    {% if content.zones %}
+                                        {% for zone in content.zones %}
+                                        <div class="legend-item draggable btn btn-outline-secondary text-start" 
+                                             draggable="true" 
+                                             data-legend="{{ zone.legend }}"
+                                             style="cursor: grab; margin-bottom: 8px;">
+                                            {{ zone.legend }}
+                                        </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Mode quadrillage -->
+                    {% if content.mode == 'grid' %}
+                    <div id="grid-mode">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="legend-grid-container" style="display: grid; grid-template-columns: repeat({{ content.grid_cols }}, 1fr); gap: 10px; margin-bottom: 20px;">
+                                    {% for row in range(content.grid_rows) %}
+                                        {% for col in range(content.grid_cols) %}
+                                            <div class="legend-grid-item drop-zone" 
+                                                 data-row="{{ row }}" 
+                                                 data-col="{{ col }}"
+                                                 data-zone-id="grid-{{ row }}-{{ col }}"
+                                                 style="border: 1px solid #ddd; padding: 15px; text-align: center; min-height: 80px; display: flex; align-items: center; justify-content: center; background-color: #f8f9fa;">
+                                                <span class="grid-placeholder">Déposer ici</span>
+                                            </div>
+                                        {% endfor %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <h5 class="mb-3">Éléments à placer :</h5>
+                                <div id="grid-elements-container" class="d-flex flex-column gap-2">
+                                    {% if content.grid_elements %}
+                                        {% for element in content.grid_elements %}
+                                        <div class="grid-element draggable btn btn-outline-secondary text-start" 
+                                             draggable="true" 
+                                             data-content="{{ element.content }}"
+                                             data-correct-row="{{ element.row }}"
+                                             data-correct-col="{{ element.col }}"
+                                             style="cursor: grab; margin-bottom: 8px;">
+                                            {{ element.content }}
+                                        </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Mode spatial -->
+                    {% if content.mode == 'spatial' %}
+                    <div id="spatial-mode">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="spatial-zones-container">
+                                    {% if content.zones %}
+                                        {% for zone in content.zones %}
+                                        <div class="spatial-zone drop-zone" 
+                                             data-zone-id="spatial-{{ loop.index }}"
+                                             data-zone-name="{{ zone.name }}"
+                                             data-correct-element="{{ zone.correct_element }}"
+                                             style="border: 1px solid #007bff; background-color: rgba(0, 123, 255, 0.1); padding: 15px; margin-bottom: 15px; border-radius: 5px;">
+                                            <h6>{{ zone.name }}</h6>
+                                            <div class="spatial-placeholder">Déposer un élément ici</div>
+                                        </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <h5 class="mb-3">Éléments à placer :</h5>
+                                <div id="spatial-elements-container" class="d-flex flex-column gap-2">
+                                    {% if content.elements %}
+                                        {% for element in content.elements %}
+                                        <div class="spatial-element draggable btn btn-outline-secondary text-start" 
+                                             draggable="true" 
+                                             data-element="{{ element }}"
+                                             style="cursor: grab; margin-bottom: 8px;">
+                                            {{ element }}
+                                        </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Formulaire de soumission -->
+                    <form id="exercise-form" method="POST" action="{{ url_for('handle_exercise_answer', exercise_id=exercise.id) }}" class="mt-4">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <input type="hidden" id="user-answers" name="user_answers" value="">
+                        
+                        <div class="text-center">
+                            <button type="button" id="verify-btn" class="btn btn-success btn-lg me-3">
+                                <i class="fas fa-check"></i> Vérifier
+                            </button>
+                            <button type="button" id="reset-btn" class="btn btn-warning btn-lg">
+                                <i class="fas fa-undo"></i> Recommencer
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Zone de feedback -->
+                    <div id="feedback" class="mt-4" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.legend-point {
+    transition: all 0.3s ease;
+}
+
+.drop-zone {
+    transition: all 0.3s ease;
+}
+
+.drop-zone.drag-over {
+    border-color: #28a745 !important;
+    background-color: rgba(40, 167, 69, 0.1) !important;
+}
+
+.drop-zone.filled {
+    border-color: #28a745;
+    background-color: rgba(40, 167, 69, 0.2);
+    border-style: solid;
+}
+
+.drop-zone.correct {
+    border-color: #28a745;
+    background-color: rgba(40, 167, 69, 0.3);
+    color: #155724;
+}
+
+.drop-zone.incorrect {
+    border-color: #dc3545;
+    background-color: rgba(220, 53, 69, 0.3);
+    color: #721c24;
+}
+
+.draggable {
+    transition: all 0.3s ease;
+}
+
+.draggable:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.draggable.dragging {
+    opacity: 0.5;
+    transform: rotate(5deg);
+}
+
+.draggable.used {
+    opacity: 0.5;
+    pointer-events: none;
+    background-color: #e9ecef;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const draggables = document.querySelectorAll('.draggable');
+    const dropZones = document.querySelectorAll('.drop-zone');
+    const verifyBtn = document.getElementById('verify-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const userAnswersInput = document.getElementById('user-answers');
+    const feedbackDiv = document.getElementById('feedback');
+
+    let userAnswers = {};
+    
+    // Fonction pour ajuster les positions des points selon la taille d'affichage
+    function adjustPointPositions() {
+        const image = document.getElementById('main-image');
+        const points = document.querySelectorAll('.legend-point');
+        
+        if (!image || points.length === 0) return;
+        
+        // Attendre que l'image soit complètement chargée
+        setTimeout(() => {
+            const displayWidth = image.clientWidth;
+            const displayHeight = image.clientHeight;
+            
+            console.log('[POINT_ADJUST] Taille affichage: ' + displayWidth + 'x' + displayHeight);
+            
+            points.forEach((point, index) => {
+                const originalX = parseFloat(point.dataset.originalX);
+                const originalY = parseFloat(point.dataset.originalY);
+                
+                console.log('[POINT_ADJUST] Point ' + (index + 1) + ': (' + originalX + ',' + originalY + ')');
+                
+                point.style.left = (originalX * 100) + '%';
+                point.style.top = (originalY * 100) + '%';
+            });
+        }, 100);
+    }
+    
+    // Réajuster les positions si la fenêtre est redimensionnée
+    window.addEventListener('resize', adjustPointPositions);
+
+    // Drag and Drop pour les éléments
+    draggables.forEach(draggable => {
+        draggable.addEventListener('dragstart', function(e) {
+            e.dataTransfer.setData('text/plain', JSON.stringify({
+                type: this.classList.contains('legend-item') ? 'legend' : 
+                      this.classList.contains('grid-element') ? 'grid' : 'spatial',
+                content: this.classList.contains('legend-item') ? this.dataset.legend : 
+                         this.classList.contains('grid-element') ? this.dataset.content : this.dataset.element,
+                row: this.dataset.correctRow,
+                col: this.dataset.correctCol
+            }));
+            this.classList.add('dragging');
+        });
+
+        draggable.addEventListener('dragend', function() {
+            this.classList.remove('dragging');
+        });
+    });
+
+    // Drop zones
+    dropZones.forEach(zone => {
+        zone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('drag-over');
+        });
+
+        zone.addEventListener('dragleave', function() {
+            this.classList.remove('drag-over');
+        });
+
+        zone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+            
+            const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+            const zoneId = this.dataset.zoneId;
+            
+            // Vérifier la compatibilité entre l'élément et la zone
+            let isCompatible = false;
+            if (data.type === 'legend' && zoneId.startsWith('point-')) {
+                isCompatible = true;
+            } else if (data.type === 'grid' && zoneId.startsWith('grid-')) {
+                isCompatible = true;
+            } else if (data.type === 'spatial' && zoneId.startsWith('spatial-')) {
+                isCompatible = true;
+            }
+            
+            if (!isCompatible) {
+                console.log('Incompatible: ' + data.type + ' avec zone ' + zoneId);
+                return;
+            }
+            
+            // Placer l'élément dans la zone
+            if (data.type === 'legend') {
+                this.innerHTML = `<span class="legend-text">${data.content}</span>`;
+            } else if (data.type === 'grid') {
+                this.innerHTML = `<span class="grid-text">${data.content}</span>`;
+            } else {
+                this.querySelector('.spatial-placeholder').innerHTML = data.content;
+            }
+            
+            this.classList.add('filled');
+            
+            // Marquer l'élément comme utilisé
+            let selector = '';
+            if (data.type === 'legend') {
+                selector = `[data-legend="${data.content}"]`;
+            } else if (data.type === 'grid') {
+                selector = `[data-content="${data.content}"]`;
+            } else {
+                selector = `[data-element="${data.content}"]`;
+            }
+            
+            const element = document.querySelector(selector);
+            if (element) {
+                element.classList.add('used');
+            }
+            
+            // Enregistrer la réponse
+            userAnswers[zoneId] = data.content;
+            
+            console.log('Réponses utilisateur:', userAnswers);
+        });
+
+        // Permettre de cliquer pour retirer un élément
+        zone.addEventListener('click', function() {
+            if (this.classList.contains('filled')) {
+                const zoneId = this.dataset.zoneId;
+                let content = '';
+                
+                if (zoneId.startsWith('point-')) {
+                    content = this.querySelector('.legend-text').textContent;
+                    this.innerHTML = zoneId.split('-')[1];
+                } else if (zoneId.startsWith('grid-')) {
+                    content = this.querySelector('.grid-text').textContent;
+                    this.innerHTML = '<span class="grid-placeholder">Déposer ici</span>';
+                } else {
+                    content = this.querySelector('.spatial-placeholder').textContent;
+                    this.querySelector('.spatial-placeholder').innerHTML = 'Déposer un élément ici';
+                }
+                
+                this.classList.remove('filled', 'correct', 'incorrect');
+                
+                // Rendre l'élément disponible
+                let selector = '';
+                if (zoneId.startsWith('point-')) {
+                    selector = `[data-legend="${content}"]`;
+                } else if (zoneId.startsWith('grid-')) {
+                    selector = `[data-content="${content}"]`;
+                } else {
+                    selector = `[data-element="${content}"]`;
+                }
+                
+                const element = document.querySelector(selector);
+                if (element) {
+                    element.classList.remove('used');
+                }
+                
+                // Supprimer la réponse
+                delete userAnswers[zoneId];
+                
+                console.log('Réponses utilisateur:', userAnswers);
+            }
+        });
+    });
+
+    // Bouton Vérifier
+    verifyBtn.addEventListener('click', function() {
+        // Préparer les données pour la soumission
+        userAnswersInput.value = JSON.stringify(userAnswers);
+        
+        // Vérifier les réponses côté client pour le feedback immédiat
+        let correctCount = 0;
+        let totalZones = 0;
+        
+        dropZones.forEach(zone => {
+            const zoneId = zone.dataset.zoneId;
+            let correctAnswer = '';
+            let userAnswer = userAnswers[zoneId];
+            
+            if (!userAnswer) return;
+            totalZones++;
+            
+            zone.classList.remove('correct', 'incorrect');
+            
+            if (zoneId.startsWith('point-')) {
+                correctAnswer = zone.dataset.expectedLegend;
+            } else if (zoneId.startsWith('grid-')) {
+                const row = parseInt(zone.dataset.row);
+                const col = parseInt(zone.dataset.col);
+                const gridElement = document.querySelector(`[data-correct-row="${row}"][data-correct-col="${col}"]`);
+                if (gridElement) {
+                    correctAnswer = gridElement.dataset.content;
+                }
+            } else if (zoneId.startsWith('spatial-')) {
+                correctAnswer = zone.dataset.correctElement;
+            }
+            
+            if (userAnswer === correctAnswer) {
+                zone.classList.add('correct');
+                correctCount++;
+            } else {
+                zone.classList.add('incorrect');
+            }
+        });
+        
+        // Afficher le feedback
+        const score = totalZones > 0 ? Math.round((correctCount / totalZones) * 100) : 0;
+        let feedbackHtml = `
+            <div class="alert ${score >= 80 ? 'alert-success' : score >= 60 ? 'alert-warning' : 'alert-danger'}">
+                <h5><i class="fas fa-chart-bar"></i> Résultat : ${correctCount}/${totalZones} (${score}%)</h5>
+                <p class="mb-0">
+                    ${score >= 80 ? 'Excellent travail ! 🎉' : 
+                      score >= 60 ? 'Bien joué ! Vous pouvez encore vous améliorer. 👍' : 
+                      'Continuez vos efforts ! 💪'}
+                </p>
+            </div>
+        `;
+        
+        feedbackDiv.innerHTML = feedbackHtml;
+        feedbackDiv.style.display = 'block';
+        
+        // Soumettre le formulaire pour enregistrer la tentative
+        document.getElementById('exercise-form').submit();
+    });
+
+    // Bouton Recommencer
+    resetBtn.addEventListener('click', function() {
+        // Réinitialiser toutes les zones
+        dropZones.forEach(zone => {
+            const zoneId = zone.dataset.zoneId;
+            
+            zone.classList.remove('filled', 'correct', 'incorrect');
+            
+            if (zoneId.startsWith('point-')) {
+                zone.innerHTML = zoneId.split('-')[1];
+            } else if (zoneId.startsWith('grid-')) {
+                zone.innerHTML = '<span class="grid-placeholder">Déposer ici</span>';
+            } else if (zoneId.startsWith('spatial-')) {
+                zone.querySelector('.spatial-placeholder').innerHTML = 'Déposer un élément ici';
+            }
+        });
+        
+        // Réinitialiser tous les éléments
+        draggables.forEach(draggable => {
+            draggable.classList.remove('used');
+        });
+        
+        // Réinitialiser les réponses
+        userAnswers = {};
+        
+        // Masquer le feedback
+        feedbackDiv.style.display = 'none';
+        
+        console.log('Exercice réinitialisé');
+    });
+    
+    // Initialiser l'ajustement des points
+    if (document.getElementById('main-image')) {
+        adjustPointPositions();
+    }
+});
+</script>
+{% endblock %}

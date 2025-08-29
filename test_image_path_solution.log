@@ -1,0 +1,143 @@
+2025-08-28 12:01:19,139 - __main__ - INFO - Fichier de test créé: static/uploads/exercises/qcm/Capture d'écran 2025-08-12 180016.png
+2025-08-28 12:01:19,139 - __main__ - INFO - Fichier de test créé: static/uploads/exercises/qcm/Image avec espaces.jpg
+2025-08-28 12:01:19,140 - __main__ - INFO - Fichier de test créé: static/exercises/qcm/Image-avec-tirets.png
+2025-08-28 12:01:19,140 - __main__ - INFO - Fichier de test créé: static/exercises/qcm/Image_avec_underscores.jpg
+2025-08-28 12:01:19,141 - __main__ - INFO - Fichier de test créé: static/uploads/exercises/qcm/Image avec caractères spéciaux éèàç.png
+2025-08-28 12:01:19,142 - __main__ - INFO - === Test du service ImageUrlService ===
+2025-08-28 12:01:19,142 - image_url_service - DEBUG - get_image_url appelée avec image_path=/static/uploads/exercises/qcm/Capture d'écran 2025-08-12 180016.png
+2025-08-28 12:01:19,142 - image_url_service - DEBUG - Nom de fichier extrait: Capture d'écran 2025-08-12 180016.png
+2025-08-28 12:01:19,142 - image_url_service - DEBUG - Nom de fichier normalisé: Capture_d_ecran_2025-08-12_180016.png (original: Capture d'écran 2025-08-12 180016.png)
+2025-08-28 12:01:19,142 - image_url_service - DEBUG - Chemin avec nom de fichier normalisé: /static/uploads/exercises/qcm/Capture_d_ecran_2025-08-12_180016.png
+2025-08-28 12:01:19,143 - image_url_service - DEBUG - Le fichier existe directement avec le chemin original: True
+2025-08-28 12:01:19,143 - image_url_service - DEBUG - Le fichier existe avec le nom normalisé: False
+2025-08-28 12:01:19,143 - image_url_service - DEBUG - Retour du chemin original: /static/uploads/exercises/qcm/Capture d'écran 2025-08-12 180016.png
+2025-08-28 12:01:19,143 - __main__ - INFO - ImageUrlService.get_image_url(/static/uploads/exercises/qcm/Capture d'écran 2025-08-12 180016.png) => /static/uploads/exercises/qcm/Capture d'écran 2025-08-12 180016.png
+2025-08-28 12:01:19,143 - image_url_service - DEBUG - get_image_url appelée avec image_path=/static/uploads/exercises/qcm/Capture d'écran 2025-08-12 180016.png
+2025-08-28 12:01:19,143 - image_url_service - DEBUG - Nom de fichier extrait: Capture d'écran 2025-08-12 180016.png
+2025-08-28 12:01:19,143 - image_url_service - DEBUG - Nom de fichier normalisé: Capture_d_ecran_2025-08-12_180016.png (original: Capture d'écran 2025-08-12 180016.png)
+2025-08-28 12:01:19,143 - image_url_service - DEBUG - Chemin avec nom de fichier normalisé: /static/uploads/exercises/qcm/Capture_d_ecran_2025-08-12_180016.png
+2025-08-28 12:01:19,143 - image_url_service - DEBUG - Le fichier existe directement avec le chemin original: True
+2025-08-28 12:01:19,143 - image_url_service - DEBUG - Le fichier existe avec le nom normalisé: False
+2025-08-28 12:01:19,143 - image_url_service - DEBUG - Retour du chemin original: /static/uploads/exercises/qcm/Capture d'écran 2025-08-12 180016.png
+2025-08-28 12:01:19,144 - __main__ - INFO - get_cloudinary_url(/static/uploads/exercises/qcm/Capture d'écran 2025-08-12 180016.png) => /static/uploads/exercises/qcm/Capture d'écran 2025-08-12 180016.png
+2025-08-28 12:01:19,144 - image_url_service - DEBUG - get_image_url appelée avec image_path=static/uploads/exercises/qcm/Image avec espaces.jpg
+2025-08-28 12:01:19,144 - image_url_service - DEBUG - Nom de fichier extrait: Image avec espaces.jpg
+2025-08-28 12:01:19,144 - image_url_service - DEBUG - Nom de fichier normalisé: Image_avec_espaces.jpg (original: Image avec espaces.jpg)
+2025-08-28 12:01:19,144 - image_url_service - DEBUG - Chemin avec nom de fichier normalisé: static/uploads/exercises/qcm/Image_avec_espaces.jpg
+2025-08-28 12:01:19,144 - image_url_service - DEBUG - Le fichier existe directement avec le chemin original: True
+2025-08-28 12:01:19,144 - image_url_service - DEBUG - Le fichier existe avec le nom normalisé: False
+2025-08-28 12:01:19,144 - image_url_service - DEBUG - Retour du chemin original: /static/uploads/exercises/qcm/Image avec espaces.jpg
+2025-08-28 12:01:19,144 - __main__ - INFO - ImageUrlService.get_image_url(static/uploads/exercises/qcm/Image avec espaces.jpg) => /static/uploads/exercises/qcm/Image avec espaces.jpg
+2025-08-28 12:01:19,144 - image_url_service - DEBUG - get_image_url appelée avec image_path=static/uploads/exercises/qcm/Image avec espaces.jpg
+2025-08-28 12:01:19,144 - image_url_service - DEBUG - Nom de fichier extrait: Image avec espaces.jpg
+2025-08-28 12:01:19,144 - image_url_service - DEBUG - Nom de fichier normalisé: Image_avec_espaces.jpg (original: Image avec espaces.jpg)
+2025-08-28 12:01:19,144 - image_url_service - DEBUG - Chemin avec nom de fichier normalisé: static/uploads/exercises/qcm/Image_avec_espaces.jpg
+2025-08-28 12:01:19,144 - image_url_service - DEBUG - Le fichier existe directement avec le chemin original: True
+2025-08-28 12:01:19,144 - image_url_service - DEBUG - Le fichier existe avec le nom normalisé: False
+2025-08-28 12:01:19,144 - image_url_service - DEBUG - Retour du chemin original: /static/uploads/exercises/qcm/Image avec espaces.jpg
+2025-08-28 12:01:19,145 - __main__ - INFO - get_cloudinary_url(static/uploads/exercises/qcm/Image avec espaces.jpg) => /static/uploads/exercises/qcm/Image avec espaces.jpg
+2025-08-28 12:01:19,145 - image_url_service - DEBUG - get_image_url appelée avec image_path=/static/exercises/qcm/Image-avec-tirets.png
+2025-08-28 12:01:19,145 - image_url_service - DEBUG - Nom de fichier extrait: Image-avec-tirets.png
+2025-08-28 12:01:19,145 - image_url_service - DEBUG - Le fichier existe directement avec le chemin original: True
+2025-08-28 12:01:19,145 - image_url_service - DEBUG - Le fichier existe avec le nom normalisé: True
+2025-08-28 12:01:19,145 - image_url_service - DEBUG - Retour du chemin original: /static/exercises/qcm/Image-avec-tirets.png
+2025-08-28 12:01:19,145 - __main__ - INFO - ImageUrlService.get_image_url(/static/exercises/qcm/Image-avec-tirets.png) => /static/exercises/qcm/Image-avec-tirets.png
+2025-08-28 12:01:19,145 - image_url_service - DEBUG - get_image_url appelée avec image_path=/static/exercises/qcm/Image-avec-tirets.png
+2025-08-28 12:01:19,145 - image_url_service - DEBUG - Nom de fichier extrait: Image-avec-tirets.png
+2025-08-28 12:01:19,145 - image_url_service - DEBUG - Le fichier existe directement avec le chemin original: True
+2025-08-28 12:01:19,145 - image_url_service - DEBUG - Le fichier existe avec le nom normalisé: True
+2025-08-28 12:01:19,145 - image_url_service - DEBUG - Retour du chemin original: /static/exercises/qcm/Image-avec-tirets.png
+2025-08-28 12:01:19,145 - __main__ - INFO - get_cloudinary_url(/static/exercises/qcm/Image-avec-tirets.png) => /static/exercises/qcm/Image-avec-tirets.png
+2025-08-28 12:01:19,145 - image_url_service - DEBUG - get_image_url appelée avec image_path=static/exercises/qcm/Image_avec_underscores.jpg
+2025-08-28 12:01:19,145 - image_url_service - DEBUG - Nom de fichier extrait: Image_avec_underscores.jpg
+2025-08-28 12:01:19,145 - image_url_service - DEBUG - Le fichier existe directement avec le chemin original: True
+2025-08-28 12:01:19,145 - image_url_service - DEBUG - Le fichier existe avec le nom normalisé: True
+2025-08-28 12:01:19,145 - image_url_service - DEBUG - Retour du chemin original: /static/exercises/qcm/Image_avec_underscores.jpg
+2025-08-28 12:01:19,146 - __main__ - INFO - ImageUrlService.get_image_url(static/exercises/qcm/Image_avec_underscores.jpg) => /static/exercises/qcm/Image_avec_underscores.jpg
+2025-08-28 12:01:19,146 - image_url_service - DEBUG - get_image_url appelée avec image_path=static/exercises/qcm/Image_avec_underscores.jpg
+2025-08-28 12:01:19,146 - image_url_service - DEBUG - Nom de fichier extrait: Image_avec_underscores.jpg
+2025-08-28 12:01:19,146 - image_url_service - DEBUG - Le fichier existe directement avec le chemin original: True
+2025-08-28 12:01:19,146 - image_url_service - DEBUG - Le fichier existe avec le nom normalisé: True
+2025-08-28 12:01:19,146 - image_url_service - DEBUG - Retour du chemin original: /static/exercises/qcm/Image_avec_underscores.jpg
+2025-08-28 12:01:19,146 - __main__ - INFO - get_cloudinary_url(static/exercises/qcm/Image_avec_underscores.jpg) => /static/exercises/qcm/Image_avec_underscores.jpg
+2025-08-28 12:01:19,146 - image_url_service - DEBUG - get_image_url appelée avec image_path=/static/uploads/exercises/qcm/Image avec caractères spéciaux éèàç.png
+2025-08-28 12:01:19,146 - image_url_service - DEBUG - Nom de fichier extrait: Image avec caractères spéciaux éèàç.png
+2025-08-28 12:01:19,146 - image_url_service - DEBUG - Nom de fichier normalisé: Image_avec_caracteres_speciaux_eeac.png (original: Image avec caractères spéciaux éèàç.png)
+2025-08-28 12:01:19,146 - image_url_service - DEBUG - Chemin avec nom de fichier normalisé: /static/uploads/exercises/qcm/Image_avec_caracteres_speciaux_eeac.png
+2025-08-28 12:01:19,146 - image_url_service - DEBUG - Le fichier existe directement avec le chemin original: True
+2025-08-28 12:01:19,146 - image_url_service - DEBUG - Le fichier existe avec le nom normalisé: False
+2025-08-28 12:01:19,192 - image_url_service - DEBUG - Retour du chemin original: /static/uploads/exercises/qcm/Image avec caractères spéciaux éèàç.png
+2025-08-28 12:01:19,192 - __main__ - INFO - ImageUrlService.get_image_url(/static/uploads/exercises/qcm/Image avec caractères spéciaux éèàç.png) => /static/uploads/exercises/qcm/Image avec caractères spéciaux éèàç.png
+2025-08-28 12:01:19,192 - image_url_service - DEBUG - get_image_url appelée avec image_path=/static/uploads/exercises/qcm/Image avec caractères spéciaux éèàç.png
+2025-08-28 12:01:19,192 - image_url_service - DEBUG - Nom de fichier extrait: Image avec caractères spéciaux éèàç.png
+2025-08-28 12:01:19,192 - image_url_service - DEBUG - Nom de fichier normalisé: Image_avec_caracteres_speciaux_eeac.png (original: Image avec caractères spéciaux éèàç.png)
+2025-08-28 12:01:19,192 - image_url_service - DEBUG - Chemin avec nom de fichier normalisé: /static/uploads/exercises/qcm/Image_avec_caracteres_speciaux_eeac.png
+2025-08-28 12:01:19,192 - image_url_service - DEBUG - Le fichier existe directement avec le chemin original: True
+2025-08-28 12:01:19,192 - image_url_service - DEBUG - Le fichier existe avec le nom normalisé: False
+2025-08-28 12:01:19,192 - image_url_service - DEBUG - Retour du chemin original: /static/uploads/exercises/qcm/Image avec caractères spéciaux éèàç.png
+2025-08-28 12:01:19,192 - __main__ - INFO - get_cloudinary_url(/static/uploads/exercises/qcm/Image avec caractères spéciaux éèàç.png) => /static/uploads/exercises/qcm/Image avec caractères spéciaux éèàç.png
+2025-08-28 12:01:19,192 - image_url_service - DEBUG - get_image_url appelée avec image_path=/static/uploads/exercises/qcm/Capture_d_ecran_2025-08-12_180016.png
+2025-08-28 12:01:19,193 - image_url_service - DEBUG - Nom de fichier extrait: Capture_d_ecran_2025-08-12_180016.png
+2025-08-28 12:01:19,193 - image_url_service - DEBUG - Le fichier existe directement avec le chemin original: False
+2025-08-28 12:01:19,193 - image_url_service - DEBUG - Le fichier existe avec le nom normalisé: False
+2025-08-28 12:01:19,193 - image_url_service - DEBUG - Le fichier existe avec le chemin normalisé: False
+2025-08-28 12:01:19,194 - image_url_service - WARNING - Aucun fichier trouvé, retour du chemin par défaut: /static/uploads/exercises/qcm/Capture_d_ecran_2025-08-12_180016.png
+2025-08-28 12:01:19,194 - __main__ - INFO - ImageUrlService.get_image_url(/static/uploads/exercises/qcm/Capture_d_ecran_2025-08-12_180016.png) => /static/uploads/exercises/qcm/Capture_d_ecran_2025-08-12_180016.png
+2025-08-28 12:01:19,194 - image_url_service - DEBUG - get_image_url appelée avec image_path=/static/uploads/exercises/qcm/Capture_d_ecran_2025-08-12_180016.png
+2025-08-28 12:01:19,194 - image_url_service - DEBUG - Nom de fichier extrait: Capture_d_ecran_2025-08-12_180016.png
+2025-08-28 12:01:19,194 - image_url_service - DEBUG - Le fichier existe directement avec le chemin original: False
+2025-08-28 12:01:19,194 - image_url_service - DEBUG - Le fichier existe avec le nom normalisé: False
+2025-08-28 12:01:19,194 - image_url_service - DEBUG - Le fichier existe avec le chemin normalisé: False
+2025-08-28 12:01:19,195 - image_url_service - WARNING - Aucun fichier trouvé, retour du chemin par défaut: /static/uploads/exercises/qcm/Capture_d_ecran_2025-08-12_180016.png
+2025-08-28 12:01:19,195 - __main__ - INFO - get_cloudinary_url(/static/uploads/exercises/qcm/Capture_d_ecran_2025-08-12_180016.png) => /static/uploads/exercises/qcm/Capture_d_ecran_2025-08-12_180016.png
+2025-08-28 12:01:19,195 - image_url_service - DEBUG - get_image_url appelée avec image_path=static/uploads/exercises/qcm/Image_avec_espaces.jpg
+2025-08-28 12:01:19,195 - image_url_service - DEBUG - Nom de fichier extrait: Image_avec_espaces.jpg
+2025-08-28 12:01:19,195 - image_url_service - DEBUG - Le fichier existe directement avec le chemin original: False
+2025-08-28 12:01:19,195 - image_url_service - DEBUG - Le fichier existe avec le nom normalisé: False
+2025-08-28 12:01:19,195 - image_url_service - DEBUG - Le fichier existe avec le chemin normalisé: False
+2025-08-28 12:01:19,196 - image_url_service - WARNING - Aucun fichier trouvé, retour du chemin par défaut: /static/uploads/exercises/qcm/Image_avec_espaces.jpg
+2025-08-28 12:01:19,196 - __main__ - INFO - ImageUrlService.get_image_url(static/uploads/exercises/qcm/Image_avec_espaces.jpg) => /static/uploads/exercises/qcm/Image_avec_espaces.jpg
+2025-08-28 12:01:19,196 - image_url_service - DEBUG - get_image_url appelée avec image_path=static/uploads/exercises/qcm/Image_avec_espaces.jpg
+2025-08-28 12:01:19,196 - image_url_service - DEBUG - Nom de fichier extrait: Image_avec_espaces.jpg
+2025-08-28 12:01:19,196 - image_url_service - DEBUG - Le fichier existe directement avec le chemin original: False
+2025-08-28 12:01:19,196 - image_url_service - DEBUG - Le fichier existe avec le nom normalisé: False
+2025-08-28 12:01:19,196 - image_url_service - DEBUG - Le fichier existe avec le chemin normalisé: False
+2025-08-28 12:01:19,197 - image_url_service - WARNING - Aucun fichier trouvé, retour du chemin par défaut: /static/uploads/exercises/qcm/Image_avec_espaces.jpg
+2025-08-28 12:01:19,197 - __main__ - INFO - get_cloudinary_url(static/uploads/exercises/qcm/Image_avec_espaces.jpg) => /static/uploads/exercises/qcm/Image_avec_espaces.jpg
+2025-08-28 12:01:19,197 - image_url_service - DEBUG - get_image_url appelée avec image_path=/static/uploads/exercises/qcm/Image_avec_caracteres_speciaux_eeac.png
+2025-08-28 12:01:19,197 - image_url_service - DEBUG - Nom de fichier extrait: Image_avec_caracteres_speciaux_eeac.png
+2025-08-28 12:01:19,197 - image_url_service - DEBUG - Le fichier existe directement avec le chemin original: False
+2025-08-28 12:01:19,197 - image_url_service - DEBUG - Le fichier existe avec le nom normalisé: False
+2025-08-28 12:01:19,197 - image_url_service - DEBUG - Le fichier existe avec le chemin normalisé: False
+2025-08-28 12:01:19,198 - image_url_service - WARNING - Aucun fichier trouvé, retour du chemin par défaut: /static/uploads/exercises/qcm/Image_avec_caracteres_speciaux_eeac.png
+2025-08-28 12:01:19,198 - __main__ - INFO - ImageUrlService.get_image_url(/static/uploads/exercises/qcm/Image_avec_caracteres_speciaux_eeac.png) => /static/uploads/exercises/qcm/Image_avec_caracteres_speciaux_eeac.png
+2025-08-28 12:01:19,198 - image_url_service - DEBUG - get_image_url appelée avec image_path=/static/uploads/exercises/qcm/Image_avec_caracteres_speciaux_eeac.png
+2025-08-28 12:01:19,198 - image_url_service - DEBUG - Nom de fichier extrait: Image_avec_caracteres_speciaux_eeac.png
+2025-08-28 12:01:19,198 - image_url_service - DEBUG - Le fichier existe directement avec le chemin original: False
+2025-08-28 12:01:19,198 - image_url_service - DEBUG - Le fichier existe avec le nom normalisé: False
+2025-08-28 12:01:19,198 - image_url_service - DEBUG - Le fichier existe avec le chemin normalisé: False
+2025-08-28 12:01:19,199 - image_url_service - WARNING - Aucun fichier trouvé, retour du chemin par défaut: /static/uploads/exercises/qcm/Image_avec_caracteres_speciaux_eeac.png
+2025-08-28 12:01:19,199 - __main__ - INFO - get_cloudinary_url(/static/uploads/exercises/qcm/Image_avec_caracteres_speciaux_eeac.png) => /static/uploads/exercises/qcm/Image_avec_caracteres_speciaux_eeac.png
+2025-08-28 12:01:19,199 - __main__ - INFO - === Test du module image_path_handler ===
+2025-08-28 12:01:19,199 - __main__ - INFO - normalize_filename(Capture d'écran 2025-08-12 180016.png) => Capture_d_ecran_2025-08-12_180016.png
+2025-08-28 12:01:19,199 - __main__ - INFO - normalize_filename(Image avec espaces.jpg) => Image_avec_espaces.jpg
+2025-08-28 12:01:19,199 - __main__ - INFO - normalize_filename(Image-avec-tirets.png) => Image-avec-tirets.png
+2025-08-28 12:01:19,199 - __main__ - INFO - normalize_filename(Image_avec_underscores.jpg) => Image_avec_underscores.jpg
+2025-08-28 12:01:19,199 - __main__ - INFO - normalize_filename(Image avec caractères spéciaux éèàç.png) => Image_avec_caracteres_speciaux_eeac.png
+2025-08-28 12:01:19,199 - __main__ - INFO - normalize_image_path(/static/uploads/exercises/qcm/Capture d'écran 2025-08-12 180016.png) => /static/uploads/exercises/qcm/Capture_d_ecran_2025-08-12_180016.png
+2025-08-28 12:01:19,199 - __main__ - INFO - normalize_image_path(static/uploads/exercises/qcm/Image avec espaces.jpg) => /static/uploads/exercises/qcm/Image_avec_espaces.jpg
+2025-08-28 12:01:19,199 - __main__ - INFO - normalize_image_path(/static/exercises/qcm/Image-avec-tirets.png) => /static/exercises/qcm/Image-avec-tirets.png
+2025-08-28 12:01:19,199 - __main__ - INFO - normalize_image_path(static/exercises/qcm/Image_avec_underscores.jpg) => /static/exercises/qcm/Image_avec_underscores.jpg
+2025-08-28 12:01:19,199 - __main__ - INFO - normalize_image_path(/static/uploads/exercises/qcm/Image avec caractères spéciaux éèàç.png) => /static/uploads/exercises/qcm/Image_avec_caracteres_speciaux_eeac.png
+2025-08-28 12:01:19,200 - test_image_path_solution - DEBUG - Image trouvée avec le nom original: /static/uploads/exercises/qcm/Capture d'écran 2025-08-12 180016.png
+2025-08-28 12:01:19,200 - __main__ - INFO - handler_get_image_url(/static/uploads/exercises/qcm/Capture d'écran 2025-08-12 180016.png) => /static/uploads/exercises/qcm/Capture d'écran 2025-08-12 180016.png
+2025-08-28 12:01:19,200 - test_image_path_solution - DEBUG - Image trouvée avec le nom original: /static/uploads/exercises/qcm/Image avec espaces.jpg
+2025-08-28 12:01:19,200 - __main__ - INFO - handler_get_image_url(static/uploads/exercises/qcm/Image avec espaces.jpg) => /static/uploads/exercises/qcm/Image avec espaces.jpg
+2025-08-28 12:01:19,200 - test_image_path_solution - DEBUG - Image trouvée avec le chemin normalisé: /static/exercises/qcm/Image-avec-tirets.png
+2025-08-28 12:01:19,200 - __main__ - INFO - handler_get_image_url(/static/exercises/qcm/Image-avec-tirets.png) => /static/exercises/qcm/Image-avec-tirets.png
+2025-08-28 12:01:19,200 - test_image_path_solution - DEBUG - Image trouvée avec le chemin normalisé: /static/exercises/qcm/Image_avec_underscores.jpg
+2025-08-28 12:01:19,200 - __main__ - INFO - handler_get_image_url(static/exercises/qcm/Image_avec_underscores.jpg) => /static/exercises/qcm/Image_avec_underscores.jpg
+2025-08-28 12:01:19,200 - test_image_path_solution - DEBUG - Image trouvée avec le nom original: /static/uploads/exercises/qcm/Image avec caractères spéciaux éèàç.png
+2025-08-28 12:01:19,200 - __main__ - INFO - handler_get_image_url(/static/uploads/exercises/qcm/Image avec caractères spéciaux éèàç.png) => /static/uploads/exercises/qcm/Image avec caractères spéciaux éèàç.png
+2025-08-28 12:01:19,200 - __main__ - INFO - Tous les tests ont été exécutés avec succès
+2025-08-28 12:01:19,246 - __main__ - INFO - Fichiers de test supprimés

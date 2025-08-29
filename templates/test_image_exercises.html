@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test d'affichage des images</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css">
+    <style>
+        .card {
+            margin-bottom: 20px;
+        }
+        .image-container {
+            max-height: 200px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        .image-container img {
+            max-width: 100%;
+            max-height: 200px;
+        }
+        .test-section {
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1>Test d'affichage des images</h1>
+        
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="btn-group">
+                    <a href="{{ url_for('create_sample_exercises') }}" class="btn btn-primary">Créer des exercices de test</a>
+                    <a href="{{ url_for('reset_db') }}" class="btn btn-danger">Réinitialiser la base de données</a>
+                    <a href="{{ url_for('test_get_cloudinary_url') }}" class="btn btn-info">Tester get_cloudinary_url</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Word Placement -->
+        <div class="test-section">
+            <h2>Exercices "Mots à placer"</h2>
+            {% if word_placement_exercises %}
+                <div class="row">
+                    {% for exercise in word_placement_exercises %}
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>{{ exercise.title }}</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Description:</strong> {{ exercise.description }}</p>
+                                    
+                                    <div class="image-details">
+                                        <h6>Détails de l'image:</h6>
+                                        <ul>
+                                            <li><strong>image_path:</strong> {{ exercise.image_path or 'Non défini' }}</li>
+                                            {% set content = exercise.content|tojson|fromjson %}
+                                            <li><strong>content['image']:</strong> {{ content.image if content and content.image else 'Non défini' }}</li>
+                                        </ul>
+                                    </div>
+
+                                    <div class="image-container">
+                                        {% if exercise.image_path %}
+                                            <h6>Image depuis image_path:</h6>
+                                            <img src="{{ exercise.image_path }}" alt="Image de l'exercice" class="img-thumbnail">
+                                        {% endif %}
+                                        
+                                        {% set content = exercise.content|tojson|fromjson %}
+                                        {% if content and content.image %}
+                                            <h6>Image depuis content['image']:</h6>
+                                            <img src="{{ content.image }}" alt="Image de l'exercice (content)" class="img-thumbnail">
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <a href="{{ url_for('view_word_placement', exercise_id=exercise.id) }}" class="btn btn-primary">Voir l'exercice</a>
+                                    <button class="btn btn-info test-image-url" data-path="{{ exercise.image_path }}">Tester URL image_path</button>
+                                    
+                                    {% set content = exercise.content|tojson|fromjson %}
+                                    {% if content and content.image %}
+                                        <button class="btn btn-info test-image-url" data-path="{{ content.image }}">Tester URL content.image</button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-info">Aucun exercice de type "word_placement" trouvé.</div>
+            {% endif %}
+        </div>
+
+        <!-- Section Flashcards -->
+        <div class="test-section">
+            <h2>Exercices "Cartes mémoire"</h2>
+            {% if flashcard_exercises %}
+                <div class="row">
+                    {% for exercise in flashcard_exercises %}
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>{{ exercise.title }}</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Description:</strong> {{ exercise.description }}</p>
+                                    
+                                    <div class="image-details">
+                                        <h6>Détails de l'image principale:</h6>
+                                        <ul>
+                                            <li><strong>image_path:</strong> {{ exercise.image_path or 'Non défini' }}</li>
+                                        </ul>
+                                    </div>
+
+                                    <div class="image-container">
+                                        {% if exercise.image_path %}
+                                            <h6>Image principale:</h6>
+                                            <img src="{{ exercise.image_path }}" alt="Image de l'exercice" class="img-thumbnail">
+                                        {% endif %}
+                                    </div>
+                                    
+                                    {% set content = exercise.content|tojson|fromjson %}
+                                    {% if content and content.cards %}
+                                        <h6>Images des cartes:</h6>
+                                        <div class="row">
+                                            {% for card in content.cards %}
+                                                {% if card.image %}
+                                                    <div class="col-6">
+                                                        <div class="card mb-2">
+                                                            <div class="card-header">Carte {{ loop.index }}</div>
+                                                            <div class="card-body">
+                                                                <img src="{{ card.image }}" alt="Image de la carte {{ loop.index }}" class="img-thumbnail">
+                                                                <button class="btn btn-sm btn-info mt-2 test-image-url" data-path="{{ card.image }}">Tester URL</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <a href="{{ url_for('view_flashcards', exercise_id=exercise.id) }}" class="btn btn-primary">Voir l'exercice</a>
+                                    {% if exercise.image_path %}
+                                        <button class="btn btn-info test-image-url" data-path="{{ exercise.image_path }}">Tester URL image_path</button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-info">Aucun exercice de type "flashcards" trouvé.</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Modal pour afficher les résultats du test d'URL -->
+    <div class="modal fade" id="imageUrlTestModal" tabindex="-1" role="dialog" aria-labelledby="imageUrlTestModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="imageUrlTestModalLabel">Résultat du test d'URL</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="urlTestResult">
+                        <div class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="sr-only">Chargement...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Tester l'URL d'une image
+            $('.test-image-url').click(function() {
+                var imagePath = $(this).data('path');
+                $('#imageUrlTestModal').modal('show');
+                $('#urlTestResult').html('<div class="text-center"><div class="spinner-border" role="status"><span class="sr-only">Chargement...</span></div></div>');
+                
+                $.ajax({
+                    url: '/test/check-image-url',
+                    data: { path: imagePath },
+                    success: function(response) {
+                        var html = '<div class="alert alert-success">URL générée avec succès</div>';
+                        html += '<table class="table table-bordered">';
+                        html += '<tr><th>Chemin original</th><td>' + response.original_path + '</td></tr>';
+                        html += '<tr><th>URL Cloudinary</th><td>' + response.cloudinary_url + '</td></tr>';
+                        html += '</table>';
+                        
+                        html += '<div class="image-preview mt-3">';
+                        html += '<h6>Aperçu de l\'image:</h6>';
+                        html += '<img src="' + response.cloudinary_url + '" alt="Image preview" class="img-fluid">';
+                        html += '</div>';
+                        
+                        $('#urlTestResult').html(html);
+                    },
+                    error: function(xhr) {
+                        var response = xhr.responseJSON || {};
+                        var html = '<div class="alert alert-danger">Erreur lors de la génération de l\'URL</div>';
+                        html += '<table class="table table-bordered">';
+                        html += '<tr><th>Chemin original</th><td>' + (response.original_path || imagePath) + '</td></tr>';
+                        html += '<tr><th>Erreur</th><td>' + (response.error || 'Erreur inconnue') + '</td></tr>';
+                        html += '</table>';
+                        $('#urlTestResult').html(html);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

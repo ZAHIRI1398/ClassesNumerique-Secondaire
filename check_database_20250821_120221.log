@@ -1,0 +1,82 @@
+2025-08-21 12:02:21,867 - INFO - === DÉBUT DE L'EXAMEN DES BASES DE DONNÉES ===
+2025-08-21 12:02:21,867 - INFO - Examen de la base de données: app.db
+2025-08-21 12:02:21,868 - INFO - Tables dans app.db:
+2025-08-21 12:02:21,868 - INFO - Examen de la base de données: instance/app.db
+2025-08-21 12:02:21,928 - INFO - Tables dans instance/app.db:
+2025-08-21 12:02:21,928 - INFO - - user
+2025-08-21 12:02:21,929 - INFO -   Colonnes de la table user:
+2025-08-21 12:02:21,929 - INFO -   - id (INTEGER)
+2025-08-21 12:02:21,929 - INFO -   - username (VARCHAR(80))
+2025-08-21 12:02:21,929 - INFO -   - email (VARCHAR(120))
+2025-08-21 12:02:21,929 - INFO -   - name (VARCHAR(120))
+2025-08-21 12:02:21,929 - INFO -   - password_hash (VARCHAR(128))
+2025-08-21 12:02:21,929 - INFO -   - role (VARCHAR(20))
+2025-08-21 12:02:21,929 - INFO -   - school_name (VARCHAR(200))
+2025-08-21 12:02:21,929 - INFO -   - created_at (DATETIME)
+2025-08-21 12:02:21,930 - INFO -   - subscription_status (VARCHAR(20))
+2025-08-21 12:02:21,930 - INFO -   - subscription_type (VARCHAR(20))
+2025-08-21 12:02:21,930 - INFO -   - subscription_amount (FLOAT)
+2025-08-21 12:02:21,930 - INFO -   - payment_date (DATETIME)
+2025-08-21 12:02:21,930 - INFO -   - payment_reference (VARCHAR(100))
+2025-08-21 12:02:21,930 - INFO -   - payment_session_id (VARCHAR(200))
+2025-08-21 12:02:21,930 - INFO -   - payment_amount (FLOAT)
+2025-08-21 12:02:21,930 - INFO -   - approval_date (DATETIME)
+2025-08-21 12:02:21,930 - INFO -   - approved_by (INTEGER)
+2025-08-21 12:02:21,930 - INFO -   - subscription_expires (DATETIME)
+2025-08-21 12:02:21,930 - INFO -   - rejection_reason (TEXT)
+2025-08-21 12:02:21,930 - INFO -   - notes (TEXT)
+2025-08-21 12:02:21,930 - INFO -   - school_id (INTEGER)
+2025-08-21 12:02:21,930 - INFO -   La table user contient des informations sur les écoles
+2025-08-21 12:02:21,954 - INFO -   Écoles trouvées dans la table user:
+2025-08-21 12:02:21,954 - INFO -   - École Test
+2025-08-21 12:02:21,955 - INFO -     Utilisateurs de l'école 'École Test': 2
+2025-08-21 12:02:21,955 - INFO -     - ID: 1, Email: teacher@test.com, Rôle: teacher, Type: free, Statut: approved
+2025-08-21 12:02:21,955 - INFO -     - ID: 2, Email: student@test.com, Rôle: student, Type: free, Statut: active
+2025-08-21 12:02:21,955 - INFO - - sqlite_sequence
+2025-08-21 12:02:21,955 - INFO - - class
+2025-08-21 12:02:21,955 - INFO - - exercise
+2025-08-21 12:02:21,955 - INFO - - course
+2025-08-21 12:02:21,955 - INFO - - student_class
+2025-08-21 12:02:21,955 - INFO - - course_exercise
+2025-08-21 12:02:21,955 - INFO - - exercise_attempt
+2025-08-21 12:02:21,955 - INFO - - course_file
+2025-08-21 12:02:21,955 - INFO - - school
+2025-08-21 12:02:21,955 - INFO - - alembic_version
+2025-08-21 12:02:21,955 - INFO - Examen de la base de données: instance/classe_numerique.db
+2025-08-21 12:02:21,957 - INFO - Tables dans instance/classe_numerique.db:
+2025-08-21 12:02:21,957 - INFO - - school
+2025-08-21 12:02:21,957 - INFO - - alembic_version
+2025-08-21 12:02:21,957 - INFO - - user
+2025-08-21 12:02:21,958 - INFO -   Colonnes de la table user:
+2025-08-21 12:02:21,958 - INFO -   - id (INTEGER)
+2025-08-21 12:02:21,958 - INFO -   - username (VARCHAR(80))
+2025-08-21 12:02:21,958 - INFO -   - email (VARCHAR(120))
+2025-08-21 12:02:21,958 - INFO -   - name (VARCHAR(120))
+2025-08-21 12:02:21,958 - INFO -   - password_hash (VARCHAR(128))
+2025-08-21 12:02:21,958 - INFO -   - role (VARCHAR(20))
+2025-08-21 12:02:21,958 - INFO -   - school_name (VARCHAR(200))
+2025-08-21 12:02:21,958 - INFO -   - created_at (DATETIME)
+2025-08-21 12:02:21,958 - INFO -   - subscription_status (VARCHAR(20))
+2025-08-21 12:02:21,958 - INFO -   - subscription_type (VARCHAR(20))
+2025-08-21 12:02:21,958 - INFO -   - subscription_amount (FLOAT)
+2025-08-21 12:02:21,958 - INFO -   - payment_date (DATETIME)
+2025-08-21 12:02:21,958 - INFO -   - payment_reference (VARCHAR(100))
+2025-08-21 12:02:21,958 - INFO -   - payment_session_id (VARCHAR(200))
+2025-08-21 12:02:21,958 - INFO -   - payment_amount (FLOAT)
+2025-08-21 12:02:21,958 - INFO -   - approval_date (DATETIME)
+2025-08-21 12:02:21,958 - INFO -   - approved_by (INTEGER)
+2025-08-21 12:02:21,958 - INFO -   - subscription_expires (DATETIME)
+2025-08-21 12:02:21,959 - INFO -   - rejection_reason (TEXT)
+2025-08-21 12:02:21,959 - INFO -   - notes (TEXT)
+2025-08-21 12:02:21,959 - INFO -   La table user contient des informations sur les écoles
+2025-08-21 12:02:21,959 - INFO -   Écoles trouvées dans la table user:
+2025-08-21 12:02:21,959 - INFO - - class
+2025-08-21 12:02:21,959 - INFO - - exercise
+2025-08-21 12:02:21,959 - INFO - - student_class
+2025-08-21 12:02:21,959 - INFO - - course
+2025-08-21 12:02:21,959 - INFO - - course_exercise
+2025-08-21 12:02:21,959 - INFO - - exercise_attempt
+2025-08-21 12:02:21,959 - INFO - - course_file
+2025-08-21 12:02:21,959 - INFO - Examen de la base de données: instance/site.db
+2025-08-21 12:02:21,960 - INFO - Tables dans instance/site.db:
+2025-08-21 12:02:21,960 - INFO - === FIN DE L'EXAMEN DES BASES DE DONNÉES ===

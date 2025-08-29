@@ -1,0 +1,11 @@
+2025-08-29 20:39:21,933 - INFO - Début de la vérification des images QCM
+2025-08-29 20:39:21,934 - INFO - Fichier de log: qcm_images_verification_20250829_203921.log
+2025-08-29 20:39:21,934 - WARNING - L'URL de production n'a pas été configurée. La vérification distante sera désactivée.
+2025-08-29 20:39:21,934 - WARNING - Pour activer la vérification distante, modifiez la variable BASE_URL dans le script.
+2025-08-29 20:39:21,935 - INFO - Vérification de 2 exercices QCM
+2025-08-29 20:39:21,935 - INFO - Image trouvée: /static/uploads/exercises/qcm/Capture_d_ecran_2025-08-14_151156_20250828_154105_KZGCo1.png → static/uploads/exercises/qcm/Capture_d_ecran_2025-08-14_151156_20250828_154105_KZGCo1.png pour l'exercice #58 (Sciences - Le système solaire)
+2025-08-29 20:39:21,936 - INFO - Image trouvée: /static/uploads/exercises/qcm/1756399598_91izlx.png → static/uploads/exercises/qcm/1756399598_91izlx.png pour l'exercice #87 (Test QCM Complet)
+2025-08-29 20:39:21,936 - INFO - Toutes les images des 2 exercices QCM sont accessibles
+2025-08-29 20:39:21,937 - INFO - Rapport généré: qcm_images_report_20250829_203921.md
+2025-08-29 20:39:21,937 - INFO - Vérification terminée avec succès. Aucun problème détecté.
+2025-08-29 20:39:21,937 - INFO - Fin de la vérification des images QCM

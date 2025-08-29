@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "edit_exercise.html" %}
 
 {% block title %}Éditer - {{ exercise.title }}{% endblock %}
 
@@ -176,16 +176,7 @@
                 </div>
             </div>
 
-            <!-- Upload d'image -->
-            <div class="mb-3">
-                <label for="image" class="form-label fw-bold">Image (optionnelle) :</label>
-                <input type="file" class="form-control" id="image" name="image" accept="image/*">
-                {% if exercise and exercise.image_path %}
-                    <div class="mt-2">
-                        <small class="text-muted">Image actuelle : {{ exercise.image_path.split('/')[-1] }}</small>
-                    </div>
-                {% endif %}
-            </div>
+            <!-- La section d'upload d'image a été supprimée car elle est déjà présente dans le template parent edit_exercise.html -->
 
             <!-- Phrases à compléter -->
             <div class="section-header">

@@ -1,4 +1,17 @@
+<!-- Affichage de l'image d'exercice QCM depuis content.image -->
+{% if content and content.image %}
+<div class="card mb-4">
+    <div class="card-body text-center">
+        <img src="{{ content.image }}" 
+             alt="Image de l'exercice" 
+             class="img-fluid rounded shadow-sm"
+             style="max-width: 100%; max-height: 400px;">
+    </div>
+</div>
+{% endif %}
+
 {% if content and content.questions %}
+    
     <div class="card mb-4">
         <div class="card-body">
             <form method="POST" action="{{ url_for('exercise.submit_answer', exercise_id=exercise.id) }}" class="qcm-form">

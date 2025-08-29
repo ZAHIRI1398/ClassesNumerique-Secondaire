@@ -1,6 +1,8 @@
 from flask import Flask
 from models import db, User, Exercise
 import json
+import os
+import shutil
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
@@ -18,6 +20,7 @@ with app.app_context():
     teacher = User(
         username="Mr ZAHIRI",
         email="mr.zahiri@gmail.com",
+        name="Ahmed ZAHIRI",  # Ajout du champ name requis
         role="teacher"
     )
     teacher.set_password("password123")
@@ -29,7 +32,9 @@ with app.app_context():
         title=" Exercice1:Nombres décimaux - Exercice à trous",
         description="Complétez les phrases avec les bons nombres.",
         exercise_type="fill_in_blanks",
+        image_path="/static/uploads/fill_in_blanks/decimal_numbers_fill.png",
         content=json.dumps({
+            "image": "/static/uploads/fill_in_blanks/decimal_numbers_fill.png",
             "sentences": [
                 {"text": "Dans 3,45 le chiffre des dixièmes est", "answer": "4"},
                 {"text": "Dans 3,45 le chiffre des centièmes est", "answer": "5"},
@@ -48,7 +53,9 @@ with app.app_context():
         title="Exercice2:Nombres décimaux - QCM",
         description="Choisissez la bonne réponse pour chaque calcul.",
         exercise_type="qcm",
+        image_path="/static/uploads/qcm/decimal_numbers_qcm.png",
         content=json.dumps({
+            "image": "/static/uploads/qcm/decimal_numbers_qcm.png",
             "questions": [
                 {
                     "text": "0,07 × 900 =",
@@ -76,7 +83,9 @@ with app.app_context():
         title="Exercice3:Nombres décimaux - Appariement",
         description="Associez chaque nombre décimal à son écriture en lettres.",
         exercise_type="pairs",
+        image_path="/static/uploads/pairs/decimal_numbers_pairs.png",
         content=json.dumps({
+            "image": "/static/uploads/pairs/decimal_numbers_pairs.png",
             "left_items": ["3,14", "0,5", "2,08", "0,25"],
             "right_items": [
                 "trois unités et quatorze centièmes",
@@ -96,7 +105,9 @@ with app.app_context():
         title="Exercice4:Nombres décimaux - Glisser-déposer",
         description="Placez les nombres décimaux dans l'ordre croissant.",
         exercise_type="drag_and_drop",
+        image_path="/static/uploads/drag_drop/decimal_numbers_order.png",
         content=json.dumps({
+            "image": "/static/uploads/drag_drop/decimal_numbers_order.png",
             "draggable_items": ["0,8", "0,08", "0,85", "0,9"],
             "drop_zones": [
                 "Premier nombre",
@@ -110,8 +121,42 @@ with app.app_context():
     )
     db.session.add(drag_drop)
 
+    # Créer les dossiers pour les images si nécessaires
+    upload_dirs = [
+        os.path.join(app.root_path, 'static', 'uploads', 'qcm'),
+        os.path.join(app.root_path, 'static', 'uploads', 'fill_in_blanks'),
+        os.path.join(app.root_path, 'static', 'uploads', 'pairs'),
+        os.path.join(app.root_path, 'static', 'uploads', 'drag_drop')
+    ]
+    
+    for directory in upload_dirs:
+        os.makedirs(directory, exist_ok=True)
+    
+    # Créer des images de test pour chaque exercice
+    def create_test_image(path, text):
+        # Vérifier si l'image existe déjà
+        if not os.path.exists(path):
+            # Copier une image existante ou créer une image vide
+            sample_path = os.path.join(app.root_path, 'static', 'exercise_images', 'sample.png')
+            if os.path.exists(sample_path):
+                shutil.copy(sample_path, path)
+                print(f"Image créée: {path}")
+            else:
+                print(f"Impossible de créer l'image: {path} (fichier source manquant)")
+    
+    # Créer les images pour chaque exercice
+    create_test_image(os.path.join(app.root_path, 'static', 'uploads', 'qcm', 'decimal_numbers_qcm.png'), "QCM Nombres Décimaux")
+    create_test_image(os.path.join(app.root_path, 'static', 'uploads', 'fill_in_blanks', 'decimal_numbers_fill.png'), "Exercice à Trous")
+    create_test_image(os.path.join(app.root_path, 'static', 'uploads', 'pairs', 'decimal_numbers_pairs.png'), "Exercice d'Appariement")
+    create_test_image(os.path.join(app.root_path, 'static', 'uploads', 'drag_drop', 'decimal_numbers_order.png'), "Exercice de Glisser-Déposer")
+    
     db.session.commit()
     print("Exercices créés avec succès !")
     print("\nIdentifiants de connexion enseignant :")
     print("Email : mr.zahiri@gmail.com")
     print("Password : password123")
+    print("\nChemins d'images configurés avec le préfixe /static/ :")
+    print("- QCM: " + qcm.image_path)
+    print("- Exercice à trous: " + fill_blanks.image_path)
+    print("- Appariement: " + pairs.image_path)
+    print("- Glisser-déposer: " + drag_drop.image_path)

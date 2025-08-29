@@ -145,15 +145,30 @@
     </div>
     
     <!-- Affichage de l'image optionnelle -->
-    {% if content and content.image %}
+    {% if content and content.image or exercise.image_path %}
     <div class="mb-4 text-center">
         <div class="card image-display-card">
             <div class="card-body p-4">
-                <img src="{{ cloud_storage.get_cloudinary_url(content.image) }}" 
+                {% set image_path = content.image if content and content.image else exercise.image_path %}
+                {% set cache_buster = range(1000000, 9999999) | random %}
+                
+                <!-- Affichage principal avec gestion améliorée des chemins imbriqués -->
+                <img src="{{ image_path }}?v={{ cache_buster }}" 
                      alt="Image d'illustration" 
                      class="img-fluid rounded shadow" 
                      style="max-width: 100%; max-height: 400px; object-fit: contain;"
-                     onerror="this.style.display='none';">
+                     onerror="this.onerror=null; 
+                             // Essayer plusieurs variantes de chemins
+                             if (this.src.includes('/static/uploads/exercises/')) {
+                                 // Déjà un chemin imbriqué, essayer sans le segment 'uploads'
+                                 this.src='{{ image_path.replace('/static/uploads/exercises/', '/static/exercises/') }}?v={{ cache_buster }}';
+                             } else if (this.src.includes('/static/uploads/')) {
+                                 // Chemin standard, essayer le remplacement classique
+                                 this.src='{{ image_path.replace('/static/uploads/', '/static/exercises/') }}?v={{ cache_buster }}';
+                             } else {
+                                 // Dernier recours
+                                 this.style.display='none';
+                             }">
             </div>
         </div>
     </div>
@@ -248,14 +263,7 @@
         {% endif %}
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         
-        <!-- Affichage de l'image si elle existe -->
-        {% if exercise.image_path %}
-        <div class="exercise-image" style="text-align: center; margin: 1.5rem 0;">
-            <img src="{{ cloud_storage.get_cloudinary_url(exercise.image_path) }}" 
-                 alt="Image de l'exercice" 
-                 style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-        </div>
-        {% endif %}
+        <!-- L'image principale est déjà affichée en haut de la page via content.image -->
         
         {% for question in content.questions %}
             {% if question and question.text and question.choices %}

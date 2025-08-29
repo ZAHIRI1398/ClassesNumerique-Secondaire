@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}Créer un exercice de légende{% endblock %}
+
+{% block head %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<style>
+    .legend-zone {
+        position: relative;
+        margin-bottom: 15px;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+    }
+    
+    .legend-image-container {
+        position: relative;
+        max-width: 100%;
+        margin-bottom: 20px;
+        overflow: auto;
+    }
+    
+    .legend-image {
+        max-width: 100%;
+        cursor: crosshair;
+    }
+    
+    .legend-point {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        background-color: rgba(255, 0, 0, 0.5);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 12px;
+    }
+    
+    .legend-grid-container {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-top: 20px;
+    }
+    
+    .legend-grid-cell {
+        border: 1px solid #ddd;
+        padding: 10px;
+        text-align: center;
+        min-height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .legend-spatial-zone {
+        position: absolute;
+        border: 2px dashed red;
+        background-color: rgba(255, 0, 0, 0.1);
+        cursor: move;
+    }
+    
+    .legend-spatial-zone-label {
+        position: absolute;
+        top: -25px;
+        left: 0;
+        background-color: rgba(255, 255, 255, 0.8);
+        padding: 2px 5px;
+        border: 1px solid #ddd;
+        font-size: 12px;
+    }
+    
+    .legend-element-list {
+        margin-top: 20px;
+    }
+    
+    .legend-element-item {
+        margin-bottom: 10px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Créer un exercice de légende</h1>
+    
+    <form method="POST" enctype="multipart/form-data" id="create-legend-form">
+        <div class="card mb-4">
+            <div class="card-body">
+                <!-- Champs de base -->
+                <div class="mb-3">
+                    <label for="title" class="form-label">Titre de l'exercice</label>
+                    <input type="text" class="form-control" id="title" name="title" required>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="description" class="form-label">Description</label>
+                    <textarea class="form-control" id="description" name="description" rows="2"></textarea>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="max_attempts" class="form-label">Nombre maximum de tentatives</label>
+                    <input type="number" class="form-control" id="max_attempts" name="max_attempts" value="3" min="1">
+                </div>
+                
+                <div class="mb-3">
+                    <label for="subject" class="form-label">Matière</label>
+                    <input type="text" class="form-control" id="subject" name="subject">
+                </div>
+                
+                <!-- Mode de légende -->
+                <div class="mb-4 legend-mode-selector">
+                    <label class="form-label">Mode de légende</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="legend_mode" id="mode_classic" value="classic" checked>
+                        <label class="form-check-label" for="mode_classic">
+                            Classique (points sur image)
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="legend_mode" id="mode_grid" value="grid">
+                        <label class="form-check-label" for="mode_grid">
+                            Quadrillage (grille)
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="legend_mode" id="mode_spatial" value="spatial">
+                        <label class="form-check-label" for="mode_spatial">
+                            Spatial (zones définies)
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Instructions -->
+                <div class="mb-3">
+                    <label for="legend_instructions" class="form-label">Instructions</label>
+                    <textarea class="form-control" id="legend_instructions" name="legend_instructions" rows="2"></textarea>
+                    <small class="form-text text-muted">Instructions pour l'élève. Si vide, des instructions par défaut seront utilisées.</small>
+                </div>
+                
+                <!-- Image principale -->
+                <div class="mb-4">
+                    <label for="legend_main_image" class="form-label">Image principale</label>
+                    <input type="file" class="form-control" id="legend_main_image" name="legend_main_image" accept="image/*">
+                    <small class="form-text text-muted">Vous pourrez ajouter des points, zones ou grilles après la création de l'exercice.</small>
+                </div>
+                
+                <!-- Paramètres de grille (visible uniquement en mode grille) -->
+                <div id="grid_params" class="mb-4" style="display: none;">
+                    <h4>Paramètres de la grille</h4>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="grid_rows" class="form-label">Nombre de lignes</label>
+                            <input type="number" class="form-control" id="grid_rows" name="grid_rows" value="3" min="1" max="10">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="grid_cols" class="form-label">Nombre de colonnes</label>
+                            <input type="number" class="form-control" id="grid_cols" name="grid_cols" value="3" min="1" max="10">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Boutons de soumission -->
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">Créer l'exercice</button>
+                    <a href="{{ url_for('index') }}" class="btn btn-secondary">Annuler</a>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Gestion de l'affichage des sections selon le mode sélectionné
+        const modeClassic = document.getElementById('mode_classic');
+        const modeGrid = document.getElementById('mode_grid');
+        const modeSpatial = document.getElementById('mode_spatial');
+        const gridParams = document.getElementById('grid_params');
+        
+        function updateSections() {
+            if (modeGrid.checked) {
+                gridParams.style.display = 'block';
+            } else {
+                gridParams.style.display = 'none';
+            }
+        }
+        
+        modeClassic.addEventListener('change', updateSections);
+        modeGrid.addEventListener('change', updateSections);
+        modeSpatial.addEventListener('change', updateSections);
+        
+        // Initialiser l'affichage
+        updateSections();
+    });
+</script>
+{% endblock %}

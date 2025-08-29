@@ -1,6 +1,22 @@
 {% extends "edit_exercise.html" %}
 
+{% block title %}Modifier l'exercice - {{ exercise.title }}{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+    /* Styles pour la section d'upload d'image QCM */
+    #exercise-image-preview img {
+        max-width: 300px;
+        height: auto;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+</style>
+{% endblock %}
+
 {% block exercise_content %}
+<!-- Note: La section d'upload d'image est gérée par le template parent edit_exercise.html et est maintenant activée pour les QCM -->
 <div id="questions-container">
     {% if not content or not content.questions %}
         <div class="question-block card mb-3">
@@ -15,6 +31,8 @@
                     <label class="form-label">Question :</label>
                     <input type="text" class="form-control question-input" name="questions[]" required placeholder="Entrez votre question ici">
                 </div>
+                
+                
                 <div class="options-container">
                     <label class="form-label">Options :</label>
                     <div class="option-block d-flex align-items-center gap-2 mb-2">
@@ -51,6 +69,8 @@
                     <label class="form-label">Question :</label>
                     <input type="text" class="form-control question-input" name="questions[]" value="{{ question.text }}" required placeholder="Entrez votre question ici">
                 </div>
+                
+                
                 <div class="options-container">
                     <label class="form-label">Options :</label>
                     {% for option in question.choices %}
@@ -92,6 +112,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const questionsContainer = document.getElementById('questions-container');
     const questionCountInput = document.getElementById('question_count');
     const addQuestionBtn = document.getElementById('add-question');
+    
+    // Fonction de prévisualisation d'image disponible via le template parent
 
     if (!questionsContainer || !questionCountInput || !addQuestionBtn) {
         console.error('Required elements not found');
@@ -122,15 +144,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     const input = optionBlock.querySelector('.option-input');
                     
                     if (radio) {
-                        radio.name = `correct_answers[${index}]`;
+                        radio.name = `correct_${index}`;
                         radio.value = optionIndex;
                     }
                     if (input) {
-                        input.name = `choices[${index}][]`;
-                        input.placeholder = `Option ${optionIndex + 1}`;
+                        input.name = `option_${index}_${optionIndex}`;
+                        input.placeholder = `Option ${String.fromCharCode(65 + optionIndex)}`;
                     }
                 });
             }
+            
+            // Fonctionnalité d'image activée pour les QCM
         });
         
         updateQuestionCount();
@@ -187,6 +211,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     <label class="form-label">Question :</label>
                     <input type="text" class="form-control question-input" name="questions[]" required placeholder="Entrez votre question ici">
                 </div>
+                
+                
                 <div class="options-container">
                     <label class="form-label">Options :</label>
                 </div>
@@ -282,6 +308,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialiser le compteur de questions
     updateQuestionCount();
+    
+    // Fonction de suppression d'image disponible via le template parent
 });
 </script>
 {% endblock %}

@@ -1,4 +1,4 @@
-from flask import Blueprint, current_app, render_template_string, jsonify, request
+from flask import Blueprint, current_app, render_template_string, jsonify, request, redirect, url_for, flash
 import os
 import json
 from pathlib import Path
@@ -6,7 +6,7 @@ from models import Exercise, db
 import cloud_storage
 
 # Création du blueprint pour les routes de synchronisation et correction d'images
-image_sync_bp = Blueprint('image_sync', __name__)
+image_sync_bp = Blueprint('image_sync', __name__, url_prefix='/image-sync')
 
 @image_sync_bp.route('/sync-image-paths')
 def sync_image_paths():
@@ -607,7 +607,433 @@ def create_simple_placeholders():
             'error': str(e)
         }), 500
 
+@image_sync_bp.route('/fix-edit-image-display')
+def fix_edit_image_display():
+    """Corrige le problème d'affichage des images lors de l'édition d'exercices
+    en s'assurant que exercise.image_path est toujours synchronisé avec content['image'] ou content['main_image']"""
+    try:
+        # Récupérer tous les exercices
+        exercises = Exercise.query.all()
+        
+        results = {
+            'total': len(exercises),
+            'updated': 0,
+            'already_synced': 0,
+            'no_image': 0,
+            'errors': 0,
+            'details': []
+        }
+        
+        for ex in exercises:
+            try:
+                # Récupérer le contenu JSON
+                content = ex.get_content() or {}
+                
+                # Cas 1: Pas d'image du tout
+                if not ex.image_path and not content.get('image') and not content.get('main_image'):
+                    results['no_image'] += 1
+                    continue
+                
+                # Cas 2: Image dans exercise.image_path mais pas dans content
+                if ex.image_path and not content.get('image') and not content.get('main_image'):
+                    # Mettre à jour content avec l'image de exercise.image_path
+                    normalized_path = cloud_storage.get_cloudinary_url(ex.image_path)
+                    content['main_image'] = normalized_path
+                    ex.set_content(content)
+                    
+                    results['updated'] += 1
+                    results['details'].append({
+                        'exercise_id': ex.id,
+                        'title': ex.title,
+                        'action': 'Ajout de main_image dans content',
+                        'image_path': ex.image_path,
+                        'main_image': normalized_path,
+                        'status': 'updated'
+                    })
+                    continue
+                
+                # Cas 3: Image dans content mais pas dans exercise.image_path
+                image_in_content = content.get('image') or content.get('main_image')
+                if image_in_content and not ex.image_path:
+                    # Mettre à jour exercise.image_path avec l'image de content
+                    normalized_path = cloud_storage.get_cloudinary_url(image_in_content)
+                    ex.image_path = normalized_path
+                    
+                    # S'assurer que main_image est défini et cohérent
+                    content['main_image'] = normalized_path
+                    ex.set_content(content)
+                    
+                    results['updated'] += 1
+                    results['details'].append({
+                        'exercise_id': ex.id,
+                        'title': ex.title,
+                        'action': 'Ajout de image_path depuis content',
+                        'image_path': normalized_path,
+                        'main_image': normalized_path,
+                        'status': 'updated'
+                    })
+                    continue
+                
+                # Cas 4: Les deux sont présents mais différents
+                if ex.image_path and image_in_content:
+                    # Normaliser les deux chemins pour comparaison
+                    normalized_image_path = cloud_storage.get_cloudinary_url(ex.image_path)
+                    normalized_content_image = cloud_storage.get_cloudinary_url(image_in_content)
+                    
+                    if normalized_image_path != normalized_content_image:
+                        # Priorité à exercise.image_path
+                        content['main_image'] = normalized_image_path
+                        ex.set_content(content)
+                        
+                        results['updated'] += 1
+                        results['details'].append({
+                            'exercise_id': ex.id,
+                            'title': ex.title,
+                            'action': 'Synchronisation des chemins différents',
+                            'image_path': ex.image_path,
+                            'old_main_image': normalized_content_image,
+                            'new_main_image': normalized_image_path,
+                            'status': 'updated'
+                        })
+                    else:
+                        results['already_synced'] += 1
+                else:
+                    # Cas 5: Les deux sont présents et identiques
+                    results['already_synced'] += 1
+                
+            except Exception as e:
+                current_app.logger.error(f"[FIX_EDIT_IMAGE_DISPLAY] Erreur pour l'exercice {ex.id}: {str(e)}")
+                results['errors'] += 1
+                results['details'].append({
+                    'exercise_id': ex.id,
+                    'title': ex.title,
+                    'error': str(e),
+                    'status': 'error'
+                })
+        
+        # Sauvegarder toutes les modifications
+        db.session.commit()
+        
+        # Générer un rapport HTML
+        html_report = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Correction de l'affichage des images en édition</title>
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+            <style>
+                .status-ok { color: green; }
+                .status-updated { color: blue; }
+                .status-error { color: red; }
+            </style>
+        </head>
+        <body>
+            <div class="container mt-4">
+                <h1>Correction de l'affichage des images en édition</h1>
+                
+                <div class="mb-4">
+                    <h2>Résumé</h2>
+                    <ul>
+                        <li>Total d'exercices: {{ results.total }}</li>
+                        <li>Exercices mis à jour: {{ results.updated }}</li>
+                        <li>Exercices déjà synchronisés: {{ results.already_synced }}</li>
+                        <li>Exercices sans image: {{ results.no_image }}</li>
+                        <li>Erreurs: {{ results.errors }}</li>
+                    </ul>
+                </div>
+                
+                <h2>Détails des mises à jour</h2>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Titre</th>
+                            <th>Action</th>
+                            <th>Image Path</th>
+                            <th>Main Image</th>
+                            <th>Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for detail in results.details %}
+                        <tr>
+                            <td>{{ detail.exercise_id }}</td>
+                            <td>{{ detail.title }}</td>
+                            <td>{{ detail.action }}</td>
+                            <td>
+                                <code>{{ detail.image_path }}</code>
+                            </td>
+                            <td>
+                                {% if detail.old_main_image %}
+                                <code>{{ detail.old_main_image }}</code> → <code>{{ detail.new_main_image }}</code>
+                                {% else %}
+                                <code>{{ detail.main_image }}</code>
+                                {% endif %}
+                            </td>
+                            <td class="status-{{ detail.status }}">
+                                {{ detail.status }}
+                                {% if detail.error %}
+                                <br><small>{{ detail.error }}</small>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                
+                <div class="mt-4">
+                    <a href="{{ url_for('image_sync.check_image_consistency') }}" class="btn btn-primary">Vérifier la cohérence des images</a>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        return render_template_string(html_report, results=results)
+        
+    except Exception as e:
+        current_app.logger.error(f"[FIX_EDIT_IMAGE_DISPLAY] Erreur générale: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@image_sync_bp.route('/fix-image-labeling')
+def fix_image_labeling():
+    """Corrige l'incohérence entre exercise.image_path et content['main_image'] pour les exercices de type image_labeling"""
+    try:
+        # Récupérer tous les exercices de type image_labeling
+        exercises = Exercise.query.filter_by(exercise_type='image_labeling').all()
+        
+        results = {
+            'total': len(exercises),
+            'updated': 0,
+            'already_synced': 0,
+            'no_image': 0,
+            'errors': 0,
+            'details': []
+        }
+        
+        for ex in exercises:
+            try:
+                # Récupérer le contenu JSON
+                try:
+                    content = json.loads(ex.content) if ex.content else {}
+                except:
+                    content = {}
+                
+                if not isinstance(content, dict):
+                    content = {}
+                
+                # Cas 1: content['main_image'] existe mais pas exercise.image_path
+                if content.get('main_image') and not ex.image_path:
+                    # Normaliser le chemin de l'image
+                    normalized_path = normalize_image_path(content['main_image'])
+                    
+                    # Mettre à jour exercise.image_path
+                    ex.image_path = normalized_path
+                    
+                    # Mettre à jour content['main_image'] avec le chemin normalisé
+                    content['main_image'] = normalized_path
+                    ex.content = json.dumps(content)
+                    
+                    results['updated'] += 1
+                    results['details'].append({
+                        'exercise_id': ex.id,
+                        'title': ex.title,
+                        'action': 'Ajout de exercise.image_path',
+                        'image_path': normalized_path,
+                        'old_main_image': content.get('main_image'),
+                        'new_main_image': normalized_path,
+                        'status': 'updated'
+                    })
+                
+                # Cas 2: exercise.image_path existe mais pas content['main_image']
+                elif ex.image_path and not content.get('main_image'):
+                    # Normaliser le chemin de l'image
+                    normalized_path = normalize_image_path(ex.image_path)
+                    
+                    # Mettre à jour content['main_image']
+                    content['main_image'] = normalized_path
+                    ex.content = json.dumps(content)
+                    
+                    # Mettre à jour exercise.image_path avec le chemin normalisé
+                    ex.image_path = normalized_path
+                    
+                    results['updated'] += 1
+                    results['details'].append({
+                        'exercise_id': ex.id,
+                        'title': ex.title,
+                        'action': 'Ajout de content[main_image]',
+                        'image_path': normalized_path,
+                        'old_main_image': None,
+                        'new_main_image': normalized_path,
+                        'status': 'updated'
+                    })
+                
+                # Cas 3: Les deux existent mais sont différents
+                elif ex.image_path and content.get('main_image') and ex.image_path != content['main_image']:
+                    # Normaliser le chemin de l'image (priorité à content['main_image'])
+                    normalized_path = normalize_image_path(content['main_image'])
+                    
+                    # Mettre à jour exercise.image_path
+                    ex.image_path = normalized_path
+                    
+                    # Mettre à jour content['main_image'] avec le chemin normalisé
+                    content['main_image'] = normalized_path
+                    ex.content = json.dumps(content)
+                    
+                    results['updated'] += 1
+                    results['details'].append({
+                        'exercise_id': ex.id,
+                        'title': ex.title,
+                        'action': 'Synchronisation des chemins',
+                        'image_path': normalized_path,
+                        'old_main_image': content.get('main_image'),
+                        'new_main_image': normalized_path,
+                        'status': 'updated'
+                    })
+                
+                # Cas 4: Aucune image
+                elif not ex.image_path and not content.get('main_image'):
+                    results['no_image'] += 1
+                
+                # Cas 5: Les deux sont présents et identiques
+                else:
+                    results['already_synced'] += 1
+                    results['details'].append({
+                        'exercise_id': ex.id,
+                        'title': ex.title,
+                        'action': 'Déjà synchronisé',
+                        'image_path': ex.image_path,
+                        'main_image': content.get('main_image'),
+                        'status': 'ok'
+                    })
+            
+            except Exception as e:
+                current_app.logger.error(f"[FIX_IMAGE_LABELING] Erreur pour l'exercice {ex.id}: {str(e)}")
+                results['errors'] += 1
+                results['details'].append({
+                    'exercise_id': ex.id,
+                    'title': ex.title,
+                    'error': str(e),
+                    'status': 'error'
+                })
+        
+        # Sauvegarder toutes les modifications
+        db.session.commit()
+        
+        # Générer un rapport HTML
+        html_report = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Correction des exercices d'étiquetage d'image</title>
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+            <style>
+                .status-ok { color: green; }
+                .status-updated { color: blue; }
+                .status-error { color: red; }
+            </style>
+        </head>
+        <body>
+            <div class="container mt-4">
+                <h1>Correction des exercices d'étiquetage d'image</h1>
+                
+                <div class="mb-4">
+                    <h2>Résumé</h2>
+                    <ul>
+                        <li>Total d'exercices: {{ results.total }}</li>
+                        <li>Exercices mis à jour: {{ results.updated }}</li>
+                        <li>Exercices déjà synchronisés: {{ results.already_synced }}</li>
+                        <li>Exercices sans image: {{ results.no_image }}</li>
+                        <li>Erreurs: {{ results.errors }}</li>
+                    </ul>
+                </div>
+                
+                <h2>Détails des mises à jour</h2>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Titre</th>
+                            <th>Action</th>
+                            <th>Image Path</th>
+                            <th>Main Image</th>
+                            <th>Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for detail in results.details %}
+                        <tr>
+                            <td>{{ detail.exercise_id }}</td>
+                            <td>{{ detail.title }}</td>
+                            <td>{{ detail.action }}</td>
+                            <td>
+                                <code>{{ detail.image_path }}</code>
+                            </td>
+                            <td>
+                                {% if detail.old_main_image %}
+                                <code>{{ detail.old_main_image }}</code> → <code>{{ detail.new_main_image }}</code>
+                                {% else %}
+                                <code>{{ detail.main_image }}</code>
+                                {% endif %}
+                            </td>
+                            <td class="status-{{ detail.status }}">
+                                {{ detail.status }}
+                                {% if detail.error %}
+                                <br><small>{{ detail.error }}</small>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                
+                <div class="mt-4">
+                    <a href="{{ url_for('image_sync.check_image_consistency') }}" class="btn btn-primary">Vérifier la cohérence des images</a>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        return render_template_string(html_report, results=results)
+        
+    except Exception as e:
+        current_app.logger.error(f"[FIX_IMAGE_LABELING] Erreur générale: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+# Fonction pour normaliser les chemins d'image
+def normalize_image_path(path):
+    """Normalise le chemin d'image pour assurer la cohérence"""
+    if not path:
+        return None
+    
+    # Si c'est déjà un chemin relatif commençant par /static/
+    if path.startswith('/static/'):
+        return path
+    
+    # Si c'est un chemin relatif sans /static/
+    if not path.startswith('/'):
+        # Si c'est un chemin d'image pour les exercices d'étiquetage
+        if 'exercises/image_labeling/' in path or path.startswith('exercises/image_labeling/'):
+            return f'/static/uploads/{path}'
+        
+        # Si c'est un chemin d'image standard pour les exercices
+        if 'exercises/' in path or path.startswith('exercises/'):
+            return f'/static/uploads/{path}'
+    
+    return path
+
 # Fonction pour intégrer le blueprint dans l'application
 def register_image_sync_routes(app):
-    app.register_blueprint(image_sync_bp)
-    app.logger.info("Routes de synchronisation et correction d'images enregistrées")
+    # Vérifier si le blueprint est déjà enregistré
+    if 'image_sync' not in app.blueprints:
+        app.register_blueprint(image_sync_bp, url_prefix='/image-sync')
+        app.logger.info("Routes de synchronisation et correction d'images enregistrées")
+    else:
+        app.logger.info("Routes de synchronisation d'images déjà enregistrées")

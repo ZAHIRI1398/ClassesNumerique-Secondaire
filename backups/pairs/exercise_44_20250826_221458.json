@@ -1,0 +1,44 @@
+{
+  "id": 44,
+  "title": "t145",
+  "description": "t145",
+  "exercise_type": "pairs",
+  "image_path": null,
+  "content": {
+    "pairs": [
+      {
+        "id": "2",
+        "left": {
+          "content": "/static/exercises/1756238871_hl4h2q.png",
+          "type": "image"
+        },
+        "right": {
+          "content": "B",
+          "type": "text"
+        }
+      },
+      {
+        "id": "1",
+        "left": {
+          "content": "/static/exercises/1756238871_db43tr.png",
+          "type": "image"
+        },
+        "right": {
+          "content": "A",
+          "type": "text"
+        }
+      },
+      {
+        "id": "3",
+        "left": {
+          "content": "/static/exercises/1756238871_idn8jg.png",
+          "type": "image"
+        },
+        "right": {
+          "content": "C",
+          "type": "text"
+        }
+      }
+    ]
+  }
+}

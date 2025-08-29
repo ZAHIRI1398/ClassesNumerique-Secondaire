@@ -172,7 +172,8 @@
                     <!-- Image de la carte -->
                     <div id="card-image-container" class="mb-4">
                         {% if content.cards[0].image %}
-                        <img src="{{ cloud_storage.get_cloudinary_url(content.cards[0].image) }}" 
+                        <!-- Utilisation d'une image placeholder qui sera remplacée par JavaScript -->
+                        <img src="/static/img/loading.gif" 
                              alt="Image de la carte" class="img-fluid rounded" 
                              style="max-height: 300px;" id="card-image">
                         {% endif %}
@@ -235,17 +236,30 @@ const progressBar = document.getElementById('progress-bar');
 const currentScore = document.getElementById('current-score');
 const finishSection = document.getElementById('finish-section');
 
-function updateCard() {
-    const card = cards[currentCardIndex];
-    
-    // Mettre à jour la question
-    cardQuestion.textContent = card.question;
+// Charger l'image de la première carte dès le début
+loadCardImage(0);
+
+function loadCardImage(index) {
+    const card = cards[index];
     
     // Mettre à jour l'image
     if (card.image) {
-        // Utiliser l'URL Cloudinary via une route dédiée
-        cardImage.src = `/get_cloudinary_url?image_path=${encodeURIComponent(card.image)}`;
-        cardImageContainer.style.display = 'block';
+        // Utiliser l'API pour récupérer l'URL Cloudinary
+        fetch(`/get_cloudinary_url?image_path=${encodeURIComponent(card.image)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.url) {
+                    cardImage.src = data.url;
+                    cardImageContainer.style.display = 'block';
+                } else {
+                    console.error('Erreur: URL non trouvée dans la réponse');
+                    cardImageContainer.style.display = 'none';
+                }
+            })
+            .catch(error => {
+                console.error('Erreur lors de la récupération de l\'URL:', error);
+                cardImageContainer.style.display = 'none';
+            });
     } else {
         cardImageContainer.style.display = 'none';
     }
@@ -411,6 +425,25 @@ userAnswerInput.addEventListener('keypress', function(e) {
         }
     }
 });
+
+// Fonction pour mettre à jour la carte actuelle
+function updateCard() {
+    // Mettre à jour la question
+    cardQuestion.textContent = cards[currentCardIndex].question;
+    
+    // Charger l'image
+    loadCardImage(currentCardIndex);
+    
+    // Réinitialiser l'entrée utilisateur
+    userAnswerInput.value = '';
+    userAnswerInput.disabled = false;
+    userAnswerInput.focus();
+    
+    // Afficher le bouton de vérification
+    verifyBtn.style.display = 'inline-block';
+    nextBtn.style.display = 'none';
+    feedback.style.display = 'none';
+}
 
 // Initialiser la première carte
 updateCard();

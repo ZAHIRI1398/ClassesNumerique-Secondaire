@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .exercise-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+        background-color: #f8f9fa;
+        border-radius: 16px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+    
+    .pairs-container {
+        display: flex;
+        gap: 2rem;
+        margin: 2rem 0;
+    }
+    
+    .pairs-column {
+        flex: 1;
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .column-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 1rem;
+        text-align: center;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 0.5rem;
+    }
+    
+    .pair-item {
+        background: #f8f9fa;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: center;
+    }
+    
+    .pair-item:hover {
+        border-color: #3498db;
+        background: #e3f2fd;
+        transform: translateY(-2px);
+    }
+    
+    .pair-item.selected {
+        border-color: #2196f3;
+        background: #bbdefb;
+        box-shadow: 0 4px 8px rgba(33, 150, 243, 0.3);
+    }
+    
+    .pair-content img {
+        max-width: 120px;
+        max-height: 120px;
+        object-fit: contain;
+        border-radius: 6px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .pair-text {
+        font-size: 1.1rem;
+        font-weight: 500;
+        color: #2c3e50;
+        display: block;
+        padding: 1rem;
+    }
+    
+    .submit-button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 1rem 2rem;
+        border-radius: 8px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: block;
+        margin: 2rem auto;
+    }
+    
+    .submit-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+    }
+    
+    .number-badge {
+        background: #3498db;
+        color: white;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+    
+    .image-error {
+        color: #e74c3c;
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+    }
+</style>
+
+<div class="exercise-container">
+    <div class="exercise-header">
+        <h2>{{ exercise.title }}</h2>
+        <p class="exercise-description">{{ exercise.description }}</p>
+    </div>
+
+    <form action="{{ url_for('handle_exercise_answer', exercise_id=exercise.id) }}" method="POST" onsubmit="updateHiddenFields(); return true;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        {% if course %}
+        <input type="hidden" name="course_id" value="{{ course.id }}"/>
+        {% endif %}
+        
+        <div class="pairs-container">
+            <!-- Colonne de gauche -->
+            <div class="pairs-column">
+                <h4 class="column-title">Éléments de gauche</h4>
+                <div class="pairs-list">
+                    {% for item in content.left_items %}
+                        <div class="pair-item" data-index="{{ loop.index0 }}" onclick="selectLeft(this, {{ loop.index0 }})">
+                            <div class="pair-content">
+                                {% if item.type == 'image' %}
+                                    {% if item.content and (item.content.startswith('/static/') or item.content.startswith('http')) %}
+                                        <img src="{{ item.content }}?v={{ range(1000, 9999) | random }}" alt="Image {{ loop.index0 }}" onerror="this.onerror=null; this.src='/static/img/placeholder.png'; this.parentNode.innerHTML += '<div class=\'image-error\'>Image non disponible</div>';">
+                                    {% elif item.content %}
+                                        <img src="{{ url_for('static', filename=item.content.replace('/static/', '')) }}?v={{ range(1000, 9999) | random }}" alt="Image {{ loop.index0 }}" onerror="this.onerror=null; this.src='/static/img/placeholder.png'; this.parentNode.innerHTML += '<div class=\'image-error\'>Image non disponible</div>';">
+                                    {% else %}
+                                        <div class="pair-text">Image non disponible</div>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="pair-text">{{ item.content }}</span>
+                                {% endif %}
+                            </div>
+                            <input type="hidden" name="left_{{ loop.index0 }}" id="left_{{ loop.index0 }}" value="">
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Colonne de droite -->
+            <div class="pairs-column">
+                <h4 class="column-title">Éléments de droite</h4>
+                <div class="pairs-list">
+                    {% for item in content.shuffled_right_items %}
+                        <div class="pair-item" data-index="{{ content.shuffled_indices[loop.index0] }}" onclick="selectRight(this, {{ content.shuffled_indices[loop.index0] }})">
+                            <div class="pair-content">
+                                <div class="number-badge">{{ loop.index }}</div>
+                                {% if item.type == 'image' %}
+                                    {% if item.content and (item.content.startswith('/static/') or item.content.startswith('http')) %}
+                                        <img src="{{ item.content }}?v={{ range(1000, 9999) | random }}" alt="Image {{ loop.index0 }}" onerror="this.onerror=null; this.src='/static/img/placeholder.png'; this.parentNode.innerHTML += '<div class=\'image-error\'>Image non disponible</div>';">
+                                    {% elif item.content %}
+                                        <img src="{{ url_for('static', filename=item.content.replace('/static/', '')) }}?v={{ range(1000, 9999) | random }}" alt="Image {{ loop.index0 }}" onerror="this.onerror=null; this.src='/static/img/placeholder.png'; this.parentNode.innerHTML += '<div class=\'image-error\'>Image non disponible</div>';">
+                                    {% else %}
+                                        <div class="pair-text">Image non disponible</div>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="pair-text">{{ item.content }}</span>
+                                {% endif %}
+                            </div>
+                            <input type="hidden" name="right_{{ loop.index0 }}" id="right_{{ loop.index0 }}" value="">
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="submit-button">
+            Valider mes réponses
+        </button>
+    </form>
+</div>
+
+<script>
+    let selectedLeft = null;
+    let selectedRight = null;
+    let connections = [];
+
+    function selectLeft(element, index) {
+        // Désélectionner l'élément précédent
+        if (selectedLeft) {
+            selectedLeft.classList.remove('selected');
+        }
+        
+        // Sélectionner le nouvel élément
+        selectedLeft = element;
+        element.classList.add('selected');
+        
+        // Si un élément de droite est sélectionné, créer la connexion
+        if (selectedRight) {
+            addPair();
+        }
+    }
+
+    function selectRight(element, index) {
+        // Désélectionner l'élément précédent
+        if (selectedRight) {
+            selectedRight.classList.remove('selected');
+        }
+        
+        // Sélectionner le nouvel élément
+        selectedRight = element;
+        element.classList.add('selected');
+        
+        // Si un élément de gauche est sélectionné, créer la connexion
+        if (selectedLeft) {
+            addPair();
+        }
+    }
+
+    function addPair() {
+        if (!selectedLeft || !selectedRight) return;
+        
+        const leftIndex = selectedLeft.getAttribute('data-index');
+        const rightIndex = selectedRight.getAttribute('data-index');
+        
+        // Enregistrer la connexion
+        connections.push({
+            left: leftIndex,
+            right: rightIndex
+        });
+        
+        // Marquer les éléments comme connectés
+        selectedLeft.style.background = '#c8e6c9';
+        selectedRight.style.background = '#c8e6c9';
+        selectedLeft.style.borderColor = '#4caf50';
+        selectedRight.style.borderColor = '#4caf50';
+        
+        // Désactiver les éléments
+        selectedLeft.onclick = null;
+        selectedRight.onclick = null;
+        
+        // Réinitialiser la sélection
+        selectedLeft.classList.remove('selected');
+        selectedRight.classList.remove('selected');
+        selectedLeft = null;
+        selectedRight = null;
+        
+        console.log('Connexion ajoutée:', leftIndex, '→', rightIndex);
+        console.log('Toutes les connexions:', connections);
+    }
+
+    function updateHiddenFields() {
+        // Créer un objet de correspondances
+        const answers = {};
+        
+        connections.forEach(connection => {
+            answers[connection.left] = connection.right;
+        });
+        
+        // Remplir les champs cachés
+        Object.keys(answers).forEach(leftIndex => {
+            const rightIndex = answers[leftIndex];
+            const hiddenField = document.getElementById(`left_${leftIndex}`);
+            if (hiddenField) {
+                hiddenField.value = rightIndex;
+            }
+        });
+        
+        console.log('Réponses finales:', answers);
+        return true;
+    }
+    
+    // Fonction pour précharger les images et détecter les erreurs
+    window.addEventListener('DOMContentLoaded', function() {
+        const images = document.querySelectorAll('.pair-content img');
+        images.forEach(img => {
+            // Ajouter un gestionnaire d'erreur pour chaque image
+            img.addEventListener('error', function() {
+                console.error('Erreur de chargement pour l\'image:', img.src);
+            });
+        });
+    });
+</script>
+{% endblock %}

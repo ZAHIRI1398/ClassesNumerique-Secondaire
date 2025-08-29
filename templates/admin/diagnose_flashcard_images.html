@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+
+{% block title %}Diagnostic des images des flashcards{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Diagnostic des images des flashcards</h1>
+    
+    <div class="alert alert-info">
+        <p><strong>Cette page permet de diagnostiquer les problèmes d'affichage des images dans les flashcards.</strong></p>
+        <p>Les chemins d'images sont vérifiés pour déterminer si les fichiers existent physiquement sur le serveur.</p>
+    </div>
+    
+    {% if results %}
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">{{ results|length }} exercices analysés</h3>
+            </div>
+            <div class="card-body">
+                {% set total_cards = namespace(value=0) %}
+                {% set missing_cards = namespace(value=0) %}
+                
+                {% for exercise in results %}
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h4>Exercice {{ exercise.id }}: {{ exercise.title }}</h4>
+                        </div>
+                        <div class="card-body">
+                            {% if exercise.main_image %}
+                                <div class="mb-3">
+                                    <h5>Image principale</h5>
+                                    <div class="d-flex align-items-center">
+                                        {% if exercise.main_image.exists %}
+                                            <span class="badge bg-success me-2">Trouvée</span>
+                                        {% else %}
+                                            <span class="badge bg-danger me-2">Manquante</span>
+                                        {% endif %}
+                                        <code>{{ exercise.main_image.original_path }}</code>
+                                    </div>
+                                    {% if exercise.main_image.exists %}
+                                        <div class="mt-2">
+                                            <p>Trouvée à: <code>{{ exercise.main_image.found_at }}</code></p>
+                                            <img src="{{ exercise.main_image.found_at }}" alt="Image principale" class="img-thumbnail" style="max-height: 100px;">
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                            
+                            {% if exercise.cards %}
+                                <h5>Images des cartes</h5>
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Carte</th>
+                                                <th>Chemin</th>
+                                                <th>Statut</th>
+                                                <th>Aperçu</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for card in exercise.cards %}
+                                                {% set total_cards.value = total_cards.value + 1 %}
+                                                {% if not card.image.exists %}
+                                                    {% set missing_cards.value = missing_cards.value + 1 %}
+                                                {% endif %}
+                                                <tr>
+                                                    <td>{{ card.index + 1 }}</td>
+                                                    <td><code>{{ card.image.original_path }}</code></td>
+                                                    <td>
+                                                        {% if card.image.exists %}
+                                                            <span class="badge bg-success">Trouvée</span>
+                                                            <div class="small text-muted">{{ card.image.found_at }}</div>
+                                                        {% else %}
+                                                            <span class="badge bg-danger">Manquante</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        {% if card.image.exists %}
+                                                            <img src="{{ card.image.found_at }}" alt="Image carte {{ card.index + 1 }}" class="img-thumbnail" style="max-height: 50px;">
+                                                        {% else %}
+                                                            <span class="text-muted">Pas d'aperçu</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-warning">
+                                    <p>Cet exercice ne contient pas de cartes avec des images.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="alert {% if missing_cards.value > 0 %}alert-warning{% else %}alert-success{% endif %}">
+            <h4>Résumé du diagnostic</h4>
+            <p>{{ missing_cards.value }} images manquantes sur {{ total_cards.value }} images de cartes au total.</p>
+            {% if missing_cards.value > 0 %}
+                <p>Pour corriger les chemins d'images manquantes, utilisez la page <a href="{{ url_for('fix_flashcard_images_route') }}" class="alert-link">Correction des chemins d'images</a>.</p>
+            {% endif %}
+        </div>
+        
+        <div class="d-flex justify-content-between">
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">Retour au tableau de bord</a>
+            <div>
+                <a href="{{ url_for('diagnose_flashcard_images_route') }}" class="btn btn-primary">Actualiser le diagnostic</a>
+                <a href="{{ url_for('fix_flashcard_images_route') }}" class="btn btn-success ms-2">Corriger les chemins d'images</a>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-warning">
+            <p><strong>Aucun exercice de type flashcards trouvé.</strong></p>
+        </div>
+        
+        <div class="d-flex justify-content-between">
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">Retour au tableau de bord</a>
+            <a href="{{ url_for('diagnose_flashcard_images_route') }}" class="btn btn-primary">Actualiser le diagnostic</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

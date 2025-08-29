@@ -2,6 +2,8 @@ import os
 import logging
 import importlib.util
 from flask import current_app
+from utils.image_utils_no_normalize import normalize_image_path
+from utils.image_path_manager import ImagePathManager
 
 # Vérifier si le module cloudinary est disponible sans l'importer directement
 cloudinary_available = importlib.util.find_spec("cloudinary") is not None
@@ -61,13 +63,15 @@ def configure_cloudinary():
             print(f"Erreur lors de la configuration de Cloudinary: {str(e)}")
         return False
 
-def upload_file(file, folder="uploads"):
+def upload_file(file, folder="uploads", exercise_type=None):
     """
     Upload un fichier vers Cloudinary ou en local selon la configuration
+    Version améliorée qui vérifie la taille du fichier et évite les fichiers vides
     
     Args:
         file: Objet fichier de Flask (request.files['file'])
-        folder: Dossier de destination sur Cloudinary
+        folder: Dossier de destination (ignoré si exercise_type est fourni)
+        exercise_type: Type d'exercice pour déterminer le dossier automatiquement
         
     Returns:
         str: URL du fichier uploadé (Cloudinary ou local)
@@ -80,12 +84,32 @@ def upload_file(file, folder="uploads"):
         except:
             print("Aucun fichier fourni pour l'upload")
         return None
+    
+    # DEBUG: Vérifier la taille initiale du fichier
+    try:
+        file.seek(0, 2)  # Aller à la fin
+        file_size = file.tell()  # Obtenir la position (taille)
+        file.seek(0)  # Revenir au début
+        try:
+            current_app.logger.info(f"DEBUG: Taille fichier initial: {file_size} octets")
+        except:
+            print(f"DEBUG: Taille fichier initial: {file_size} octets")
+            
+        # IMPORTANT: Vérifier si le fichier est vide et annuler l'upload
+        if file_size == 0:
+            try:
+                current_app.logger.error("ERREUR: Le fichier est vide, upload annulé")
+            except:
+                print("ERREUR: Le fichier est vide, upload annulé")
+            return None
+    except Exception as e:
+        try:
+            current_app.logger.error(f"DEBUG: Erreur lecture taille fichier: {e}")
+        except:
+            print(f"DEBUG: Erreur lecture taille fichier: {e}")
         
-    # Générer un nom de fichier unique pour éviter les collisions
-    import uuid
-    import datetime
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    unique_filename = f"{timestamp}_{uuid.uuid4().hex}_{file.filename}"
+    # Générer un nom de fichier unique avec le nouveau système
+    unique_filename = ImagePathManager.generate_unique_filename(file.filename, exercise_type)
     
     try:
         # Si Cloudinary est disponible et n'est pas configuré, essayer de le configurer
@@ -95,6 +119,9 @@ def upload_file(file, folder="uploads"):
         # Si Cloudinary est disponible et configuré, upload vers Cloudinary
         if cloudinary_available and cloudinary_configured:
             try:
+                # CORRECTION: Remettre le pointeur au début avant Cloudinary aussi
+                file.seek(0)
+                
                 # Import conditionnel de cloudinary
                 import cloudinary.uploader
                 
@@ -119,16 +146,66 @@ def upload_file(file, folder="uploads"):
         
         # Stockage local si Cloudinary n'est pas disponible ou a échoué
         try:
-            # Créer le dossier s'il n'existe pas
-            local_folder = os.path.join(current_app.static_folder, folder)
-            os.makedirs(local_folder, exist_ok=True)
+            # SOLUTION ROBUSTE: Lire le contenu du fichier en mémoire puis l'écrire
+            file.seek(0)
+            file_content = file.read()
             
-            # Sauvegarder le fichier localement
-            local_path = os.path.join(local_folder, unique_filename)
-            file.save(local_path)
+            try:
+                current_app.logger.info(f"DEBUG: Contenu lu en mémoire: {len(file_content)} octets")
+            except:
+                print(f"DEBUG: Contenu lu en mémoire: {len(file_content)} octets")
+            
+            if len(file_content) == 0:
+                try:
+                    current_app.logger.error("ERREUR: Le fichier reçu est vide!")
+                except:
+                    print("ERREUR: Le fichier reçu est vide!")
+                return None
+            
+            # Utiliser le nouveau système de gestion des dossiers
+            if exercise_type:
+                local_folder_path = ImagePathManager.get_upload_folder(exercise_type)
+                ImagePathManager.ensure_directory_exists(exercise_type)
+            else:
+                local_folder_path = f"static/uploads/{folder}"
+                os.makedirs(local_folder_path, exist_ok=True)
+            
+            # Écrire le contenu directement sur le disque
+            local_path = os.path.join(local_folder_path, unique_filename)
+            
+            with open(local_path, 'wb') as f:
+                f.write(file_content)
+            
+            try:
+                current_app.logger.info(f"DEBUG: Fichier écrit directement: {local_path}")
+            except:
+                print(f"DEBUG: Fichier écrit directement: {local_path}")
+            
+            # Vérifier que le fichier a été sauvegardé correctement
+            if os.path.exists(local_path):
+                file_size = os.path.getsize(local_path)
+                if file_size == 0:
+                    try:
+                        current_app.logger.error(f"ERREUR: Fichier sauvegardé avec 0 octets: {local_path}")
+                    except:
+                        print(f"ERREUR: Fichier sauvegardé avec 0 octets: {local_path}")
+                    # CORRECTION: Supprimer le fichier vide
+                    os.remove(local_path)
+                    return None
+                else:
+                    try:
+                        current_app.logger.info(f"Fichier sauvegardé avec succès: {local_path} ({file_size} octets)")
+                    except:
+                        print(f"Fichier sauvegardé avec succès: {local_path} ({file_size} octets)")
+            else:
+                try:
+                    current_app.logger.error(f"ERREUR: Fichier non créé: {local_path}")
+                except:
+                    print(f"ERREUR: Fichier non créé: {local_path}")
+                return None
             
             # Générer l'URL relative pour le fichier local
-            relative_path = f"{folder}/{unique_filename}"
+            relative_path = ImagePathManager.get_web_path(unique_filename, exercise_type)
             try:
                 current_app.logger.info(f"Fichier sauvegardé localement: {relative_path}")
             except:
@@ -241,114 +318,79 @@ def delete_file(public_id):
             print(f"Erreur générale lors de la suppression: {str(e)}")
         return False
 
-def get_cloudinary_url(image_path):
+def get_cloudinary_url(image_path, exercise_type=None):
     """
-    Convertit un chemin d'image en URL Cloudinary ou locale selon le contexte
+    Version corrigée de la fonction get_cloudinary_url
+    Retourne une URL valide pour une image, en vérifiant que le fichier existe
     
     Args:
-        image_path: Chemin de l'image (peut être une URL Cloudinary ou un chemin local)
+        image_path: Le chemin de l'image
+        exercise_type: Le type d'exercice pour organiser les images dans des sous-dossiers
         
     Returns:
-        URL de l'image (Cloudinary ou locale)
+        L'URL de l'image
     """
+    if not image_path:
+        print(f"[WARNING] get_cloudinary_url appelée avec un chemin vide")
+        return None
+        
+    # Vérifier le type de chemin d'image
+    if not isinstance(image_path, str):
+        print(f"Type de chemin d'image non valide: {type(image_path)}")
+        return None
+        
+    # Log du chemin d'image pour débogage
     try:
-        # Si le chemin est None ou vide, retourner None
-        if not image_path:
-            return None
-            
-        # Gérer le cas où image_path est un objet et pas une chaîne
-        if not isinstance(image_path, str):
-            try:
-                image_path = str(image_path)
-                try:
-                    current_app.logger.info(f"Conversion du chemin d'image en chaîne: {image_path}")
-                except:
-                    print(f"Conversion du chemin d'image en chaîne: {image_path}")
-            except:
-                try:
-                    current_app.logger.error(f"Type de chemin d'image non valide: {type(image_path)}")
-                except:
-                    print(f"Type de chemin d'image non valide: {type(image_path)}")
-                return None
-        
-        # Log du chemin d'image pour débogage
-        try:
-            current_app.logger.debug(f"[IMAGE_PATH_DEBUG] Traitement du chemin d'image: {image_path}")
-        except:
-            print(f"[IMAGE_PATH_DEBUG] Traitement du chemin d'image: {image_path}")
-        
+        current_app.logger.debug(f"[IMAGE_PATH_DEBUG] Traitement du chemin d'image: {image_path}")
+    except Exception:
+        print(f"[DEBUG] get_cloudinary_url appelée avec image_path={image_path}")
+        print(f"[IMAGE_PATH_DEBUG] Traitement du chemin d'image: {image_path}")
+    
+    try:
         # RÈGLE 1: Si c'est déjà une URL Cloudinary ou une URL externe, la retourner telle quelle
         if 'cloudinary.com' in image_path or image_path.startswith('http'):
             try:
                 current_app.logger.debug(f"[IMAGE_PATH_DEBUG] URL externe ou Cloudinary détectée: {image_path}")
-            except:
+            except Exception:
                 print(f"[IMAGE_PATH_DEBUG] URL externe ou Cloudinary détectée: {image_path}")
             return image_path
         
-        # RÈGLE 2: Éviter les chemins dupliqués comme /static/uploads/static/uploads/...
-        if '/static/uploads/static/uploads/' in image_path:
-            # Cas spécifique de duplication exacte
-            filename = image_path.split('/static/uploads/static/uploads/')[-1]
+        # RÈGLE 2: Utiliser le nouveau système pour nettoyer les chemins dupliqués
+        cleaned_path = ImagePathManager.clean_duplicate_paths(image_path)
+        if cleaned_path != image_path:
             try:
-                current_app.logger.debug(f"[IMAGE_PATH_DEBUG] Correction duplication exacte: {filename}")
-            except:
-                print(f"[IMAGE_PATH_DEBUG] Correction duplication exacte: {filename}")
-            return f"/static/uploads/{filename}"
-        elif '/static/uploads/' in image_path:
-            # Extraire la dernière partie après le dernier /static/uploads/
-            parts = image_path.split('/static/uploads/')
-            # Si nous avons plusieurs occurrences de /static/uploads/, prendre le dernier segment
-            if len(parts) > 1:
-                filename = parts[-1]
-                
-                # Éviter les chemins vides
-                if not filename:
-                    filename = image_path.split('/')[-1]
-                    
-                try:
-                    current_app.logger.debug(f"[IMAGE_PATH_DEBUG] Chemin normalisé depuis /static/uploads/: {filename}")
-                except:
-                    print(f"[IMAGE_PATH_DEBUG] Chemin normalisé depuis /static/uploads/: {filename}")
-                    
-                return f"/static/uploads/{filename}"
-        
-        # RÈGLE 3: Gestion des chemins commençant par /static/ ou static/
-        if image_path.startswith('/static/'):
-            try:
-                current_app.logger.debug(f"[IMAGE_PATH_DEBUG] Chemin /static/ déjà formaté correctement: {image_path}")
-            except:
-                print(f"[IMAGE_PATH_DEBUG] Chemin /static/ déjà formaté correctement: {image_path}")
-            return image_path
+                current_app.logger.debug(f"[IMAGE_PATH_DEBUG] Chemin nettoyé: {cleaned_path}")
+            except Exception:
+                print(f"[IMAGE_PATH_DEBUG] Chemin nettoyé: {cleaned_path}")
+            return cleaned_path
             
-        if image_path.startswith('static/'):
-            normalized_path = f"/{image_path}"
+        # RÈGLE 3: Gestion des chemins commençant par /static/ ou static/
+        if image_path.startswith('/static/') or image_path.startswith('static/'):
+            normalized_path = normalize_image_path(image_path if image_path.startswith('/') else f"/{image_path}", exercise_type)
             try:
-                current_app.logger.debug(f"[IMAGE_PATH_DEBUG] Ajout du / initial: {normalized_path}")
-            except:
-                print(f"[IMAGE_PATH_DEBUG] Ajout du / initial: {normalized_path}")
+                current_app.logger.debug(f"[IMAGE_PATH_DEBUG] Chemin static normalisé: {normalized_path}")
+            except Exception:
+                print(f"[IMAGE_PATH_DEBUG] Chemin static normalisé: {normalized_path}")
             return normalized_path
         
-        # RÈGLE 4: Pour les chemins relatifs ou noms de fichiers simples
-        # Extraire le nom de fichier (dernière partie après /)
-        filename = image_path.split('/')[-1]
+        # RÈGLE 4: Pour les noms de fichiers simples, utiliser le système de gestion
+        filename = ImagePathManager.extract_filename_from_path(image_path)
+        if filename:
+            web_path = ImagePathManager.get_web_path(filename, exercise_type)
+            try:
+                current_app.logger.debug(f"[IMAGE_PATH_DEBUG] Chemin web généré: {web_path}")
+            except Exception:
+                print(f"[IMAGE_PATH_DEBUG] Chemin web généré: {web_path}")
+            return web_path
         
-        # Si le nom de fichier est vide (cas rare), utiliser le chemin complet
-        if not filename:
-            filename = image_path
-        
-        normalized_path = f"/static/uploads/{filename}"
-        try:
-            current_app.logger.debug(f"[IMAGE_PATH_DEBUG] Chemin normalisé avec nom de fichier: {normalized_path}")
-        except:
-            print(f"[IMAGE_PATH_DEBUG] Chemin normalisé avec nom de fichier: {normalized_path}")
-            
-        return normalized_path
+        # Si aucune règle ne s'applique, retourner le chemin tel quel
+        return image_path
         
     except Exception as e:
         # En cas d'erreur, logger et essayer de retourner un chemin utilisable
         try:
             current_app.logger.error(f"[IMAGE_PATH_ERROR] Erreur lors de la génération d'URL: {str(e)}")
-        except:
+        except Exception:
             print(f"[IMAGE_PATH_ERROR] Erreur lors de la génération d'URL: {str(e)}")
             
         # Tentative de récupération en cas d'erreur
@@ -357,8 +399,11 @@ def get_cloudinary_url(image_path):
             if 'cloudinary.com' in image_path or image_path.startswith('http'):
                 return image_path
                 
-            # Pour les autres cas, extraire le nom de fichier et utiliser /static/uploads/
-            filename = image_path.split('/')[-1]
-            return f"/static/uploads/{filename}"
+            # Pour les autres cas, utiliser le système de gestion d'images
+            try:
+                filename = ImagePathManager.extract_filename_from_path(image_path)
+                return ImagePathManager.get_web_path(filename, exercise_type) if filename else image_path
+            except Exception:
+                return image_path
         
         return image_path

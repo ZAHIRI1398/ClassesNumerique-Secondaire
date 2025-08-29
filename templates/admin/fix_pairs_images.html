@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Correction des chemins d'images dans les exercices de paires{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Correction des chemins d'images dans les exercices de paires</h1>
+    
+    <div class="alert alert-info">
+        <h4>Résumé</h4>
+        <p>{{ fixed_count }} exercices corrigés sur {{ total_count }} exercices de paires au total.</p>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2>Résultats détaillés</h2>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Titre</th>
+                        <th>Statut</th>
+                        <th>Message</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in results %}
+                    <tr>
+                        <td>{{ result.id }}</td>
+                        <td>{{ result.title }}</td>
+                        <td>
+                            {% if result.status == 'fixed' %}
+                                <span class="badge bg-success">Corrigé</span>
+                            {% elif result.status == 'ok' %}
+                                <span class="badge bg-primary">OK</span>
+                            {% elif result.status == 'error' %}
+                                <span class="badge bg-danger">Erreur</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Ignoré</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ result.message }}</td>
+                        <td>
+                            <a href="{{ url_for('edit_exercise', exercise_id=result.id) }}" class="btn btn-sm btn-outline-primary">Éditer</a>
+                            <a href="{{ url_for('view_exercise', exercise_id=result.id) }}" class="btn btn-sm btn-outline-secondary">Voir</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2>Instructions</h2>
+        </div>
+        <div class="card-body">
+            <p>Cette page a corrigé automatiquement les chemins d'images dans les exercices de paires. Les corrections suivantes ont été appliquées :</p>
+            <ul>
+                <li>Ajout du préfixe <code>/static/uploads/</code> aux chemins d'images relatifs</li>
+                <li>Conversion des chemins <code>/static/exercises/</code> en <code>/static/uploads/</code></li>
+                <li>Normalisation des formats de chemins pour assurer la cohérence</li>
+            </ul>
+            <p>Pour vérifier que les images s'affichent correctement, cliquez sur le bouton "Voir" à côté de chaque exercice.</p>
+        </div>
+    </div>
+    
+    <div class="mt-4">
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-primary">Retour au tableau de bord</a>
+    </div>
+</div>
+{% endblock %}

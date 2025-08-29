@@ -1,0 +1,49 @@
+2025-08-27 00:01:01,922 - INFO - === GÉNÉRATION DU RAPPORT SUR L'ÉTAT DES EXERCICES ===
+2025-08-27 00:01:01,924 - INFO - === RAPPORT SUR L'ÉTAT DES EXERCICES ===
+2025-08-27 00:01:01,924 - INFO - Date du rapport: 2025-08-27 00:01:01
+2025-08-27 00:01:01,924 - INFO - Nombre total d'exercices: 7
+2025-08-27 00:01:01,924 - INFO - 
+=== EXERCICES PAR TYPE ===
+2025-08-27 00:01:01,925 - INFO - 
++-------------------+----------+
+| Type d'exercice   |   Nombre |
++===================+==========+
+| fill_in_blanks    |        1 |
++-------------------+----------+
+| qcm               |        1 |
++-------------------+----------+
+| pairs             |        1 |
++-------------------+----------+
+| drag_and_drop     |        1 |
++-------------------+----------+
+| legend            |        1 |
++-------------------+----------+
+| word_placement    |        1 |
++-------------------+----------+
+| image_labeling    |        1 |
++-------------------+----------+
+2025-08-27 00:01:01,926 - INFO - 
+=== LISTE DES EXERCICES ===
+2025-08-27 00:01:02,077 - INFO - 
+=== VÉRIFICATION DES DOSSIERS D'UPLOAD ===
+2025-08-27 00:01:02,080 - INFO - 
+=== UTILISATEURS ENSEIGNANTS ===
+2025-08-27 00:01:02,080 - INFO - 
++------+---------------------+--------------------+-------------------+
+|   ID | Nom d'utilisateur   | Email              |   Exercices créés |
++======+=====================+====================+===================+
+|   10 | xavier              | xavier@example.com |                 0 |
++------+---------------------+--------------------+-------------------+
+2025-08-27 00:01:02,081 - INFO - 
+=== RAPPORT GÉNÉRÉ AVEC SUCCÈS ===
+
+Le rapport sur l'état des exercices a été généré avec succès.
+Consultez le fichier de log pour les détails complets.
+
+Résumé:
+- Tous les exercices ont été vérifiés
+- Les statistiques par type d'exercice ont été générées
+- La structure du contenu de chaque exercice a été analysée
+- Les dossiers d'upload ont été vérifiés
+- Les utilisateurs enseignants ont été listés
+

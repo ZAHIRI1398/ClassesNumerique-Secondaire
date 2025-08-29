@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier l'exercice - Réponse libre{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('exercise.exercise_library') }}">Bibliothèque d'exercices</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('view_exercise', exercise_id=exercise.id) }}">{{ exercise.title }}</a></li>
+            <li class="breadcrumb-item active">Modifier</li>
+        </ol>
+    </nav>
+
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h2 class="card-title mb-0">Modifier l'exercice de réponse libre</h2>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('edit_exercise', exercise_id=exercise.id) }}" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="mb-3">
+                    <label for="title" class="form-label">Titre *</label>
+                    <input type="text" class="form-control" id="title" name="title" value="{{ exercise.title }}" required>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="description" class="form-label">Description</label>
+                    <textarea class="form-control" id="description" name="description" rows="3">{{ exercise.description }}</textarea>
+                    <div class="form-text">Une description détaillée aide les élèves à mieux comprendre l'exercice.</div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="subject" class="form-label">Matière *</label>
+                    <input type="text" class="form-control" id="subject" name="subject" value="{{ exercise.subject }}" required>
+                </div>
+                
+                <!-- Section d'upload d'image -->
+                <div class="mb-3">
+                    <label for="exercise_image" class="form-label">Image de l'exercice (optionnelle)</label>
+                    
+                    <!-- Affichage de l'image actuelle si elle existe -->
+                    {% if exercise.image_path %}
+                    <div class="current-image mb-3" id="current-image-container">
+                        <p class="text-muted mb-2">Image actuelle :</p>
+                        <img src="{{ cloud_storage.get_cloudinary_url(exercise.image_path) }}" 
+                             alt="Image de l'exercice" 
+                             onerror="this.style.display='none';"
+                             style="max-width: 300px; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <div class="mt-2">
+                            <small class="text-muted">Fichier : {{ exercise.image_path }}</small>
+                        </div>
+                        <div class="mt-2">
+                            <button type="button" class="btn btn-danger btn-sm" id="remove-exercise-image-btn">
+                                <i class="fas fa-trash"></i> Supprimer l'image
+                            </button>
+                        </div>
+                    </div>
+                    <input type="hidden" name="remove_exercise_image" id="remove_exercise_image" value="false">
+                    {% endif %}
+                    
+                    <input type="file" class="form-control" id="exercise_image" name="exercise_image" accept="image/*" onchange="previewExerciseImage(this)">
+                    <div class="form-text">
+                        {% if exercise.image_path %}
+                            Sélectionnez une nouvelle image pour remplacer l'image actuelle, ou laissez vide pour conserver l'image existante.
+                        {% else %}
+                            Ajoutez une image pour illustrer votre exercice (formats acceptés : JPG, PNG, GIF).
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Zone de prévisualisation pour nouvelle image -->
+                    <div id="exercise-image-preview" class="mt-3"></div>
+                </div>
+                
+                <!-- Champs spécifiques à la réponse libre -->
+                <div class="mb-3">
+                    <label for="text_question" class="form-label">Question *</label>
+                    <textarea class="form-control" id="text_question" name="text_question" rows="3" required>{{ content.text_question }}</textarea>
+                    <div class="form-text">La question à laquelle l'élève doit répondre.</div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="expected_answer" class="form-label">Réponse attendue</label>
+                    <textarea class="form-control" id="expected_answer" name="expected_answer" rows="5">{{ content.expected_answer }}</textarea>
+                    <div class="form-text">La réponse que vous attendez de l'élève (pour la correction).</div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="max_attempts" class="form-label">Nombre maximum de tentatives</label>
+                    <input type="number" class="form-control" id="max_attempts" name="max_attempts" min="1" value="{{ exercise.max_attempts or 1 }}">
+                    <div class="form-text">Laissez vide pour permettre des tentatives illimitées. Par défaut : 1 tentative.</div>
+                </div>
+                
+                <input type="hidden" name="exercise_type" value="text">
+                
+                <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('exercise.exercise_library') }}" class="btn btn-secondary">Annuler</a>
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Fonction de prévisualisation d'image
+function previewExerciseImage(input) {
+    console.log('=== PRÉVISUALISATION IMAGE ===');
+    const preview = document.getElementById('exercise-image-preview');
+    
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.innerHTML = `
+                <div class="border rounded p-3" style="background-color: #f8f9fa;">
+                    <p class="text-success small mb-2"><i class="fas fa-check-circle"></i> Nouvelle image sélectionnée :</p>
+                    <img src="${e.target.result}" class="img-thumbnail" style="max-height: 200px; max-width: 300px;">
+                    <p class="text-muted small mt-2">Cette image remplacera l'image actuelle après sauvegarde</p>
+                </div>
+            `;
+            console.log('=== PRÉVISUALISATION AFFICHÉE ===');
+        };
+        reader.readAsDataURL(input.files[0]);
+    } else {
+        preview.innerHTML = '';
+        console.log('=== PRÉVISUALISATION EFFACÉE ===');
+    }
+}
+
+// Attendre que la page soit complètement chargée
+window.addEventListener('load', function() {
+    console.log('=== PAGE CHARGÉE - RECHERCHE BOUTON ===');
+    
+    // Rechercher le bouton de suppression
+    const btn = document.getElementById('remove-exercise-image-btn');
+    console.log('Bouton trouvé:', btn);
+    
+    if (btn) {
+        console.log('=== AJOUT ÉVÉNEMENT CLIC ===');
+        btn.onclick = function(e) {
+            e.preventDefault();
+            console.log('=== CLIC DÉTECTÉ ===');
+            
+            // Suppression directe sans confirm() pour éviter les problèmes
+            console.log('=== SUPPRESSION AUTOMATIQUE ===');
+            
+            // Marquer pour suppression
+            const hiddenField = document.getElementById('remove_exercise_image');
+            if (hiddenField) {
+                hiddenField.value = 'true';
+                console.log('Champ marqué:', hiddenField.value);
+            }
+            
+            // Masquer l'image
+            const imageContainer = document.getElementById('current-image-container');
+            if (imageContainer) {
+                imageContainer.style.display = 'none';
+                console.log('Container image masqué');
+            }
+            
+            // Masquer le bouton
+            btn.style.display = 'none';
+            
+            // Afficher message
+            const msg = document.createElement('div');
+            msg.className = 'alert alert-success';
+            msg.innerHTML = '✓ Image marquée pour suppression';
+            btn.parentNode.appendChild(msg);
+            
+            console.log('=== SUPPRESSION TERMINÉE ===');
+        };
+    } else {
+        console.log('=== BOUTON NON TROUVÉ ===');
+    }
+});
+</script>
+{% endblock %}

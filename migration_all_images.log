@@ -1,0 +1,44 @@
+2025-08-29 18:30:44,965 - __main__ - INFO - Début de la migration des chemins d'images pour tous les types d'exercices...
+2025-08-29 18:30:46,652 - __main__ - INFO - Traitement de 24 exercices au total
+2025-08-29 18:30:46,653 - __main__ - INFO - Traitement de l'exercice ID 57 de type 'fill_in_blanks'
+2025-08-29 18:30:46,668 - __main__ - INFO - Exercice ID 57: Chemin d'image dans image_path normalisé: /static/exercises/fill_in_blanks/fill_in_blanks_20250828_174524_0923eac0.png -> /static/uploads/fill_in_blanks/fill_in_blanks_20250828_174524_0923eac0.png
+2025-08-29 18:30:46,669 - __main__ - INFO - Traitement de l'exercice ID 58 de type 'qcm'
+2025-08-29 18:30:46,670 - __main__ - INFO - Exercice ID 58: Chemin d'image dans image_path normalisé: /static/uploads/exercises/qcm/Capture_d_ecran_2025-08-14_151156_20250828_154105_KZGCo1.png -> /static/uploads/qcm/Capture_d_ecran_2025-08-14_151156_20250828_154105_KZGCo1.png
+2025-08-29 18:30:46,670 - __main__ - INFO - Traitement de l'exercice ID 59 de type 'pairs'
+2025-08-29 18:30:46,670 - __main__ - INFO - Traitement de l'exercice ID 60 de type 'drag_and_drop'
+2025-08-29 18:30:46,671 - __main__ - INFO - Exercice ID 60: Chemin d'image dans image_path normalisé: /static/uploads/drag_drop/history_timeline.png -> /static/uploads/drag_and_drop/history_timeline.png
+2025-08-29 18:30:46,671 - __main__ - INFO - Traitement de l'exercice ID 61 de type 'legend'
+2025-08-29 18:30:46,671 - __main__ - INFO - Traitement de l'exercice ID 62 de type 'word_placement'
+2025-08-29 18:30:46,672 - __main__ - INFO - Traitement de l'exercice ID 63 de type 'image_labeling'
+2025-08-29 18:30:46,672 - __main__ - INFO - Traitement de l'exercice ID 67 de type 'fill_in_blanks'
+2025-08-29 18:30:46,672 - __main__ - INFO - Exercice ID 67: Chemin d'image dans image_path normalisé: /static/exercises/fill_in_blanks/fill_in_blanks_20250828_174226_87a587e7.png -> /static/uploads/fill_in_blanks/fill_in_blanks_20250828_174226_87a587e7.png
+2025-08-29 18:30:46,673 - __main__ - INFO - Traitement de l'exercice ID 68 de type 'drag_and_drop'
+2025-08-29 18:30:46,673 - __main__ - INFO - Traitement de l'exercice ID 69 de type 'image_labeling'
+2025-08-29 18:30:46,673 - __main__ - INFO - Exercice ID 69: Chemin d'image principale normalisé: /static/uploads/1756247220_ut0fo0.png -> /static/uploads/image_labeling/1756247220_ut0fo0.png
+2025-08-29 18:30:46,673 - __main__ - INFO - Exercice ID 69: Chemin d'image dans image_path normalisé: /static/uploads/1756247220_ut0fo0.png -> /static/uploads/image_labeling/1756247220_ut0fo0.png
+2025-08-29 18:30:46,674 - __main__ - INFO - Traitement de l'exercice ID 72 de type 'qcm_multichoix'
+2025-08-29 18:30:46,674 - __main__ - INFO - Exercice ID 72: Chemin d'image dans image_path normalisé: /static/exercises/general/general_20250828_193746_8baa0046.png -> /static/uploads/qcm_multichoix/general_20250828_193746_8baa0046.png
+2025-08-29 18:30:46,674 - __main__ - INFO - Traitement de l'exercice ID 73 de type 'flashcards'
+2025-08-29 18:30:46,674 - __main__ - INFO - Exercice ID 73: Chemin d'image flashcard normalisé: /static/uploads/1756311751_8651bx.png -> /static/uploads/flashcards/1756311751_8651bx.png
+2025-08-29 18:30:46,675 - __main__ - INFO - Exercice ID 73: Chemin d'image flashcard normalisé: /static/uploads/1756311751_6h36rk.png -> /static/uploads/flashcards/1756311751_6h36rk.png
+2025-08-29 18:30:46,675 - __main__ - INFO - Exercice ID 73: Chemin d'image flashcard normalisé: /static/uploads/1756311751_lx16jf.png -> /static/uploads/flashcards/1756311751_lx16jf.png
+2025-08-29 18:30:46,675 - __main__ - INFO - Traitement de l'exercice ID 74 de type 'word_placement'
+2025-08-29 18:30:46,675 - __main__ - INFO - Traitement de l'exercice ID 75 de type 'word_placement'
+2025-08-29 18:30:46,675 - __main__ - INFO - Traitement de l'exercice ID 76 de type 'word_placement'
+2025-08-29 18:30:46,676 - __main__ - INFO - Traitement de l'exercice ID 77 de type 'word_placement'
+2025-08-29 18:30:46,676 - __main__ - INFO - Traitement de l'exercice ID 78 de type 'word_placement'
+2025-08-29 18:30:46,676 - __main__ - INFO - Traitement de l'exercice ID 79 de type 'word_search'
+2025-08-29 18:30:46,676 - __main__ - INFO - Traitement de l'exercice ID 80 de type 'underline_words'
+2025-08-29 18:30:46,676 - __main__ - INFO - Exercice ID 80: Chemin d'image dans image_path normalisé: /static/uploads/1756322558_c2gyvu.png -> /static/uploads/underline_words/1756322558_c2gyvu.png
+2025-08-29 18:30:46,676 - __main__ - INFO - Traitement de l'exercice ID 81 de type 'image_labeling'
+2025-08-29 18:30:46,677 - __main__ - INFO - Exercice ID 81: Chemin d'image principale normalisé: /static/uploads/exercises/image_labeling/image_20250829_001528.png -> /static/uploads/image_labeling/image_20250829_001528.png
+2025-08-29 18:30:46,677 - __main__ - INFO - Exercice ID 81: Chemin d'image dans image_path normalisé: /static/uploads/1756323191_81snn3.png -> /static/uploads/image_labeling/1756323191_81snn3.png
+2025-08-29 18:30:46,677 - __main__ - INFO - Traitement de l'exercice ID 83 de type 'dictation'
+2025-08-29 18:30:46,677 - __main__ - INFO - Traitement de l'exercice ID 87 de type 'qcm'
+2025-08-29 18:30:46,677 - __main__ - INFO - Exercice ID 87: Chemin d'image dans image_path normalisé: /static/exercises/1756399598_91izlx.png -> /static/uploads/qcm/1756399598_91izlx.png
+2025-08-29 18:30:46,677 - __main__ - INFO - Traitement de l'exercice ID 92 de type 'pairs'
+2025-08-29 18:30:46,678 - __main__ - INFO - Exercice ID 92: Chemin d'image gauche normalisé: /static/exercises/pairs/pairs_20250829_004426_dbe1fceb.jpg -> /static/uploads/pairs/pairs_20250829_004426_dbe1fceb.jpg
+2025-08-29 18:30:46,678 - __main__ - INFO - Traitement de l'exercice ID 93 de type 'pairs'
+2025-08-29 18:30:46,678 - __main__ - INFO - Exercice ID 93: Chemin d'image gauche normalisé: /static/exercises/pairs/pairs_20250829_013448_fbce8995.jpg -> /static/uploads/pairs/pairs_20250829_013448_fbce8995.jpg
+2025-08-29 18:30:47,048 - __main__ - INFO - Migration terminée avec succès. 14 chemins d'images ont été normalisés.
+2025-08-29 18:30:47,049 - __main__ - INFO - Migration des chemins d'images terminée avec succès.

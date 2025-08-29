@@ -1,0 +1,14 @@
+2025-08-29 21:08:07,504 - INFO - Début de la vérification des images QCM Multichoix
+2025-08-29 21:08:07,504 - INFO - Fichier de log: qcm_multichoix_images_verification_20250829_210807.log
+2025-08-29 21:08:07,504 - WARNING - L'URL de production n'a pas été configurée. La vérification distante sera désactivée.
+2025-08-29 21:08:07,504 - WARNING - Pour activer la vérification distante, modifiez la variable BASE_URL dans le script.
+2025-08-29 21:08:07,505 - INFO - Vérification de 1 exercices QCM Multichoix
+2025-08-29 21:08:07,506 - WARNING - Image non trouvée: /static/uploads/qcm_multichoix/general_20250829_205036_dc120bcd.png pour l'exercice #72 (test170)
+2025-08-29 21:08:07,506 - WARNING - 1 images non trouvées sur 1 exercices QCM Multichoix
+2025-08-29 21:08:07,507 - WARNING -   - Exercice #72 (test170): /static/uploads/qcm_multichoix/general_20250829_205036_dc120bcd.png
+2025-08-29 21:08:07,508 - INFO - Rapport généré: qcm_multichoix_images_report_20250829_210807.md
+2025-08-29 21:08:07,508 - INFO - Script de correction généré: fix_qcm_multichoix_images_20250829_210807.py
+2025-08-29 21:08:07,508 - WARNING - Vérification terminée avec 1 problèmes détectés.
+2025-08-29 21:08:07,508 - WARNING - Consultez le rapport qcm_multichoix_images_report_20250829_210807.md pour plus de détails.
+2025-08-29 21:08:07,508 - WARNING - Exécutez le script fix_qcm_multichoix_images_20250829_210807.py pour corriger automatiquement les problèmes.
+2025-08-29 21:08:07,508 - INFO - Fin de la vérification des images QCM Multichoix

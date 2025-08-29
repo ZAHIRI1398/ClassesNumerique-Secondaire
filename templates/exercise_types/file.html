@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}{{ exercise.title }} - Fichier à rendre{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('teacher_dashboard') }}">Tableau de bord</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('exercise.exercise_library') }}">Bibliothèque d'exercices</a></li>
+            <li class="breadcrumb-item active">{{ exercise.title }}</li>
+        </ol>
+    </nav>
+
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h2 class="card-title mb-0">{{ exercise.title }}</h2>
+        </div>
+        <div class="card-body">
+            {% if exercise.description %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> {{ exercise.description }}
+            </div>
+            {% endif %}
+
+            <!-- Affichage de l'image si présente -->
+            {% if exercise.image_path %}
+            <div class="text-center mb-4">
+                <img src="{{ cloud_storage.get_cloudinary_url(exercise.image_path) }}?v={{ now }}" 
+                     alt="Image de l'exercice" 
+                     class="img-fluid rounded shadow" 
+                     style="max-height: 400px;"
+                     onerror="this.onerror=null; this.src='{{ url_for('static', filename='images/placeholder.png') }}';">
+            </div>
+            {% endif %}
+
+            <div class="mb-4">
+                <h3 class="h5 mb-3">Instructions</h3>
+                <div class="alert alert-secondary">
+                    {{ content.file_instructions|default('Veuillez téléverser votre fichier ci-dessous.', true) }}
+                </div>
+                
+                <form method="POST" action="{{ url_for('submit_exercise', exercise_id=exercise.id) }}" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="form-group mb-4">
+                        <label for="file_submission" class="form-label">Fichier à rendre:</label>
+                        <input type="file" class="form-control" id="file_submission" name="file_submission" required>
+                        <div class="form-text text-muted">
+                            Formats acceptés: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, ZIP, RAR, JPG, PNG, GIF
+                        </div>
+                    </div>
+                    
+                    <div class="form-group mb-4">
+                        <label for="comment" class="form-label">Commentaire (optionnel):</label>
+                        <textarea class="form-control" id="comment" name="comment" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{{ url_for('exercise.exercise_library') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Retour
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i> Soumettre
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

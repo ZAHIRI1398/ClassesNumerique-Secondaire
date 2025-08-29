@@ -1,0 +1,341 @@
+{% extends "edit_exercise.html" %}
+
+{% block exercise_content %}
+<div id="questions-container">
+    {% if not content or not content.questions %}
+        <div class="question-block card mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="card-title mb-0">Question 1</h5>
+                    <button type="button" class="btn btn-danger btn-sm remove-question">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                <div class="form-group mb-3">
+                    <label class="form-label">Question :</label>
+                    <input type="text" class="form-control question-input" name="questions[]" required placeholder="Entrez votre question ici">
+                </div>
+                
+                <!-- Section d'image pour la question -->
+                <div class="form-group mb-3 question-image-container">
+                    <label class="form-label">Image pour la question (optionnelle) :</label>
+                    <input type="file" class="form-control question-image-input" name="question_image_0" accept="image/*">
+                    <div class="form-text">Ajoutez une image pour illustrer cette question (formats acceptés : JPG, PNG, GIF).</div>
+                    <input type="hidden" class="question-image-path" name="question_image_path_0" value="">
+                </div>
+                
+                <div class="options-container">
+                    <label class="form-label">Options :</label>
+                    <div class="option-block d-flex align-items-center gap-2 mb-2">
+                        <div class="input-group">
+                            <div class="input-group-text">
+                                <input class="form-check-input mt-0" type="radio" name="correct_0" value="0" checked>
+                            </div>
+                            <input type="text" class="form-control option-input" name="option_0_0" required placeholder="Option A">
+                            <button type="button" class="btn btn-outline-danger remove-option">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <button type="button" class="btn btn-outline-primary add-option">
+                        <i class="fas fa-plus"></i> Ajouter une option
+                    </button>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+    {% for question in content.questions if content and content.questions %}
+        {% set question_index = loop.index0 %}
+        <div class="question-block card mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="card-title mb-0">Question {{ loop.index }}</h5>
+                    <button type="button" class="btn btn-danger btn-sm remove-question">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                <div class="form-group mb-3">
+                    <label class="form-label">Question :</label>
+                    <input type="text" class="form-control question-input" name="questions[]" value="{{ question.text }}" required placeholder="Entrez votre question ici">
+                </div>
+                
+                <!-- Section d'image pour la question avec affichage de l'image existante -->
+                <div class="form-group mb-3 question-image-container">
+                    <label class="form-label">Image pour la question (optionnelle) :</label>
+                    
+                    <!-- Affichage de l'image actuelle si elle existe -->
+                    {% if question.image %}
+                    <div class="current-image mb-3">
+                        <p class="text-muted mb-2">Image actuelle :</p>
+                        <img src="{{ cloud_storage.get_cloudinary_url(normalize_image_path(question.image)) }}" 
+                             alt="Image de la question" 
+                             style="max-width: 300px; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    </div>
+                    {% endif %}
+                    
+                    <input type="file" class="form-control question-image-input" name="question_image_{{ question_index }}" accept="image/*">
+                    <div class="form-text">
+                        {% if question.image %}
+                            Sélectionnez une nouvelle image pour remplacer l'image actuelle, ou laissez vide pour conserver l'image existante.
+                        {% else %}
+                            Ajoutez une image pour illustrer cette question (formats acceptés : JPG, PNG, GIF).
+                        {% endif %}
+                    </div>
+                    <input type="hidden" class="question-image-path" name="question_image_path_{{ question_index }}" value="{{ question.image or '' }}">
+                </div>
+                
+                <div class="options-container">
+                    <label class="form-label">Options :</label>
+                    {% for option in question.choices %}
+                        <div class="option-block d-flex align-items-center gap-2 mb-2">
+                            <div class="input-group">
+                                <div class="input-group-text">
+                                    <input class="form-check-input mt-0" type="radio" name="correct_{{ question_index }}" 
+                                           value="{{ loop.index0 }}" {{ 'checked' if question.correct_answer == loop.index0 }}>
+                                </div>
+                                <input type="text" class="form-control option-input" name="option_{{ question_index }}_{{ loop.index0 }}" 
+                                       value="{{ option }}" required placeholder="Option {{ (loop.index0 + 65)|chr }}">
+                                <button type="button" class="btn btn-outline-danger remove-option">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="mt-3">
+                    <button type="button" class="btn btn-outline-primary add-option">
+                        <i class="fas fa-plus"></i> Ajouter une option
+                    </button>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+<div class="d-flex gap-2 mt-3">
+    <button type="button" id="add-question" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Ajouter une question
+    </button>
+</div>
+
+<input type="hidden" name="question_count" id="question_count" value="0">
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const questionsContainer = document.getElementById('questions-container');
+    const questionCountInput = document.getElementById('question_count');
+    const addQuestionBtn = document.getElementById('add-question');
+
+    if (!questionsContainer || !questionCountInput || !addQuestionBtn) {
+        console.error('Required elements not found');
+        return;
+    }
+
+    // Mettre à jour le compteur de questions
+    function updateQuestionCount() {
+        const count = questionsContainer.querySelectorAll('.question-block').length;
+        questionCountInput.value = count;
+        console.log('Updated question count:', count);
+    }
+
+    // Mettre à jour les numéros des questions
+    function updateQuestionNumbers() {
+        questionsContainer.querySelectorAll('.question-block').forEach((block, index) => {
+            // Mettre à jour le titre
+            const titleEl = block.querySelector('.card-title');
+            if (titleEl) {
+                titleEl.textContent = `Question ${index + 1}`;
+            }
+
+            // Mettre à jour les noms des champs
+            const optionsContainer = block.querySelector('.options-container');
+            if (optionsContainer) {
+                optionsContainer.querySelectorAll('.option-block').forEach((optionBlock, optionIndex) => {
+                    const radio = optionBlock.querySelector('.form-check-input');
+                    const input = optionBlock.querySelector('.option-input');
+                    
+                    if (radio) {
+                        radio.name = `correct_${index}`;
+                        radio.value = optionIndex;
+                    }
+                    if (input) {
+                        input.name = `option_${index}_${optionIndex}`;
+                        input.placeholder = `Option ${String.fromCharCode(65 + optionIndex)}`;
+                    }
+                });
+            }
+            
+            // Mettre à jour les noms des champs d'image
+            const imageInput = block.querySelector('.question-image-input');
+            const imagePathInput = block.querySelector('.question-image-path');
+            if (imageInput) {
+                imageInput.name = `question_image_${index}`;
+            }
+            if (imagePathInput) {
+                imagePathInput.name = `question_image_path_${index}`;
+            }
+        });
+        
+        updateQuestionCount();
+    }
+
+    // Créer un nouveau bloc d'option
+    function createOptionBlock(questionIndex, optionCount) {
+        const optionBlock = document.createElement('div');
+        optionBlock.className = 'option-block d-flex align-items-center gap-2 mb-2';
+        const optionLetter = String.fromCharCode(65 + optionCount); // A, B, C, D...
+        optionBlock.innerHTML = `
+            <div class="input-group">
+                <div class="input-group-text">
+                    <input class="form-check-input mt-0" type="radio" name="correct_${questionIndex}" value="${optionCount}">
+                </div>
+                <input type="text" class="form-control option-input" name="option_${questionIndex}_${optionCount}" required placeholder="Option ${optionLetter}">
+                <button type="button" class="btn btn-outline-danger remove-option">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+
+        // Configurer le bouton de suppression
+        const removeBtn = optionBlock.querySelector('.remove-option');
+        if (removeBtn) {
+            removeBtn.addEventListener('click', function() {
+                const container = optionBlock.closest('.options-container');
+                if (container && container.querySelectorAll('.option-block').length > 1) {
+                    optionBlock.remove();
+                    updateQuestionNumbers();
+                } else {
+                    alert('Une question doit avoir au moins une option.');
+                }
+            });
+        }
+
+        return optionBlock;
+    }
+
+    // Ajouter une nouvelle question
+    addQuestionBtn.addEventListener('click', function() {
+        const questionCount = questionsContainer.querySelectorAll('.question-block').length;
+        const questionBlock = document.createElement('div');
+        questionBlock.className = 'question-block card mb-3';
+        questionBlock.innerHTML = `
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="card-title mb-0">Question ${questionCount + 1}</h5>
+                    <button type="button" class="btn btn-danger btn-sm remove-question">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                <div class="form-group mb-3">
+                    <label class="form-label">Question :</label>
+                    <input type="text" class="form-control question-input" name="questions[]" required placeholder="Entrez votre question ici">
+                </div>
+                
+                <!-- Section d'image pour la question -->
+                <div class="form-group mb-3 question-image-container">
+                    <label class="form-label">Image pour la question (optionnelle) :</label>
+                    <input type="file" class="form-control question-image-input" name="question_image_${questionCount}" accept="image/*">
+                    <div class="form-text">Ajoutez une image pour illustrer cette question (formats acceptés : JPG, PNG, GIF).</div>
+                    <input type="hidden" class="question-image-path" name="question_image_path_${questionCount}" value="">
+                </div>
+                
+                <div class="options-container">
+                    <label class="form-label">Options :</label>
+                </div>
+                <div class="mt-3">
+                    <button type="button" class="btn btn-outline-primary add-option">
+                        <i class="fas fa-plus"></i> Ajouter une option
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Ajouter la première option
+        const optionsContainer = questionBlock.querySelector('.options-container');
+        if (optionsContainer) {
+            optionsContainer.appendChild(createOptionBlock(questionCount, 0));
+        }
+
+        // Configurer le bouton de suppression de question
+        const removeQuestionBtn = questionBlock.querySelector('.remove-question');
+        if (removeQuestionBtn) {
+            removeQuestionBtn.addEventListener('click', function() {
+                if (questionsContainer.children.length > 1) {
+                    questionBlock.remove();
+                    updateQuestionNumbers();
+                } else {
+                    alert('L\'exercice doit avoir au moins une question.');
+                }
+            });
+        }
+
+        // Configurer le bouton d'ajout d'option
+        const addOptionBtn = questionBlock.querySelector('.add-option');
+        if (addOptionBtn) {
+            addOptionBtn.addEventListener('click', function() {
+                const optionsContainer = questionBlock.querySelector('.options-container');
+                if (optionsContainer) {
+                    const optionCount = optionsContainer.querySelectorAll('.option-block').length;
+                    optionsContainer.appendChild(createOptionBlock(questionCount, optionCount));
+                }
+            });
+        }
+
+        questionsContainer.appendChild(questionBlock);
+        updateQuestionCount();
+    });
+
+    // Initialiser les événements pour les questions existantes
+    questionsContainer.querySelectorAll('.question-block').forEach((block, questionIndex) => {
+        // Configurer le bouton de suppression de question
+        const removeQuestionBtn = block.querySelector('.remove-question');
+        if (removeQuestionBtn) {
+            removeQuestionBtn.addEventListener('click', function() {
+                if (questionsContainer.children.length > 1) {
+                    block.remove();
+                    updateQuestionNumbers();
+                } else {
+                    alert('L\'exercice doit avoir au moins une question.');
+                }
+            });
+        }
+
+        // Configurer le bouton d'ajout d'option
+        const addOptionBtn = block.querySelector('.add-option');
+        if (addOptionBtn) {
+            addOptionBtn.addEventListener('click', function() {
+                const optionsContainer = block.querySelector('.options-container');
+                if (optionsContainer) {
+                    const optionCount = optionsContainer.querySelectorAll('.option-block').length;
+                    optionsContainer.appendChild(createOptionBlock(questionIndex, optionCount));
+                }
+            });
+        }
+
+        // Configurer les boutons de suppression d'option
+        block.querySelectorAll('.remove-option').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const optionBlock = btn.closest('.option-block');
+                const optionsContainer = optionBlock.closest('.options-container');
+                if (optionsContainer && optionsContainer.querySelectorAll('.option-block').length > 1) {
+                    optionBlock.remove();
+                    updateQuestionNumbers();
+                } else {
+                    alert('Une question doit avoir au moins une option.');
+                }
+            });
+        });
+    });
+
+    // Si aucune question n'existe, en ajouter une par défaut
+    if (questionsContainer.children.length === 0) {
+        addQuestionBtn.click();
+    }
+
+    // Initialiser le compteur de questions
+    updateQuestionCount();
+});
+</script>
+{% endblock %}

@@ -1,8 +1,49 @@
-{% extends "base.html" %}
+{% extends "edit_exercise.html" %}
 
 {% block title %}Modifier un exercice d'étiquetage d'image{% endblock %}
 
 {% block content %}
+<!-- Initialisation des variables JavaScript pour les étiquettes et zones existantes -->
+<!-- Génération des données JSON par Jinja2 en dehors du script JavaScript -->
+<script type="application/json" id="labels-data">
+{% if content and content.labels %}
+{{ content.labels|tojson|safe }}
+{% else %}
+[]
+{% endif %}
+</script>
+
+<script type="application/json" id="zones-data">
+{% if content and content.zones %}
+[
+    {% for zone in content.zones %}
+    {
+        "x": {{ zone.x }},
+        "y": {{ zone.y }},
+        "label": {{ zone.label|tojson|safe }}
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+]
+{% else %}
+[]
+{% endif %}
+</script>
+
+<script>
+    // Initialiser les variables avec les données existantes
+    // Récupérer les données JSON depuis les éléments script
+    var existingLabels = JSON.parse(document.getElementById('labels-data').textContent);
+    var existingZones = JSON.parse(document.getElementById('zones-data').textContent);
+    
+    // Afficher les données chargées dans la console
+    if (existingLabels.length > 0) {
+        console.log('Étiquettes chargées:', existingLabels);
+    }
+    
+    if (existingZones.length > 0) {
+        console.log('Zones chargées:', existingZones);
+    }
+</script>
 <div class="container mt-4">
     <div class="row justify-content-center">
         <div class="col-lg-10">
@@ -26,42 +67,56 @@
                             <textarea class="form-control" id="description" name="description" rows="3">{{ exercise.description }}</textarea>
                         </div>
 
-                        <!-- Image de l'exercice (optionnelle) -->
-                        <div class="mb-4">
-                            <label for="exercise_image" class="form-label">Image de l'exercice (optionnelle)</label>
-                            {% if exercise.image_path %}
-                            <div class="mb-2">
-                                <img src="{{ cloud_storage.get_cloudinary_url(exercise.image_path) }}" 
-                                     alt="Image actuelle" class="img-thumbnail" style="max-height: 150px;">
-                                <p class="text-muted small">Image actuelle</p>
-                            </div>
-                            {% endif %}
-                            <input type="file" class="form-control" id="exercise_image" name="exercise_image" 
-                                   accept="image/jpeg,image/jpg,image/png,image/gif" onchange="previewImage(this)">
-                            <div class="form-text">Formats acceptés : JPG, PNG, GIF (max 5MB)</div>
-                            <div id="image-preview" class="mt-2"></div>
-                        </div>
+                        <!-- Note: Le champ d'image optionnelle a été supprimé pour éviter la confusion avec l'image principale à légender -->
+                        <input type="hidden" name="remove_exercise_image" value="true">
+
 
                         <!-- INTERFACES ANCIENNES SUPPRIMÉES - Seule l'interface moderne ci-dessous est conservée -->
 
                         <!-- ===== INTERFACE INTERACTIVE MODERNE ===== -->
                         
-                        <!-- Image principale pour l'étiquetage -->
+                        <!-- Section d'upload d'image principale à légender -->
                         <div class="mb-4">
                             <h5 class="text-primary">
-                                <i class="fas fa-image"></i> Image principale à étiqueter
+                                <i class="fas fa-image"></i> Image principale à légender
                             </h5>
-                            {% if content and content.main_image %}
-                            <div class="mb-3">
-                                <img src="{{ cloud_storage.get_cloudinary_url(content.main_image) }}" 
-                                     alt="Image principale actuelle" class="img-thumbnail" style="max-height: 200px;">
-                                <p class="text-muted small">Image principale actuelle</p>
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i>
+                                <strong>Instructions :</strong> Téléversez l'image principale sur laquelle les élèves placeront les étiquettes.
                             </div>
+                            
+                            <!-- Affichage de l'image actuelle si elle existe -->
+                            {% if content and content.main_image %}
+                            <div class="current-image mb-3" id="current-image-container">
+                                <p class="text-muted mb-2">Image principale actuelle :</p>
+                                <img src="{{ content.main_image }}?v={{ range(100000, 999999) | random }}" 
+                                     alt="Image principale" 
+                                     onerror="this.onerror=null; this.src='/static/images/placeholder-image.png'; this.style.opacity='0.7';"
+                                     style="max-width: 300px; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                <div class="mt-2">
+                                    <small class="text-muted">Fichier : {{ content.main_image }}</small>
+                                </div>
+                                <div class="mt-2">
+                                    <button type="button" class="btn btn-danger btn-sm" id="remove-main-image-btn">
+                                        <i class="fas fa-trash"></i> Supprimer l'image
+                                    </button>
+                                </div>
+                            </div>
+                            <input type="hidden" name="remove_main_image" id="remove_main_image" value="false">
                             {% endif %}
-                            <input type="file" class="form-control" id="main_image" name="main_image" 
-                                   accept="image/jpeg,image/jpg,image/png,image/gif" onchange="previewMainImage(this)">
-                            <div class="form-text">Image sur laquelle les étiquettes seront placées (laissez vide pour conserver l'actuelle)</div>
-                            <div id="main-image-preview" class="mt-2"></div>
+                            
+                            <input type="file" class="form-control" id="main_image" name="main_image" accept="image/*" onchange="previewMainImage(this)">
+                            <div class="form-text">
+                                {% if content and content.main_image %}
+                                    Sélectionnez une nouvelle image pour remplacer l'image actuelle, ou laissez vide pour conserver l'image existante.
+                                {% else %}
+                                    Ajoutez l'image principale sur laquelle les élèves placeront les étiquettes (formats acceptés : JPG, PNG, GIF).
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Zone de prévisualisation pour nouvelle image -->
+                            <div id="main-image-preview" class="mt-3"></div>
+                            <div id="image-upload-status" class="form-text"></div>
                         </div>
                         
                         <!-- Étiquettes disponibles -->
@@ -78,7 +133,7 @@
                                 <!-- Les étiquettes existantes seront chargées ici -->
                             </div>
                             
-                            <button type="button" id="add-label-btn" class="btn btn-success">
+                            <button type="button" id="add-label-btn" class="btn btn-success" onclick="addNewLabel()">
                                 <i class="fas fa-plus"></i> Ajouter une étiquette
                             </button>
                         </div>
@@ -98,7 +153,15 @@
                                 {% if content and content.main_image %}
                                 <div class="position-relative d-inline-block">
                                     <img id="main-image" 
-                                         src="{{ cloud_storage.get_cloudinary_url(content.main_image) }}" 
+                                         src="{% if content.main_image.startswith('/static/uploads/') %}
+                                                {{ url_for('uploaded_file', filename=content.main_image.replace('/static/uploads/','').lstrip('/') ) }}
+                                              {% elif content.main_image.startswith('/static/') %}
+                                                {{ content.main_image }}
+                                              {% elif content.main_image.startswith('/') %}
+                                                {{ content.main_image }}
+                                              {% else %}
+                                                {{ get_image_url(content.main_image, 'image_labeling') }}
+                                              {% endif %}" 
                                          alt="Image à légender" 
                                          class="img-fluid border rounded"
                                          style="max-width: 100%; cursor: crosshair;">
@@ -138,36 +201,110 @@
                             </a>
                         </div>
                         <script>
-// Variables globales pour l'interface interactive
+// VERSION SIMPLIFIÉE FINALE - Cache Bypass 2025
+console.log('=== SCRIPT FINAL CACHE BYPASS ===');
+
+// Attendre que la page soit complètement chargée
+window.addEventListener('load', function() {
+    console.log('=== PAGE CHARGÉE - RECHERCHE BOUTON ===');
+    
+    // Rechercher le bouton de suppression
+    const btn = document.getElementById('remove-main-image-btn');
+    console.log('Bouton trouvé:', btn);
+    
+    if (btn) {
+        console.log('=== AJOUT ÉVÉNEMENT CLIC ===');
+        btn.onclick = function(e) {
+            e.preventDefault();
+            console.log('=== CLIC DÉTECTÉ ===');
+            
+            // Suppression directe sans confirm() pour éviter les problèmes
+            console.log('=== SUPPRESSION AUTOMATIQUE ===');
+            
+            // Marquer pour suppression
+            const hiddenField = document.getElementById('remove_main_image');
+            if (hiddenField) {
+                hiddenField.value = 'true';
+                console.log('Champ marqué:', hiddenField.value);
+            }
+            
+            // Masquer l'image principale
+            const imgContainer = document.querySelector('.mb-3');
+            const img = document.querySelector('img.img-thumbnail');
+            if (imgContainer && imgContainer.querySelector('img')) {
+                imgContainer.style.display = 'none';
+                console.log('Container image masqué');
+            } else if (img) {
+                img.style.display = 'none';
+                console.log('Image directe masquée');
+            }
+            
+            // Masquer le bouton
+            btn.style.display = 'none';
+            
+            // Afficher message
+            const msg = document.createElement('div');
+            msg.className = 'alert alert-success';
+            msg.innerHTML = '✓ Image marquée pour suppression';
+            btn.parentNode.appendChild(msg);
+            
+            console.log('=== SUPPRESSION TERMINÉE ===');
+        };
+    } else {
+        console.log('=== BOUTON NON TROUVÉ ===');
+    }
+});
+
+// Fonction de prévisualisation d'image
+function previewMainImage(input) {
+    console.log('=== PRÉVISUALISATION IMAGE ===');
+    const preview = document.getElementById('main-image-preview');
+    
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.innerHTML = `
+                <div class="mt-3">
+                    <img src="${e.target.result}" class="img-thumbnail" style="max-height: 200px;" alt="Nouvelle image">
+                    <p class="text-success small">Nouvelle image sélectionnée</p>
+                </div>
+            `;
+            console.log('Nouvelle image prévisualisée');
+        };
+        reader.readAsDataURL(input.files[0]);
+    } else {
+        preview.innerHTML = '';
+    }
+}
+
+// Fonction de base pour compatibilité
+function updateLabelsDisplay() { console.log('updateLabelsDisplay appelée'); }
+function updateZonesDisplay() { console.log('updateZonesDisplay appelée'); }
+function updateHiddenFields() { console.log('updateHiddenFields appelée'); }
+function setupEventListeners() { console.log('setupEventListeners appelée'); }
+
+// Variables globales minimales
 let labels = [];
 let zones = [];
 let selectedLabelIndex = -1;
 
-// Initialisation au chargement de la page
+// Initialisation DOMContentLoaded pour compatibilité
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('[IMAGE_LABELING_EDIT] Initialisation de l\'interface');
+    console.log('DOMContentLoaded - Mode simplifié');
     
-    // Charger les étiquettes existantes
-    {% if content and content.labels %}
-        {% for label in content.labels %}
-        labels.push("{{ label }}");
-        {% endfor %}
-    {% endif %}
-    
-    // Charger les zones existantes
-    {% if content and content.zones %}
-        {% for zone in content.zones %}
-        zones.push({
-            x: {{ zone.x }},
-            y: {{ zone.y }},
-            label: "{{ zone.label }}"
-        });
-        {% endfor %}
-    {% endif %}
+    // Charger les données depuis les variables générées côté serveur
+    if (typeof existingLabels !== 'undefined') {
+        labels = existingLabels;
+    }
+    if (typeof existingZones !== 'undefined') {
+        zones = existingZones;
+    }
     
     console.log('[IMAGE_LABELING_EDIT] Étiquettes chargées:', labels);
     console.log('[IMAGE_LABELING_EDIT] Zones chargées:', zones);
     
+    // Initialiser l'interface interactive
+    // Pas besoin d'appeler initializeLabelsInterface() car updateLabelsDisplay() fait déjà ce travail
     // Initialiser l'interface
     updateLabelsDisplay();
     updateZonesDisplay();
@@ -177,18 +314,21 @@ document.addEventListener('DOMContentLoaded', function() {
     setupEventListeners();
 });
 
+// Fonction directe pour ajouter une étiquette (appelée par onclick)
+function addNewLabel() {
+    console.log('[IMAGE_LABELING_EDIT] Fonction addNewLabel appelée');
+    const labelText = prompt('Entrez le nom de l\'étiquette :');
+    if (labelText && labelText.trim()) {
+        labels.push(labelText.trim());
+        updateLabelsDisplay();
+        updateHiddenFields();
+        console.log('[IMAGE_LABELING_EDIT] Étiquette ajoutée:', labelText);
+    }
+}
+
 // Configuration des événements
 function setupEventListeners() {
-    // Bouton d'ajout d'étiquette
-    document.getElementById('add-label-btn').addEventListener('click', function() {
-        const labelText = prompt('Entrez le nom de l\'étiquette :');
-        if (labelText && labelText.trim()) {
-            labels.push(labelText.trim());
-            updateLabelsDisplay();
-            updateHiddenFields();
-            console.log('[IMAGE_LABELING_EDIT] Étiquette ajoutée:', labelText);
-        }
-    });
+    // Code V3 supprimé pour éviter les conflits
     
     // Clic sur l'image pour placer des zones
     const mainImage = document.getElementById('main-image');
@@ -203,11 +343,14 @@ function setupEventListeners() {
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
             
+            // Stocker l'étiquette sélectionnée avant de réinitialiser l'index
+            const selectedLabel = labels[selectedLabelIndex];
+            
             // Ajouter la zone
             zones.push({
                 x: Math.round(x),
                 y: Math.round(y),
-                label: labels[selectedLabelIndex]
+                label: selectedLabel
             });
             
             updateZonesDisplay();
@@ -215,7 +358,7 @@ function setupEventListeners() {
             selectedLabelIndex = -1; // Désélectionner
             updateLabelsDisplay(); // Rafraîchir l'affichage
             
-            console.log('[IMAGE_LABELING_EDIT] Zone ajoutée:', { x: Math.round(x), y: Math.round(y), label: labels[selectedLabelIndex] });
+            console.log('[IMAGE_LABELING_EDIT] Zone ajoutée:', { x: Math.round(x), y: Math.round(y), label: selectedLabel });
         });
     }
 }
@@ -249,13 +392,27 @@ function updateLabelsDisplay() {
 
 // Suppression d'étiquette
 function removeLabel(index) {
+    // Stocker l'étiquette avant de la supprimer pour pouvoir filtrer les zones
+    const labelToRemove = labels[index];
+    
+    // Supprimer l'étiquette
     labels.splice(index, 1);
+    
     // Supprimer aussi les zones associées à cette étiquette
-    zones = zones.filter(zone => zone.label !== labels[index]);
+    zones = zones.filter(zone => zone.label !== labelToRemove);
+    
+    // Si l'étiquette supprimée était sélectionnée, désélectionner
+    if (selectedLabelIndex === index) {
+        selectedLabelIndex = -1;
+    } else if (selectedLabelIndex > index) {
+        // Ajuster l'index de sélection si une étiquette précédente a été supprimée
+        selectedLabelIndex--;
+    }
+    
     updateLabelsDisplay();
     updateZonesDisplay();
     updateHiddenFields();
-    console.log('[IMAGE_LABELING_EDIT] Étiquette supprimée:', index);
+    console.log('[IMAGE_LABELING_EDIT] Étiquette supprimée:', labelToRemove);
 }
 
 // Mise à jour de l'affichage des zones
@@ -375,15 +532,89 @@ function previewImage(input) {
     }
 }
 
-// Prévisualisation image principale
+// Fonction de prévisualisation image principale
 function previewMainImage(input) {
     const preview = document.getElementById('main-image-preview');
     const mainImage = document.getElementById('main-image');
+    const statusDiv = document.getElementById('image-upload-status');
+    
+    // Réinitialiser le statut
+    if (statusDiv) {
+        statusDiv.textContent = '';
+    }
+    
+    // Masquer l'image actuelle si une nouvelle est sélectionnée
+    const currentImageContainer = document.getElementById('current-image-container');
+    if (currentImageContainer && input.files && input.files[0]) {
+        currentImageContainer.style.opacity = '0.5';
+        const noticeDiv = document.createElement('div');
+        noticeDiv.className = 'alert alert-info mt-2';
+        noticeDiv.innerHTML = '<i class="fas fa-info-circle"></i> L\'image actuelle sera remplacée après sauvegarde';
+        currentImageContainer.appendChild(noticeDiv);
+    }
     
     if (input.files && input.files[0]) {
+        // Vérifier la taille du fichier (max 5MB)
+        if (input.files[0].size > 5 * 1024 * 1024) {
+            if (preview) {
+                preview.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i> L'image est trop volumineuse (max: 5MB).
+                        Veuillez choisir une image plus petite.
+                    </div>
+                `;
+            }
+            if (statusDiv) {
+                statusDiv.textContent = 'Erreur: L\'image est trop volumineuse (max 5MB)';
+                statusDiv.className = 'form-text text-danger mt-2';
+            }
+            input.value = ''; // Réinitialiser l'input
+            return;
+        }
+        
+        // Vérifier le type de fichier
+        const fileType = input.files[0].type;
+        if (!['image/jpeg', 'image/jpg', 'image/png', 'image/gif'].includes(fileType)) {
+            if (preview) {
+                preview.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i> Format d'image non supporté.
+                        Utilisez JPG, PNG ou GIF.
+                    </div>
+                `;
+            }
+            if (statusDiv) {
+                statusDiv.textContent = 'Erreur: Format d\'image non supporté (jpg, png, gif uniquement)';
+                statusDiv.className = 'form-text text-danger mt-2';
+            }
+            input.value = ''; // Réinitialiser l'input
+            return;
+        }
+        
+        // Si le bouton de suppression existe, réinitialiser son état
+        const removeMainImageInput = document.getElementById('remove_main_image');
+        if (removeMainImageInput) {
+            removeMainImageInput.value = 'false';
+        }
+        
         const reader = new FileReader();
         reader.onload = function(e) {
-            preview.innerHTML = `<img src="${e.target.result}" class="img-thumbnail mt-2" style="max-height: 200px;">`;
+            if (preview) {
+                preview.innerHTML = `
+                    <div class="border rounded p-3" style="background-color: #f8f9fa;">
+                        <p class="text-success small mb-2"><i class="fas fa-check-circle"></i> Nouvelle image sélectionnée :</p>
+                        <img src="${e.target.result}" class="img-thumbnail" style="max-height: 200px; max-width: 300px;">
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <p class="text-muted small mb-0">Cette image sera enregistrée après sauvegarde</p>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="cancelMainImageUpload()">Annuler</button>
+                        </div>
+                    </div>
+                `;
+            }
+            if (statusDiv) {
+                statusDiv.textContent = 'Image prête à être téléversée';
+                statusDiv.className = 'form-text text-success mt-2';
+            }
             
             // Mettre à jour aussi l'image interactive si elle existe
             if (mainImage) {
@@ -391,6 +622,41 @@ function previewMainImage(input) {
             }
         };
         reader.readAsDataURL(input.files[0]);
+    } else {
+        if (preview) {
+            preview.innerHTML = '';
+        }
+        
+        // Restaurer l'affichage de l'image actuelle
+        if (currentImageContainer) {
+            currentImageContainer.style.opacity = '1';
+            const noticeDiv = currentImageContainer.querySelector('.alert');
+            if (noticeDiv) {
+                noticeDiv.remove();
+            }
+        }
+    }
+}
+
+// Fonction pour annuler l'upload d'image principale
+function cancelMainImageUpload() {
+    const input = document.getElementById('main_image');
+    if (input) {
+        input.value = '';
+    }
+    const preview = document.getElementById('main-image-preview');
+    if (preview) {
+        preview.innerHTML = '';
+    }
+    
+    // Restaurer l'affichage de l'image actuelle
+    const currentImageContainer = document.getElementById('current-image-container');
+    if (currentImageContainer) {
+        currentImageContainer.style.opacity = '1';
+        const noticeDiv = currentImageContainer.querySelector('.alert');
+        if (noticeDiv) {
+            noticeDiv.remove();
+        }
     }
 }
 </script>

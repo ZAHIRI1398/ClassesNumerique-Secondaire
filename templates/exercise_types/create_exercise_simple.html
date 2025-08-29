@@ -772,7 +772,7 @@
                         <div class="card mb-3">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <h6><i class="bi bi-tags"></i> Étiquettes</h6>
-                                <button type="button" class="btn btn-sm btn-success" onclick="addLabelCreate()">
+                                <button type="button" class="btn btn-sm btn-success" onclick="addLabelCreate(); return false;">
                                     <i class="bi bi-plus"></i> Ajouter
                                 </button>
                             </div>
@@ -1604,6 +1604,50 @@ function testFormSubmission() {
 
 // ===== FONCTIONS POUR ÉTIQUETAGE D'IMAGE =====
 
+// Fonction utilitaire pour normaliser les noms de fichiers
+function normalizeImagePath(path) {
+    if (!path) return path;
+    
+    // Si c'est déjà un chemin normalisé (commence par /static/uploads/), retourner tel quel
+    if (path.startsWith('/static/uploads/')) {
+        return path;
+    }
+    
+    let filename;
+    
+    // Si c'est un chemin Windows, le convertir en chemin web
+    if (path.includes('\\') || path.includes(':')) {
+        // Extraire uniquement le nom du fichier
+        filename = path.split('\\').pop().split('/').pop();
+    } else {
+        // Utiliser le chemin tel quel s'il ne s'agit pas d'un chemin Windows
+        filename = path.split('/').pop();
+    }
+    
+    // Nettoyer le nom du fichier
+    filename = filename
+        .toLowerCase()
+        .replace(/\s+/g, '_')          // Remplacer les espaces par des underscores
+        .replace(/[^a-z0-9_.-]/g, '')  // Supprimer les caractères spéciaux
+        .replace(/_{2,}/g, '_')         // Remplacer les séquences d'underscores par un seul
+        .replace(/^_+|_+$/g, '')        // Supprimer les underscores en début et fin
+        .replace(/\.[^/.]+$/, '')       // Supprimer l'extension existante
+        .substring(0, 100);             // Limiter la longueur du nom de fichier
+    
+    // S'assurer que le nom de fichier a une extension valide
+    const extension = path.match(/\.([^.]+)$/);
+    const validExtensions = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'];
+    
+    if (extension && validExtensions.includes(extension[1].toLowerCase())) {
+        filename += extension[0];  // Conserver l'extension originale si valide
+    } else {
+        filename += '.jpg';  // Sinon, ajouter .jpg par défaut
+    }
+    
+    // Retourner le chemin complet normalisé
+    return '/static/uploads/' + filename;
+}
+
 // Fonction pour ajouter une étiquette
 function addImageLabel() {
     const container = document.getElementById('labels_container');
@@ -1873,6 +1917,37 @@ function previewMainImageCreate(input) {
     console.log('[CREATE_DEBUG] Prévisualisation image principale');
     const file = input.files[0];
     if (file) {
+        // Vérifier la taille du fichier (max 5MB)
+        const maxSize = 5 * 1024 * 1024; // 5MB en octets
+        if (file.size > maxSize) {
+            alert('Le fichier est trop volumineux. La taille maximale autorisée est de 5MB.');
+            input.value = ''; // Réinitialiser l'input
+            return;
+        }
+        
+        // Vérifier le type de fichier
+        const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+        if (!validTypes.includes(file.type)) {
+            alert('Format de fichier non supporté. Veuillez utiliser une image au format JPG, PNG ou GIF.');
+            input.value = ''; // Réinitialiser l'input
+            return;
+        }
+        
+        // Normaliser le nom du fichier
+        const normalizedFileName = normalizeImagePath(file.name);
+        if (file.name !== normalizedFileName) {
+            const newFile = new File([file], normalizedFileName, {
+                type: file.type,
+                lastModified: file.lastModified
+            });
+            
+            // Mettre à jour l'input avec le fichier renommé
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(newFile);
+            input.files = dataTransfer.files;
+            
+            console.log('[CREATE_DEBUG] Nom du fichier normalisé :', normalizedFileName);
+        }
         const reader = new FileReader();
         reader.onload = function(e) {
             // Afficher l'aperçu basique
@@ -1899,11 +1974,36 @@ function previewMainImageCreate(input) {
 // Supprimer l'image principale (création)
 function removeMainImageCreate() {
     console.log('[CREATE_DEBUG] Suppression image principale');
-    document.getElementById('main_image_input_create').value = '';
-    document.getElementById('main_image_preview_create').style.display = 'none';
-    document.getElementById('interactive_image_editor_create').style.display = 'none';
+    const input = document.getElementById('main_image_input');
     
-    // Réinitialiser les données
+    // Réinitialiser complètement l'input file
+    input.value = '';
+    input.type = 'file';
+    
+    // Masquer l'aperçu
+    const preview = document.getElementById('main_image_preview_create');
+    if (preview) {
+        preview.style.display = 'none';
+    }
+    
+    // Réinitialiser l'image de prévisualisation
+    const previewImg = document.getElementById('main_image_preview_img_create');
+    if (previewImg) {
+        previewImg.src = '';
+    }
+    
+    // Réinitialiser l'éditeur interactif
+    const editor = document.getElementById('interactive_image_editor_create');
+    if (editor) {
+        editor.style.display = 'none';
+        editor.innerHTML = '';
+    }
+    
+    // Réinitialiser les variables globales
+    createLabels = [];
+    createZones = [];
+    
+    console.log('[CREATE_DEBUG] Image principale supprimée et variables réinitialisées');  // Réinitialiser les données
     createLabels = [];
     createZones = [];
     updateLabelsListCreate();
@@ -1914,20 +2014,24 @@ function removeMainImageCreate() {
 // Ajouter une étiquette (création)
 function addLabelCreate() {
     console.log('[CREATE_DEBUG] Ajout d\'une étiquette');
-    const labelText = prompt('Entrez le texte de l\'étiquette :');
     
-    if (!labelText || !labelText.trim()) {
-        console.log('[CREATE_DEBUG] Ajout annulé - texte vide');
-        return;
-    }
-    
-    const trimmedText = labelText.trim();
-    createLabels.push(trimmedText);
-    console.log('[CREATE_DEBUG] Étiquette ajoutée:', trimmedText);
-    console.log('[CREATE_DEBUG] Total étiquettes:', createLabels.length);
-    
-    updateLabelsListCreate();
-    updateHiddenFieldsCreate();
+    // Utiliser setTimeout pour éviter le conflit avec les événements
+    setTimeout(function() {
+        const labelText = prompt('Entrez le texte de l\'étiquette :');
+        
+        if (!labelText || !labelText.trim()) {
+            console.log('[CREATE_DEBUG] Ajout annulé - texte vide');
+            return;
+        }
+        
+        const trimmedText = labelText.trim();
+        createLabels.push(trimmedText);
+        console.log('[CREATE_DEBUG] Étiquette ajoutée:', trimmedText);
+        console.log('[CREATE_DEBUG] Total étiquettes:', createLabels.length);
+        
+        updateLabelsListCreate();
+        updateHiddenFieldsCreate();
+    }, 100);
 }
 
 // Supprimer une étiquette (création)
@@ -2346,6 +2450,30 @@ function createZoneMarker(zone) {
 
 // Mettre à jour les champs cachés du formulaire
 function updateHiddenFormFields() {
+    console.log('[DEBUG] Mise à jour des champs cachés du formulaire');
+    
+    // Normaliser les noms de fichiers dans les étiquettes et zones
+    const mainImageInput = document.getElementById('main_image_input');
+    if (mainImageInput && mainImageInput.files.length > 0) {
+        const file = mainImageInput.files[0];
+        const normalizedFileName = normalizeImagePath(file.name);
+        
+        if (file.name !== normalizedFileName) {
+            console.log('[DEBUG] Normalisation du nom du fichier image :', file.name, '->', normalizedFileName);
+            
+            // Créer un nouveau fichier avec le nom normalisé
+            const newFile = new File([file], normalizedFileName, {
+                type: file.type,
+                lastModified: file.lastModified
+            });
+            
+            // Mettre à jour l'input avec le fichier renommé
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(newFile);
+            mainImageInput.files = dataTransfer.files;
+        }
+    }
+    
     // Supprimer les anciens champs cachés
     document.querySelectorAll('input[name^="image_labels"], input[name^="zone_x"], input[name^="zone_y"], input[name^="zone_label"]').forEach(input => {
         if (input.closest('#interactive_image_editor')) return; // Ne pas supprimer ceux de l'éditeur
@@ -2361,9 +2489,11 @@ function updateHiddenFormFields() {
         input.name = 'image_labels[]';
         input.value = label;
         form.appendChild(input);
+        
+        console.log('[DEBUG] Ajout étiquette :', label);
     });
     
-    // Ajouter les zones
+    // Ajouter les zones avec normalisation des chemins d'image
     imageLabelingZones.forEach(zone => {
         const inputX = document.createElement('input');
         inputX.type = 'hidden';
@@ -2380,9 +2510,21 @@ function updateHiddenFormFields() {
         const inputLabel = document.createElement('input');
         inputLabel.type = 'hidden';
         inputLabel.name = 'zone_label[]';
-        inputLabel.value = zone.label;
+        
+        // Normaliser le label (au cas où ce serait un chemin d'image)
+        inputLabel.value = typeof zone.label === 'string' ? normalizeImagePath(zone.label) : zone.label;
         form.appendChild(inputLabel);
+        
+        console.log('[DEBUG] Ajout zone :', { x: zone.x, y: zone.y, label: inputLabel.value });
     });
+    
+    // Vérifier si l'image principale est définie
+    const mainImagePreview = document.getElementById('main_image_preview');
+    if (mainImagePreview && mainImagePreview.style.display !== 'none') {
+        console.log('[DEBUG] Image principale détectée dans le formulaire');
+    } else {
+        console.log('[DEBUG] Aucune image principale détectée');
+    }
 }
 
 // Fonction pour supprimer l'image principale

@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, current_app, session
 from traceback import format_exc as exc_info
 from flask_login import login_required, current_user
+import cloud_storage_no_cloudinary as cloud_storage
 from models import db, Exercise, ExerciseAttempt, User
 from sqlalchemy import desc
 from decorators import teacher_required
@@ -9,11 +10,14 @@ from werkzeug.utils import secure_filename
 import json
 import random
 import os
+import time
+from utils.image_utils_no_normalize import normalize_image_path
+from normalize_pairs_exercise_paths import normalize_pairs_exercise_content
 
 bp = Blueprint('exercise', __name__)
 
 # Fonctions helper pour l'upload de fichiers
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp3', 'wav', 'ogg', 'm4a'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -134,8 +138,13 @@ def create_exercise():
                         image_path = os.path.join(upload_folder, unique_filename)
                         image_file.save(image_path)
                         
-                        # Ajouter le chemin de l'image au contenu
-                        content['image'] = f'static/uploads/{unique_filename}'
+                        # CORRECTION: Ajouter le préfixe /static/ pour cohérence
+                        normalized_path = f'/static/exercises/{unique_filename}'
+                        
+                        # Ajouter le chemin normalisé de l'image au contenu
+                        content['image'] = normalized_path
+                        # Stocker également dans exercise_image_path pour cohérence
+                        exercise_image_path = normalized_path
                         current_app.logger.debug(f'Image QCM sauvegardée: {content["image"]}')
 
             elif exercise_type == 'qcm_multichoix':
@@ -201,8 +210,13 @@ def create_exercise():
                         image_path = os.path.join(upload_folder, unique_filename)
                         image_file.save(image_path)
                         
-                        # Ajouter le chemin de l'image au contenu
-                        content['image'] = f'static/uploads/{unique_filename}'
+                        # CORRECTION: Ajouter le préfixe /static/ pour cohérence
+                        normalized_path = f'/static/exercises/{unique_filename}'
+                        
+                        # Ajouter le chemin normalisé de l'image au contenu
+                        content['image'] = normalized_path
+                        # Stocker également dans exercise_image_path pour cohérence
+                        exercise_image_path = normalized_path
                         current_app.logger.debug(f'Image QCM Multichoix sauvegardée: {content["image"]}')
 
             elif exercise_type == 'word_search':
@@ -265,8 +279,9 @@ def create_exercise():
                 for i, sentence in enumerate(sentences):
                     audio_file = request.files.get(f'dictation_audio_{i}')
                     if audio_file and audio_file.filename:
-                        # Sauvegarder le fichier audio
-                        filename = secure_filename(f'dictation_{exercise_id}_{i}_{audio_file.filename}')
+                        # Sauvegarder le fichier audio avec un timestamp unique
+                        timestamp = int(time.time())
+                        filename = secure_filename(f'dictation_{timestamp}_{i}_{audio_file.filename}')
                         audio_path = os.path.join('static/uploads/audio', filename)
                         
                         # Créer le dossier s'il n'existe pas
@@ -327,8 +342,13 @@ def create_exercise():
                         image_path = os.path.join(upload_folder, unique_filename)
                         image_file.save(image_path)
                         
-                        # Ajouter le chemin de l'image au contenu
-                        content['image'] = f'static/uploads/{unique_filename}'
+                        # CORRECTION: Ajouter le préfixe /static/ pour cohérence
+                        normalized_path = f'/static/exercises/{unique_filename}'
+                        
+                        # Ajouter le chemin normalisé de l'image au contenu
+                        content['image'] = normalized_path
+                        # Stocker également dans exercise_image_path pour cohérence
+                        exercise_image_path = normalized_path
                         current_app.logger.debug(f'Image Texte à trous sauvegardée: {content["image"]}')
                 
             elif exercise_type == 'drag_and_drop':
@@ -398,7 +418,7 @@ def create_exercise():
                                 unique_filename = generate_unique_filename(filename)
                                 file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_filename)
                                 file.save(file_path)
-                                left_content = f'/static/uploads/{unique_filename}'
+                                left_content = f'/static/exercises/{unique_filename}'
                         
                         # Si pas de fichier, utiliser l'URL
                         if not left_content:
@@ -417,7 +437,7 @@ def create_exercise():
                                 unique_filename = generate_unique_filename(filename)
                                 file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_filename)
                                 file.save(file_path)
-                                right_content = f'/static/uploads/{unique_filename}'
+                                right_content = f'/static/exercises/{unique_filename}'
                         
                         # Si pas de fichier, utiliser l'URL
                         if not right_content:
@@ -437,6 +457,9 @@ def create_exercise():
                     return redirect(request.url)
                 
                 content['pairs'] = pairs
+                
+                # Normaliser les chemins d'images dans le contenu des paires
+                content = normalize_pairs_exercise_content(content)
 
             elif exercise_type == 'drag_and_drop':
                 # Récupérer les éléments à glisser
@@ -534,11 +557,15 @@ def create_exercise():
                         
                         # CORRECTION: Sauvegarder dans exercise_image_path pour que le template puisse l'afficher
                         if not exercise_image_path:  # Ne pas écraser si déjà défini
-                            exercise_image_path = unique_filename
+                            # CORRECTION: Ajouter le préfixe /static/ pour cohérence
+                            normalized_path = f'/static/exercises/{unique_filename}'
+                            
+                            # Stocker le chemin normalisé
+                            exercise_image_path = normalized_path
                         
                         # Ajouter le chemin de l'image au contenu (pour compatibilité)
-                        content['image'] = f'static/uploads/{unique_filename}'
-                        current_app.logger.debug(f'Image Souligner les mots sauvegardée: {unique_filename}')
+                        content['image'] = exercise_image_path
+                        current_app.logger.debug(f'Image Souligner les mots sauvegardée: {exercise_image_path}')
 
             elif exercise_type == 'image_labeling':
                 current_app.logger.debug('Traitement d\'un exercice d\'étiquetage d\'image')
@@ -559,7 +586,7 @@ def create_exercise():
                         image_path = os.path.join(upload_folder, unique_filename)
                         image_file.save(image_path)
                         
-                        main_image_path = f'static/uploads/{unique_filename}'
+                        main_image_path = f'/static/uploads/{unique_filename}'  # Ajout du slash initial pour cohérence
                         current_app.logger.debug(f'Image principale étiquetage sauvegardée: {unique_filename}')
                 
                 if not main_image_path:
@@ -740,6 +767,36 @@ def create_exercise():
                     'words': words
                 }
                 
+                # CORRECTION: Traitement de l'image spécifique pour word_placement
+                if 'word_placement_image' in request.files:
+                    image_file = request.files['word_placement_image']
+                    if image_file and image_file.filename != '' and allowed_file(image_file.filename):
+                        # Sécuriser le nom du fichier
+                        filename = secure_filename(image_file.filename)
+                        
+                        # Ajouter un timestamp pour éviter les conflits de noms
+                        unique_filename = f"{int(time.time())}_{filename}"
+                        
+                        # Créer le répertoire s'il n'existe pas
+                        upload_folder = os.path.join('static', 'uploads', 'word_placement')
+                        os.makedirs(upload_folder, exist_ok=True)
+                        
+                        # Sauvegarder l'image
+                        image_path = os.path.join(upload_folder, unique_filename)
+                        image_file.save(image_path)
+                        
+                        # Normaliser le chemin pour la base de données
+                        normalized_path = f'/static/uploads/word_placement/{unique_filename}'
+                        
+                        # Stocker le chemin normalisé pour la base de données
+                        exercise_image_path = normalized_path
+                        
+                        # Ajouter le chemin de l'image au contenu JSON
+                        content['image'] = normalized_path
+                        
+                        print(f'[WORD_PLACEMENT_CREATE_DEBUG] Image sauvegardée: {normalized_path}')
+                        current_app.logger.debug(f'Image Word Placement sauvegardée: {normalized_path}')
+                
                 print(f'[WORD_PLACEMENT_CREATE_DEBUG] Contenu JSON généré: {content}')
                 current_app.logger.debug(f'Exercice Mots à placer créé avec {len(sentences)} phrases et {len(words)} mots')
 
@@ -759,8 +816,11 @@ def create_exercise():
                     image_path = os.path.join(upload_folder, unique_filename)
                     image_file.save(image_path)
                     
-                    # Stocker le chemin relatif pour la base de données
-                    exercise_image_path = unique_filename
+                    # CORRECTION: Ajouter le préfixe /static/ pour cohérence
+                    normalized_path = f'/static/exercises/{unique_filename}'
+                    
+                    # Stocker le chemin normalisé pour la base de données
+                    exercise_image_path = normalized_path
                     current_app.logger.info(f'Image exercice sauvegardée: {exercise_image_path}')
 
             # Créer l'exercice
@@ -774,7 +834,24 @@ def create_exercise():
                 teacher_id=current_user.id,
                 image_path=exercise_image_path
             )
+            
+            # Synchroniser exercise.image_path avec content['main_image'] pour les exercices image_labeling
+            if exercise_type == 'image_labeling' and 'main_image' in content:
+                exercise.image_path = content['main_image']  # Assurer la cohérence
 
+            # Vérifier si l'utilisateur a les permissions nécessaires
+            if not current_user.is_teacher or current_user.id != exercise.teacher_id:
+                flash('Vous n\'avez pas la permission de modifier cet exercice.', 'error')
+                return redirect(url_for('exercise.exercise_library'))
+            
+            # Vérifier si le template existe
+            template = f'exercise_types/{exercise.exercise_type}_edit.html'
+            try:
+                current_app.jinja_env.get_template(template)
+            except Exception:
+                flash('Une erreur est survenue : le template de modification pour ce type d\'exercice est manquant.', 'error')
+                return redirect(url_for('exercise.exercise_library'))
+            
             db.session.add(exercise)
             db.session.commit()
             
@@ -815,18 +892,9 @@ def create_exercise():
                 current_app.logger.error("Form data recue: [Unicode encoding error]")
             current_app.logger.error(f"Files recus: {list(request.files.keys())}")
             current_app.logger.error("=== FIN ERREUR ===")
-
-
-        if not current_user.is_teacher or current_user.id != exercise.teacher_id:
-            flash('Vous n\'avez pas la permission de modifier cet exercice.', 'error')
-            return redirect(url_for('exercise.exercise_library'))
-        
-        # Vérifier si le template existe
-        template = f'exercise_types/{exercise.exercise_type}_edit.html'
-        try:
-            current_app.jinja_env.get_template(template)
-        except Exception:
-            flash('Une erreur est survenue : le template de modification pour ce type d\'exercice est manquant.', 'error')
+            
+            # En cas d'erreur, rediriger vers la bibliothèque d'exercices
+            flash('Une erreur est survenue lors de la création de l\'exercice.', 'error')
             return redirect(url_for('exercise.exercise_library'))
 
         if request.method == 'POST':
@@ -1047,7 +1115,7 @@ def create_exercise():
                                 unique_filename = generate_unique_filename(filename)
                                 file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_filename)
                                 file.save(file_path)
-                                left_content = f'/static/uploads/{unique_filename}'
+                                left_content = f'/static/exercises/{unique_filename}'
                         if not left_content:
                             left_content = request.form.get(f'pair_left_{pair_id}', '').strip()
                     else:
@@ -1062,7 +1130,7 @@ def create_exercise():
                                 unique_filename = generate_unique_filename(filename)
                                 file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_filename)
                                 file.save(file_path)
-                                right_content = f'/static/uploads/{unique_filename}'
+                                right_content = f'/static/exercises/{unique_filename}'
                         if not right_content:
                             right_content = request.form.get(f'pair_right_{pair_id}', '').strip()
                     else:
@@ -1122,7 +1190,7 @@ def create_exercise():
                                 
                                 file_path = os.path.join(audio_folder, unique_filename)
                                 file.save(file_path)
-                                audio_file = f'/static/uploads/audio/{unique_filename}'
+                                audio_file = f'/static/exercises/audio/{unique_filename}'
                                 print(f"[DICTATION_EDIT_DEBUG] Audio file {i} saved: {audio_file}")
                             else:
                                 flash(f'Le fichier audio {i+1} doit être au format MP3, WAV, OGG ou M4A.', 'error')
@@ -1199,7 +1267,7 @@ def exercise_library():
     
     exercises = []
     if has_filters:
-        # Construire la requête de base seulement si des filtres sont appliqués
+        # Construire la requête de base pour TOUS les exercices (pas seulement ceux de l'enseignant connecté)
         query = Exercise.query
         
         # Appliquer les filtres
@@ -1210,7 +1278,7 @@ def exercise_library():
         if selected_subject:
             query = query.filter(Exercise.subject == selected_subject)
         
-        # Trier par date de création décroissante
+        # Trier par date de création décroissante - TOUS les exercices de TOUS les enseignants
         exercises = query.order_by(desc(Exercise.created_at)).all()
     
     # Utiliser la liste dynamique des types d'exercices du modèle

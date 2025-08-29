@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="300" fill="#e3f2fd"/>
+  <rect x="10" y="10" width="380" height="280" fill="white" stroke="#1976d2" stroke-width="2"/>
+  <text x="200" y="100" text-anchor="middle" font-family="Arial" font-size="18" fill="#1976d2">
+    IMAGE DE TEST
+  </text>
+  <text x="200" y="130" text-anchor="middle" font-family="Arial" font-size="14" fill="#666">
+    Exercice ID 4
+  </text>
+  <text x="200" y="160" text-anchor="middle" font-family="Arial" font-size="12" fill="#999">
+    Capture d'écran 2025-08-12 174...
+  </text>
+  <text x="200" y="200" text-anchor="middle" font-family="Arial" font-size="10" fill="#999">
+    Image generee automatiquement
+  </text>
+</svg>

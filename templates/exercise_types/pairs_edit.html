@@ -1,6 +1,19 @@
 {% extends "edit_exercise.html" %}
 
 {% block exercise_content %}
+<style>
+    .image-preview {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 5px;
+        background-color: #f8f9fa;
+        margin-top: 5px;
+    }
+    .image-preview img {
+        display: block;
+        margin: 0 auto;
+    }
+</style>
 <div id="pairs-editor" class="mb-4">
     <input type="hidden" id="question_count" name="question_count" value="{{ content.pairs|length if content and content.pairs else 0 }}">
     
@@ -26,7 +39,16 @@
                                 </select>
                                 <input type="text" class="form-control" name="pair_left_{{ loop.index0 }}" 
                                        value="{{ pair.left.content }}" placeholder="Texte ou URL de l'image" required>
-                                <input type="file" class="form-control mt-2" name="pair_left_image_{{ loop.index0 }}" accept="image/*" {% if pair.left.type == 'image' %}style="display: block;"{% else %}style="display: none;"{% endif %}>
+                                <input type="file" class="form-control mt-2" name="pair_left_image_{{ loop.index0 }}" accept="image/*" {% if pair.left.type == 'image' %}style="display: block;"{% else %}style="display: none;"{% endif %} onchange="previewPairImage(this, 'left', '{{ loop.index0 }}')">
+                                
+                                <!-- Prévisualisation de l'image existante -->
+                                {% if pair.left.type == 'image' and pair.left.content %}
+                                <div class="mt-2 image-preview">
+                                    <img src="{{ get_image_url(pair.left.content, 'pairs') }}?v={{ range(100000, 999999) | random }}" 
+                                         alt="Image gauche" class="img-thumbnail" style="max-height: 100px;" 
+                                         onerror="this.onerror=null; this.src='/static/images/placeholder-image.png'; this.style.opacity='0.7';">
+                                </div>
+                                {% endif %}
                             </div>
                         </div>
                         <!-- Élément de droite -->
@@ -39,7 +61,16 @@
                                 </select>
                                 <input type="text" class="form-control" name="pair_right_{{ loop.index0 }}" 
                                        value="{{ pair.right.content }}" placeholder="Texte ou URL de l'image" required>
-                                <input type="file" class="form-control mt-2" name="pair_right_image_{{ loop.index0 }}" accept="image/*" {% if pair.right.type == 'image' %}style="display: block;"{% else %}style="display: none;"{% endif %}>
+                                <input type="file" class="form-control mt-2" name="pair_right_image_{{ loop.index0 }}" accept="image/*" {% if pair.right.type == 'image' %}style="display: block;"{% else %}style="display: none;"{% endif %} onchange="previewPairImage(this, 'right', '{{ loop.index0 }}')">
+                                
+                                <!-- Prévisualisation de l'image existante -->
+                                {% if pair.right.type == 'image' and pair.right.content %}
+                                <div class="mt-2 image-preview">
+                                    <img src="{{ get_image_url(pair.right.content, 'pairs') }}?v={{ range(100000, 999999) | random }}" 
+                                         alt="Image droite" class="img-thumbnail" style="max-height: 100px;" 
+                                         onerror="this.onerror=null; this.src='/static/images/placeholder-image.png'; this.style.opacity='0.7';">
+                                </div>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -96,7 +127,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <option value="image">Image</option>
                             </select>
                             <input type="text" class="form-control" name="pair_left_${pairCount}" placeholder="Texte ou URL de l'image" required>
-                            <input type="file" class="form-control mt-2" name="pair_left_image_${pairCount}" accept="image/*" style="display: none;">
+                            <input type="file" class="form-control mt-2" name="pair_left_image_${pairCount}" accept="image/*" style="display: none;" onchange="previewPairImage(this, 'left', ${pairCount})">
+                            <div class="mt-2 image-preview" id="left-preview-${pairCount}" style="display: none;"></div>
                         </div>
                     </div>
                     <!-- Élément de droite -->
@@ -108,7 +140,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <option value="image">Image</option>
                             </select>
                             <input type="text" class="form-control" name="pair_right_${pairCount}" placeholder="Texte ou URL de l'image" required>
-                            <input type="file" class="form-control mt-2" name="pair_right_image_${pairCount}" accept="image/*" style="display: none;">
+                            <input type="file" class="form-control mt-2" name="pair_right_image_${pairCount}" accept="image/*" style="display: none;" onchange="previewPairImage(this, 'right', ${pairCount})">
+                            <div class="mt-2 image-preview" id="right-preview-${pairCount}" style="display: none;"></div>
                         </div>
                     </div>
                         </div>
@@ -137,9 +170,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updatePairNumbers() {
         document.querySelectorAll('.pair-block').forEach((block, index) => {
+            // Mettre à jour le titre de la paire
             block.querySelector('.card-title').textContent = `Paire ${index + 1}`;
-            block.querySelector('input[name^="pair_"][name$="_first"]').name = `pair_${index}_first`;
-            block.querySelector('input[name^="pair_"][name$="_second"]').name = `pair_${index}_second`;
+            
+            // Mettre à jour les noms des champs pour les éléments de gauche
+            const leftTypeSelect = block.querySelector('select[name^="pair_left_type_"]');
+            const leftInput = block.querySelector('input[name^="pair_left_"][type="text"]');
+            const leftFileInput = block.querySelector('input[name^="pair_left_image_"]');
+            
+            if (leftTypeSelect) leftTypeSelect.name = `pair_left_type_${index}`;
+            if (leftInput) leftInput.name = `pair_left_${index}`;
+            if (leftFileInput) leftFileInput.name = `pair_left_image_${index}`;
+            
+            // Mettre à jour les noms des champs pour les éléments de droite
+            const rightTypeSelect = block.querySelector('select[name^="pair_right_type_"]');
+            const rightInput = block.querySelector('input[name^="pair_right_"][type="text"]');
+            const rightFileInput = block.querySelector('input[name^="pair_right_image_"]');
+            
+            if (rightTypeSelect) rightTypeSelect.name = `pair_right_type_${index}`;
+            if (rightInput) rightInput.name = `pair_right_${index}`;
+            if (rightFileInput) rightFileInput.name = `pair_right_image_${index}`;
+            
+            // Mettre à jour les événements onchange
+            if (leftTypeSelect) leftTypeSelect.setAttribute('onchange', `togglePairInput('left', '${index}')`);
+            if (rightTypeSelect) rightTypeSelect.setAttribute('onchange', `togglePairInput('right', '${index}')`);
         });
     }
 
@@ -152,19 +206,37 @@ document.addEventListener('DOMContentLoaded', function() {
         const typeSelect = document.querySelector(`select[name="pair_${side}_type_${pairId}"]`);
         const textInput = document.querySelector(`input[name="pair_${side}_${pairId}"]`);
         const fileInput = document.querySelector(`input[name="pair_${side}_image_${pairId}"]`);
+        const previewDiv = document.getElementById(`${side}-preview-${pairId}`);
         
         if (typeSelect && textInput && fileInput) {
             if (typeSelect.value === 'image') {
                 textInput.placeholder = 'URL de l\'image (optionnel si fichier uploadé)';
                 textInput.required = false;
                 fileInput.style.display = 'block';
+                if (previewDiv) previewDiv.style.display = 'block';
             } else {
                 textInput.placeholder = 'Texte';
                 textInput.required = true;
                 fileInput.style.display = 'none';
+                if (previewDiv) previewDiv.style.display = 'none';
             }
         }
     };
+    
+    // Fonction pour prévisualiser les images téléchargées
+    function previewPairImage(input, side, pairId) {
+        const previewDiv = document.getElementById(`${side}-preview-${pairId}`);
+        if (!previewDiv) return;
+        
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewDiv.innerHTML = `<img src="${e.target.result}" class="img-thumbnail" style="max-height: 100px;">`;
+                previewDiv.style.display = 'block';
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
 });
 </script>
 {% endblock %}

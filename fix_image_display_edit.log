@@ -1,0 +1,26 @@
+2025-08-28 11:40:16,822 - __main__ - INFO - Début de la correction des problèmes d'affichage des images
+2025-08-28 11:40:17,325 - __main__ - ERROR - Erreur lors de la correction des chemins d'images: (sqlite3.OperationalError) no such table: exercise
+[SQL: SELECT id, image_path, content FROM exercise WHERE image_path IS NOT NULL AND image_path != '']
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-08-28 11:40:17,413 - __main__ - INFO - Étape 1: 0 chemins d'images corrigés dans la base de données
+2025-08-28 11:40:17,416 - __main__ - ERROR - Erreur lors de la copie des images manquantes: (sqlite3.OperationalError) no such table: exercise
+[SQL: SELECT id, image_path FROM exercise WHERE image_path IS NOT NULL AND image_path != '']
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-08-28 11:40:17,417 - __main__ - INFO - Étape 2: 0 images manquantes copiées
+2025-08-28 11:40:17,510 - __main__ - INFO - Fonction get_cloudinary_url améliorée
+2025-08-28 11:40:17,510 - __main__ - INFO - Étape 3: Fonction get_cloudinary_url améliorée
+2025-08-28 11:40:17,511 - __main__ - INFO - Correction des problèmes d'affichage des images terminée
+2025-08-28 11:47:27,251 - __main__ - INFO - Début de la correction des problèmes d'affichage des images
+2025-08-28 11:47:28,270 - __main__ - INFO - Fonction get_cloudinary_url améliorée
+2025-08-28 11:47:28,270 - __main__ - INFO - Fonction get_cloudinary_url améliorée
+2025-08-28 11:47:28,270 - __main__ - INFO - Correction des problèmes d'affichage des images terminée
+2025-08-28 11:55:45,373 - __main__ - INFO - Début de la correction des problèmes d'affichage des images
+2025-08-28 11:55:45,715 - __main__ - INFO - Fonction get_cloudinary_url améliorée
+2025-08-28 11:55:45,715 - __main__ - INFO - Fonction get_cloudinary_url améliorée
+2025-08-28 11:55:45,715 - __main__ - INFO - Test de normalisation des noms de fichiers:
+2025-08-28 11:55:45,715 - __main__ - INFO -   Original: Capture d'écran 2025-08-12 180016.png -> Normalisé: Capture_d_ecran_2025-08-12_180016.png
+2025-08-28 11:55:45,716 - __main__ - INFO -   Original: Image avec des espaces.jpg -> Normalisé: Image_avec_des_espaces.jpg
+2025-08-28 11:55:45,716 - __main__ - INFO -   Original: Image-avec-tirets.png -> Normalisé: Image-avec-tirets.png
+2025-08-28 11:55:45,716 - __main__ - INFO -   Original: Image_avec_underscores.jpg -> Normalisé: Image_avec_underscores.jpg
+2025-08-28 11:55:45,716 - __main__ - INFO -   Original: Image avec caractères spéciaux éèàç.png -> Normalisé: Image_avec_caracteres_speciaux_eeac.png
+2025-08-28 11:55:45,716 - __main__ - INFO - Correction des problèmes d'affichage des images terminée

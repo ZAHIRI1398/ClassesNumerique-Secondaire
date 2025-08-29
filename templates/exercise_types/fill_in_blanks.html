@@ -3,6 +3,9 @@
 {% block title %}{{ exercise.title }}{% endblock %}
 
 {% block head %}
+{{ super() }}
+{% set is_exercise_19 = exercise.id == 19 %}
+<div id="exercise-data" data-exercise-id="{{ exercise.id }}" data-is-exercise-19="{{ 'true' if is_exercise_19 else 'false' }}" style="display: none;"></div>
 <style>
     /* Couleurs personnalisées pour Texte à trous */
     .fill-blanks-container {
@@ -105,6 +108,18 @@
         background: rgba(102, 126, 234, 0.1);
     }
     
+    .drag-over {
+        border-color: #48bb78 !important;
+        background: rgba(72, 187, 120, 0.2) !important;
+        transform: scale(1.02);
+        transition: all 0.2s ease;
+    }
+    
+    .dragging {
+        opacity: 0.5;
+        transform: scale(0.95);
+    }
+    
     .blank-filled {
         border-color: #48bb78;
         background: rgba(72, 187, 120, 0.1);
@@ -173,17 +188,33 @@
             </div>
         {% else %}
             <!-- Affichage de l'image si elle existe -->
-            {% if exercise.image_path %}
+            {% if exercise.image_path or (content and content.image) %}
             <div class="card image-display-fill mb-4">
                 <div class="card-body text-center p-4">
-                    <img src="{{ cloud_storage.get_cloudinary_url(exercise.image_path) }}" 
+                    {% set image_path = content.image if content and content.image else exercise.image_path %}
+                    {% set cache_buster = range(1000000, 9999999) | random %}
+                    
+                    <!-- Affichage principal avec gestion améliorée des chemins imbriqués -->
+                    <img src="{{ image_path }}?v={{ cache_buster }}" 
                          alt="Image de l'exercice" 
                          class="img-fluid rounded shadow" 
-                         style="max-height: 400px;">
+                         style="max-height: 400px; max-width: 100%; object-fit: contain;"
+                         onerror="this.onerror=null; 
+                                 // Essayer plusieurs variantes de chemins
+                                 if (this.src.includes('/static/uploads/exercises/')) {
+                                     // Déjà un chemin imbriqué, essayer sans le segment 'uploads'
+                                     this.src='{{ image_path.replace('/static/uploads/exercises/', '/static/exercises/') }}?v={{ cache_buster }}';
+                                 } else if (this.src.includes('/static/uploads/')) {
+                                     // Chemin standard, essayer le remplacement classique
+                                     this.src='{{ image_path.replace('/static/uploads/', '/static/exercises/') }}?v={{ cache_buster }}';
+                                 } else {
+                                     // Dernier recours
+                                     this.style.display='none';
+                                 }">
                 </div>
             </div>
             {% endif %}
-            <form method="POST" action="{{ url_for('exercise.submit_answer', exercise_id=exercise.id) }}">
+            <form method="POST" action="{{ url_for('exercise.submit_answer', exercise_id=exercise.id) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir soumettre vos réponses ? Vous ne pourrez pas modifier vos réponses après soumission.');">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 
                 {% if current_user.role == 'teacher' %}
@@ -214,14 +245,14 @@
                                     {{ part }}
                                     {% if not loop.last %}
                                         <input type="text" 
-                                               class="blank-input d-inline-block mx-1" 
+                                               class="form-control blank-input text-center mx-1" 
                                                name="answer_{{ blank_counter[0] }}" 
-                                               required 
-                                               placeholder="____"
-                                               {% if show_answers %}
-                                               value="{{ user_answers.get('answer_' ~ blank_counter[0], '') }}"
+                                               id="blank-{{ loop.index0 }}-{{ blank_counter[0] }}" 
+                                               {% if show_answers and user_answers.get('answer_' ~ blank_counter[0]) and not attempt %} 
+                                               value="{{ user_answers.get('answer_' ~ blank_counter[0]) }}" 
                                                {% endif %}
-                                               style="width: auto; min-width: 80px; max-width: 150px;">
+                                               autocomplete="off"
+                                               required>
                                         {% if blank_counter.append(blank_counter.pop() + 1) %}{% endif %}
                                     {% endif %}
                                 {% endfor %}
@@ -241,7 +272,7 @@
                                            name="answer_{{ blank_counter[0] }}" 
                                            required 
                                            placeholder="____"
-                                           {% if show_answers %}
+                                           {% if show_answers and attempt and attempt.score is not none %}
                                            value="{{ user_answers.get('answer_' ~ blank_counter[0], '') }}"
                                            {% endif %}
                                            style="width: auto; min-width: 80px; max-width: 150px;">
@@ -269,9 +300,13 @@
                 .draggable-word:hover {
                     opacity: 0.8;
                 }
-                .blank-space {
+                .blank-input {
                     display: inline-block;
-                    min-width: 80px;
+                    width: 120px;
+                    margin: 0 5px;
+                    text-align: center;
+                    height: 38px;
+                    max-width: 200px;
                 }
                 .sentence-text {
                     font-size: 1.1em;
@@ -280,38 +315,86 @@
             </style>
             
             <script>
-            // Mélanger aléatoirement les mots disponibles
+            // Mélanger aléatoirement les mots disponibles et gérer le glisser-déposer
             document.addEventListener('DOMContentLoaded', function() {
                 const wordBank = document.querySelector('.word-bank');
-                if (wordBank) {
-                    const words = Array.from(wordBank.querySelectorAll('.draggable-word'));
+                const blankInputs = document.querySelectorAll('.blank-input');
+                
+                // Fonction pour activer le glisser-déposer
+                function setupDragAndDrop() {
+                    const draggableWords = document.querySelectorAll('.draggable-word');
                     
-                    // Fonction de mélange Fisher-Yates
-                    function shuffleArray(array) {
-                        const shuffled = [...array];
-                        for (let i = shuffled.length - 1; i > 0; i--) {
-                            const j = Math.floor(Math.random() * (i + 1));
-                            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-                        }
-                        return shuffled;
-                    }
-                    
-                    // Mélanger les mots
-                    const shuffledWords = shuffleArray(words);
-                    
-                    // Vider la banque de mots et réinsérer dans l'ordre mélangé
-                    wordBank.innerHTML = '';
-                    shuffledWords.forEach(word => {
-                        const button = document.createElement('button');
-                        button.type = 'button';
-                        button.className = 'btn btn-primary btn-sm me-2 mb-2 draggable-word';
-                        button.textContent = word.textContent;
-                        button.draggable = true;
-                        button.setAttribute('data-word', word.textContent);
-                        wordBank.appendChild(button);
+                    // Événements pour les mots à glisser
+                    draggableWords.forEach(word => {
+                        word.addEventListener('dragstart', handleDragStart);
                     });
                     
-                    console.log('Mots mélangés avec succès!');
+                    // Événements pour les champs de réponse
+                    blankInputs.forEach(input => {
+                        input.addEventListener('dragover', handleDragOver);
+                        input.addEventListener('drop', handleDrop);
+                        input.addEventListener('dragenter', handleDragEnter);
+                        input.addEventListener('dragleave', handleDragLeave);
+                    });
+                }
+                
+                // Gestionnaires d'événements
+                function handleDragStart(e) {
+                    e.dataTransfer.setData('text/plain', e.target.getAttribute('data-word'));
+                    e.target.classList.add('dragging');
+                }
+                
+                function handleDragOver(e) {
+                    e.preventDefault();
+                }
+                
+                function handleDrop(e) {
+                    e.preventDefault();
+                    const word = e.dataTransfer.getData('text/plain');
+                    e.target.value = word;
+                    e.target.classList.add('blank-filled');
+                    
+                    // Mettre à jour l'interface
+                    const draggableWord = document.querySelector(`.draggable-word[data-word="${word}"]`);
+                    if (draggableWord) {
+                        draggableWord.style.opacity = '0.5';
+                        draggableWord.style.pointerEvents = 'none';
+                    }
+                }
+                
+                function handleDragEnter(e) {
+                    e.preventDefault();
+                    e.target.classList.add('drag-over');
+                }
+                
+                function handleDragLeave(e) {
+                    e.preventDefault();
+                    e.target.classList.remove('drag-over');
+                }
+                
+                // Désactivation de la fonction de clic pour forcer la saisie manuelle
+                
+                // Fonction de mélange Fisher-Yates
+                function shuffleArray(array) {
+                    const shuffled = [...array];
+                    for (let i = shuffled.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                    }
+                    return shuffled;
+                }
+                
+                // Désactivation complète du glisser-déposer et du clic
+                // Affichage des mots de référence sans interaction
+                if (wordBank) {
+                    const words = Array.from(wordBank.querySelectorAll('.draggable-word'));
+                    wordBank.innerHTML = '';
+                    words.forEach(word => {
+                        const span = document.createElement('span');
+                        span.className = 'badge bg-secondary me-2 mb-2';
+                        span.textContent = word.textContent;
+                        wordBank.appendChild(span);
+                    });
                 }
             });
             </script>

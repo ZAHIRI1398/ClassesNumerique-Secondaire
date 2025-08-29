@@ -1,0 +1,14 @@
+2025-08-19 13:14:39,282 - migrate_image_paths - INFO - Trouvé 1 exercices de type 'image_labeling'
+2025-08-19 13:14:39,283 - migrate_image_paths - INFO - Exercice ID 3: Chemin d'image normalisé dans le contenu JSON: exercises/20250819_130210_287bbd2d18ea482e981183dcacdae149_Capture d'écran 2025-08-12 174224.png -> /static/uploads/exercises/image_labeling/20250819_130210_287bbd2d18ea482e981183dcacdae149_Capture_décran_2025-08-12_174224.png
+2025-08-19 13:14:39,421 - migrate_image_paths - INFO - Migration terminée avec succès. 1 chemins d'images ont été normalisés.
+2025-08-19 13:14:57,528 - migrate_image_paths - INFO - Trouvé 1 exercices de type 'image_labeling'
+2025-08-19 13:14:57,530 - migrate_image_paths - INFO - Aucun chemin d'image n'a été modifié.
+2025-08-19 13:15:21,138 - migrate_image_paths - INFO - Trouvé 1 exercices de type 'image_labeling'
+2025-08-19 13:15:21,138 - migrate_image_paths - INFO - Aucun chemin d'image n'a été modifié.
+2025-08-19 13:22:37,239 - migrate_image_paths - INFO - Trouvé 1 exercices de type 'image_labeling'
+2025-08-19 13:22:37,239 - migrate_image_paths - INFO - Exercice ID 3: Chemin d'image normalisé dans le contenu JSON: exercises/20250819_132051_a339a4c9e8344e97b58ecab9e99a9a25_s1.png -> /static/uploads/exercises/image_labeling/20250819_132051_a339a4c9e8344e97b58ecab9e99a9a25_s1.png
+2025-08-19 13:22:37,342 - migrate_image_paths - INFO - Migration terminée avec succès. 1 chemins d'images ont été normalisés.
+2025-08-19 13:22:54,616 - migrate_image_paths - INFO - Trouvé 1 exercices de type 'image_labeling'
+2025-08-19 13:22:54,616 - migrate_image_paths - INFO - Aucun chemin d'image n'a été modifié.
+2025-08-19 13:23:03,235 - migrate_image_paths - INFO - Trouvé 1 exercices de type 'image_labeling'
+2025-08-19 13:23:03,236 - migrate_image_paths - INFO - Aucun chemin d'image n'a été modifié.

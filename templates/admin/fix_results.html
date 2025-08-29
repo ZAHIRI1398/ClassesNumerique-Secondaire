@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">{{ title }}</h4>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-success">
+                <h5><i class="fas fa-check-circle"></i> Résumé</h5>
+                <p>{{ fixed_count }} exercices corrigés sur {{ total_count }} exercices image_labeling.</p>
+            </div>
+            
+            <h5>Détails des corrections:</h5>
+            <div class="list-group">
+                {% for result in results %}
+                <div class="list-group-item {% if 'Erreur' in result %}list-group-item-danger{% elif 'mis à jour' in result %}list-group-item-success{% else %}list-group-item-info{% endif %}">
+                    {{ result }}
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div class="mt-4">
+                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-primary">
+                    <i class="fas fa-arrow-left"></i> Retour au tableau de bord
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

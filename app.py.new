@@ -1,0 +1,50 @@
+def process_qcm_question_images(request, questions, question_count):
+    """
+    Traite les images des questions QCM et les ajoute aux questions
+    
+    Args:
+        request: L'objet request Flask
+        questions: La liste des questions à mettre à jour
+        question_count: Le nombre de questions
+        
+    Returns:
+        La liste des questions mise à jour avec les chemins d'images
+    """
+    current_app.logger.info(f'[QCM_IMAGE_DEBUG] Traitement des images pour {question_count} questions')
+    
+    for i in range(question_count):
+        # Vérifier si une image a été téléchargée pour cette question
+        image_key = f'question_image_{i}'
+        path_key = f'question_image_path_{i}'
+        
+        # Récupérer le chemin d'image existant s'il existe
+        existing_path = request.form.get(path_key, '')
+        
+        if image_key in request.files:
+            file = request.files[image_key]
+            if file and file.filename != '' and allowed_file(file.filename):
+                try:
+                    # Utiliser Cloudinary pour l'upload en production, stockage local en dev
+                    image_url = cloud_storage.upload_file(file, folder="exercises/qcm")
+                    if image_url:
+                        # Normaliser le chemin de l'image pour assurer la cohérence
+                        normalized_image_url = normalize_image_path(image_url)
+                        current_app.logger.info(f'[QCM_IMAGE_DEBUG] Image téléchargée pour la question {i}: {normalized_image_url}')
+                        
+                        # Ajouter l'image à la question
+                        if i < len(questions):
+                            questions[i]['image'] = normalized_image_url
+                except Exception as e:
+                    current_app.logger.error(f'[QCM_IMAGE_DEBUG] Erreur lors du téléchargement de l\'image pour la question {i}: {str(e)}')
+            elif existing_path:
+                # Conserver l'image existante
+                if i < len(questions):
+                    questions[i]['image'] = existing_path
+                    current_app.logger.info(f'[QCM_IMAGE_DEBUG] Image existante conservée pour la question {i}: {existing_path}')
+        elif existing_path:
+            # Conserver l'image existante
+            if i < len(questions):
+                questions[i]['image'] = existing_path
+                current_app.logger.info(f'[QCM_IMAGE_DEBUG] Image existante conservée pour la question {i}: {existing_path}')
+    
+    return questions

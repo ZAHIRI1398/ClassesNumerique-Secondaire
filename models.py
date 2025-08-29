@@ -254,6 +254,8 @@ class Exercise(db.Model):
         ('dictation', 'Dictée'),
         ('image_labeling', 'Étiquetage d\'image'),
         ('flashcards', 'Cartes mémoire'),
+        ('text', 'Réponse libre'),
+        ('file', 'Fichier à rendre'),
     ]
     
     id = db.Column(db.Integer, primary_key=True)
