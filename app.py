@@ -1,16 +1,158 @@
 import os
+import re
 import json
+import uuid
 import time
 import random
 import string
 import logging
 import datetime
+import requests
 import traceback
+from PIL import Image
+from io import BytesIO
+from decimal import Decimal
 from functools import wraps
-from logging.handlers import RotatingFileHandler
+from datetime import timedelta
+from werkzeug.utils import secure_filename
+from fixed_normalize_pairs_exercise_paths import normalize_pairs_exercise_content
+# Réintégration de l'import cloud_storage
 import cloud_storage
 from fix_image_display import register_image_fix_routes
 from teacher_classes_route import register_teacher_classes_route
+from image_sync import register_image_sync_routes
+from fix_image_display_routes import register_image_display_routes
+from fix_flashcard_images import register_fix_flashcard_images_routes
+from diagnose_flashcard_images import register_diagnose_flashcard_routes
+
+from utils.image_utils_no_normalize import normalize_image_path
+from utils.image_handler import handle_exercise_image
+from template_helpers import register_template_helpers
+# Import cloud_storage pour utiliser sa fonction get_cloudinary_url avec support du paramètre exercise_type
+import cloud_storage
+from utils.image_path_handler import normalize_image_path as normalize_path, fix_exercise_image_path, get_image_url
+# Import du service d'images unifié
+from register_unified_image_service import register_unified_image_service
+
+def process_qcm_question_images(request, questions, question_count):
+    """
+    Traite les images des questions QCM et les ajoute aux questions
+    
+    Args:
+        request: L'objet request Flask
+        questions: La liste des questions à mettre à jour
+        question_count: Le nombre de questions
+        
+    Returns:
+        La liste des questions mise à jour avec les chemins d'images normalisés
+    """
+    current_app.logger.info(f'[QCM_IMAGE_DEBUG] Début du traitement des images pour {question_count} questions')
+    
+    # Importer la fonction de normalisation des chemins d'images
+    from utils.image_utils_no_normalize import normalize_image_path
+    
+    # S'assurer que la liste des questions est assez grande
+    while len(questions) < question_count:
+        questions.append({})
+    
+    for i in range(question_count):
+        current_app.logger.debug(f'[QCM_IMAGE_DEBUG] Traitement de la question {i+1}/{question_count}')
+        
+        # Vérifier si une image a été téléchargée pour cette question
+        image_key = f'question_image_{i}'
+        path_key = f'question_image_path_{i}'
+        
+        # Récupérer le chemin d'image existant s'il existe
+        existing_path = request.form.get(path_key, '')
+        if existing_path and isinstance(existing_path, str):
+            existing_path = existing_path.strip()
+            # Normaliser immédiatement le chemin existant pour assurer la cohérence
+            existing_path = normalize_image_path(existing_path)
+        
+        current_app.logger.debug(f'[QCM_IMAGE_DEBUG] Question {i} - Chemin existant normalisé: {existing_path}')
+        
+        # Vérifier si l'utilisateur a demandé de supprimer l'image
+        remove_image = request.form.get(f'remove_question_image_{i}') == 'true'
+        
+        if remove_image:
+            current_app.logger.info(f'[QCM_IMAGE_DEBUG] Suppression demandée pour l\'image de la question {i}')
+            # Supprimer l'image existante si demandé
+            if i < len(questions) and questions[i].get('image'):
+                old_image_path = questions[i]['image']
+                try:
+                    # Extraire le chemin du fichier physique si c'est un chemin local
+                    physical_path = None
+                    if old_image_path.startswith('/static/'):
+                        # Convertir le chemin /static/ en chemin physique
+                        physical_path = os.path.join(current_app.static_folder, old_image_path.replace('/static/', '', 1))
+                    
+                    # Ne supprimer que les fichiers locaux qui existent, pas les URLs Cloudinary
+                    if physical_path and os.path.exists(physical_path) and not old_image_path.startswith(('http://', 'https://')):
+                        os.remove(physical_path)
+                        current_app.logger.info(f'[QCM_IMAGE_DEBUG] Fichier local supprimé pour la question {i}: {physical_path}')
+                    
+                    # Supprimer la référence à l'image
+                    questions[i].pop('image', None)
+                    current_app.logger.info(f'[QCM_IMAGE_DEBUG] Référence à l\'image supprimée pour la question {i}')
+                except Exception as e:
+                    current_app.logger.error(f'[QCM_IMAGE_DEBUG] Erreur lors de la suppression de l\'image pour la question {i}: {str(e)}')
+            continue
+        
+        # Traitement du téléchargement d'une nouvelle image
+        if image_key in request.files:
+            file = request.files[image_key]
+            if file and file.filename != '':
+                if not allowed_file(file.filename, file):
+                    current_app.logger.warning(f'[QCM_IMAGE_DEBUG] Type de fichier non autorisé pour la question {i}: {file.filename}')
+                    continue
+                
+                try:
+                    # Sauvegarder l'ancien chemin d'image pour le nettoyage après un upload réussi
+                    old_image_path = questions[i].get('image') if i < len(questions) and questions[i].get('image') else None
+                    
+                    # Utiliser Cloudinary pour l'upload en production, stockage local en dev
+                    image_url = cloud_storage.upload_file(
+                        file, 
+                        folder="exercises/qcm",
+                        public_id=f"qcm_question_{int(time.time())}_{i}"  # Nom de fichier unique
+                    )
+                    
+                    if image_url:
+                        # Normaliser le chemin/URL de l'image pour assurer la cohérence
+                        normalized_image_url = normalize_image_path(image_url)
+                        current_app.logger.info(f'[QCM_IMAGE_DEBUG] Image téléchargée avec succès pour la question {i}: {normalized_image_url}')
+                        
+                        # Mettre à jour la question avec la nouvelle image normalisée
+                        if i < len(questions):
+                            questions[i]['image'] = normalized_image_url
+                            current_app.logger.debug(f'[QCM_IMAGE_DEBUG] Image mise à jour pour la question {i}')
+                        
+                        # Nettoyer l'ancienne image si elle existe et est locale
+                        if old_image_path and old_image_path.startswith('/static/'):
+                            physical_path = os.path.join(current_app.static_folder, old_image_path.replace('/static/', '', 1))
+                            if os.path.exists(physical_path):
+                                try:
+                                    os.remove(physical_path)
+                                    current_app.logger.info(f'[QCM_IMAGE_DEBUG] Ancien fichier local nettoyé: {physical_path}')
+                                except Exception as e:
+                                    current_app.logger.error(f'[QCM_IMAGE_DEBUG] Erreur lors du nettoyage de l\'ancien fichier {physical_path}: {str(e)}')
+                    else:
+                        current_app.logger.error(f'[QCM_IMAGE_DEBUG] Échec du téléchargement de l\'image pour la question {i}')
+                except Exception as e:
+                    current_app.logger.error(f'[QCM_IMAGE_DEBUG] Erreur lors du traitement de l\'image pour la question {i}: {str(e)}')
+                    current_app.logger.debug(f'[QCM_IMAGE_DEBUG] Traceback: {traceback.format_exc()}')
+        elif existing_path and i < len(questions):
+            # Conserver l'image existante normalisée si aucune nouvelle image n'est fournie
+            questions[i]['image'] = existing_path
+            current_app.logger.debug(f'[QCM_IMAGE_DEBUG] Conservation de l\'image existante normalisée pour la question {i}: {existing_path}')
+    
+    # Vérification finale pour s'assurer que tous les chemins d'images sont normalisés
+    for i, question in enumerate(questions):
+        if question.get('image'):
+            question['image'] = normalize_image_path(question['image'])
+            current_app.logger.debug(f'[QCM_IMAGE_DEBUG] Vérification finale: chemin d\'image normalisé pour la question {i}: {question["image"]}')
+    
+    return questions
 
 def get_blank_location(global_blank_index, sentences):
     """Détermine à quelle phrase et à quel indice dans cette phrase correspond un indice global de blanc"""
@@ -25,6 +167,7 @@ def get_blank_location(global_blank_index, sentences):
     return -1, -1
 
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, session, current_app, abort, send_file
+from utils.image_fallback_middleware import register_image_fallback_middleware
 from fix_image_paths import register_image_sync_routes
 from flask_login import login_user, login_required, logout_user, current_user
 from werkzeug.utils import secure_filename
@@ -62,11 +205,32 @@ app.logger.setLevel(logging.DEBUG)
 # Enregistrer les routes de diagnostic et correction d'images
 register_image_fix_routes(app)
 
+# Enregistrer les routes pour l'affichage des images Cloudinary
+register_image_display_routes(app)
+
+# Enregistrer les routes pour la correction des images de flashcards
+register_fix_flashcard_images_routes(app)
+
+# Enregistrer les routes pour le diagnostic des images de flashcards
+register_diagnose_flashcard_routes(app)
+
 # Enregistrer la route de test pour la planification annuelle
 register_test_planning_route(app)
 
 # Enregistrer la route pour les classes de l'enseignant
 register_teacher_classes_route(app)
+
+# Rendre la fonction normalize_image_path disponible dans tous les templates
+@app.context_processor
+def utility_processor():
+    return dict(normalize_image_path=normalize_image_path)
+
+# Enregistrer les helpers de template pour la gestion d'images
+register_template_helpers(app)
+
+# Enregistrer le service d'images unifié
+register_unified_image_service(app)
+app.logger.info("Service d'images unifié enregistré avec succès")
 
 # Configuration de Cloudinary si les variables d'environnement sont disponibles
 with app.app_context():
@@ -100,10 +264,21 @@ else:
 from extensions import init_extensions
 init_extensions(app)
 
-# Rendre cloud_storage disponible dans tous les templates
+# Configuration de la gestion automatique des images
+from image_fallback_middleware import setup_image_fallback
+from auto_image_handler import setup_auto_image_handler
+
+# Initialiser les composants de gestion automatique des images
+setup_image_fallback(app)
+setup_auto_image_handler(app)
+app.logger.info("Gestion automatique des images configurée")
+
+# Rendre les services d'URL d'image disponibles dans tous les templates
 @app.context_processor
-def inject_cloud_storage():
-    return dict(cloud_storage=cloud_storage)
+def inject_image_url_service():
+    # Exposer image_url_service sous son propre nom pour éviter les conflits
+    import image_url_service
+    return dict(image_url_service=image_url_service)
 
 
 # Route de diagnostic pour tous les exercices fill_in_blanks
@@ -350,6 +525,10 @@ from fix_school_choice import fix_bp
 app.register_blueprint(diagnostic_bp)
 app.register_blueprint(fix_bp)
 
+# Import et enregistrement du blueprint de synchronisation des images
+from fix_image_paths import register_image_sync_routes
+register_image_sync_routes(app)
+
 # Ajout du filtre shuffle pour Jinja2
 @app.template_filter('shuffle')
 def shuffle_filter(seq):
@@ -375,11 +554,59 @@ app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max-limit
 # S'assurer que le dossier d'upload existe
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
+os.makedirs('static/uploads/qcm_multichoix', exist_ok=True)
 # Configuration de l'extension pour les fichiers
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'pdf', 'doc', 'docx'}
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'pdf', 'doc', 'docx', 'webp', 'svg', 'bmp'}
 
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+def allowed_file(filename, file_obj=None):
+    """Vérifie si un fichier est autorisé en fonction de son extension et de sa taille.
+    
+    Args:
+        filename: Nom du fichier à vérifier
+        file_obj: Objet fichier (optionnel) pour vérifier la taille
+        
+    Returns:
+        bool: True si le fichier est autorisé, False sinon
+    """
+    # Vérification du nom de fichier
+    if not filename or not isinstance(filename, str):
+        app.logger.warning(f"[EDIT_DEBUG] Nom de fichier invalide: {filename}")
+        return False
+    
+    if '.' not in filename:
+        app.logger.warning(f"[EDIT_DEBUG] Pas d'extension dans le nom de fichier: {filename}")
+        return False
+        
+    # Vérification de l'extension
+    extension = filename.rsplit('.', 1)[1].lower()
+    extension_ok = extension in ALLOWED_EXTENSIONS
+    
+    if not extension_ok:
+        app.logger.warning(f"[EDIT_DEBUG] Extension non autorisée: {extension}")
+        return False
+    
+    # Vérification de la taille du fichier si l'objet fichier est fourni
+    if file_obj:
+        try:
+            # Sauvegarde de la position actuelle dans le fichier
+            current_position = file_obj.tell()
+            
+            # Aller à la fin du fichier pour obtenir sa taille
+            file_obj.seek(0, 2)  # 2 = SEEK_END
+            file_size = file_obj.tell()
+            
+            # Revenir à la position d'origine
+            file_obj.seek(current_position)
+            
+            if file_size == 0:
+                app.logger.warning(f"[EDIT_DEBUG] Fichier vide détecté: {filename}")
+                return False
+                
+            app.logger.info(f"[EDIT_DEBUG] Taille du fichier {filename}: {file_size} octets")
+        except Exception as e:
+            app.logger.error(f"[EDIT_DEBUG] Erreur lors de la vérification de la taille du fichier {filename}: {str(e)}")
+    
+    return True
 
 # Initialisation automatique de la base de données
 def init_database():
@@ -481,6 +708,8 @@ def get_file_icon(filename):
     return icon_mapping.get(extension, 'fa-file')  # fa-file est l'icône par défaut
 
 app.jinja_env.globals.update(get_file_icon=get_file_icon)
+app.jinja_env.globals.update(get_cloudinary_url=cloud_storage.get_cloudinary_url)
+app.jinja_env.globals.update(cloud_storage=cloud_storage)
 
 # Enregistrement des filtres Jinja2
 app.jinja_env.filters['enumerate'] = enumerate_filter
@@ -511,7 +740,7 @@ def generate_unique_filename(original_filename):
     # Séparer le nom de fichier et l'extension
     name, ext = os.path.splitext(original_filename)
     # Générer un timestamp
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
     # Générer une chaîne aléatoire
     random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=6))
     # Combiner le tout
@@ -540,7 +769,11 @@ def log_request_info():
 def uploaded_file(filename):
     """Sert les fichiers uploadés depuis le dossier static/uploads"""
     try:
-        return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+        # Le chemin complet vers le fichier dans static/uploads
+        full_path = os.path.join('static', 'uploads', filename)
+        directory = os.path.dirname(full_path)
+        file_name = os.path.basename(full_path)
+        return send_from_directory(directory, file_name)
     except FileNotFoundError:
         logger.error(f"Fichier non trouvé: {filename}")
         return "Fichier non trouvé", 404
@@ -1236,6 +1469,9 @@ def exercise_library():
     if exercise_type:
         query = query.filter(Exercise.exercise_type == exercise_type)
     
+    if subject:
+        query = query.filter(Exercise.subject == subject)
+    
     # Exécuter la requête
     exercises = query.all()
 
@@ -1267,20 +1503,30 @@ def exercise_library():
 @app.route('/exercise/<int:exercise_id>/<int:course_id>')
 # @login_required  # TEMPORAIREMENT DÉSACTIVÉ POUR TEST
 def view_exercise(exercise_id, course_id=None):
-    import sys
-    print(f'[VIEW_EXERCISE_DEBUG] Starting view_exercise for ID {exercise_id}', flush=True)
-    sys.stdout.flush()
     try:
-        app.logger.info(f'Accessing exercise {exercise_id}')
+        app.logger.debug(f'[VIEW_EXERCISE] Starting view_exercise for ID {exercise_id}')
         exercise = Exercise.query.get_or_404(exercise_id)
-        print(f'[VIEW_EXERCISE_DEBUG] Exercise type: {exercise.exercise_type}')
-        app.logger.info(f'Found exercise: {exercise.title}')
-        course_id = request.args.get('course_id', type=int)
+        app.logger.debug(f'[VIEW_EXERCISE] Exercise type: {exercise.exercise_type}')
+        app.logger.info(f'Found exercise: {exercise.title} (ID: {exercise_id})')
+        
+        # Normaliser et corriger les chemins d'images si nécessaire
+        modified = fix_exercise_image_path(exercise)
+        if modified:
+            db.session.commit()
+            app.logger.info(f'[VIEW_EXERCISE] Image paths normalized for exercise {exercise_id}')
+        
+        # Récupérer le course_id depuis l'URL ou les paramètres de requête
+        course_id = course_id or request.args.get('course_id', type=int)
         course = Course.query.get(course_id) if course_id else None
-        app.logger.info(f'Course ID: {course_id}, Course: {course.title if course else None}')
+        
+        if course:
+            app.logger.info(f'Course context - ID: {course_id}, Title: {course.title}')
+        else:
+            app.logger.info('No course context provided')
+            
     except Exception as e:
-        app.logger.error(f'Error accessing exercise: {str(e)}')
-        app.logger.exception('Full error:')
+        app.logger.error(f'Error accessing exercise {exercise_id}: {str(e)}')
+        app.logger.exception('Stack trace:')
         return 'Une erreur est survenue lors de l\'accès à l\'exercice.', 500
     
     # Si l'exercice est accédé via un cours, vérifier que l'étudiant est inscrit
@@ -1307,32 +1553,43 @@ def view_exercise(exercise_id, course_id=None):
         exercise_id=exercise_id
     ).order_by(ExerciseAttempt.created_at.desc()).first()
     
-    # Si une tentative existe, récupérer les réponses de l'utilisateur
-    # mais seulement si l'exercice a été soumis (pour éviter d'afficher les réponses par défaut)
+    # Par défaut, ne pas afficher les réponses
     show_answers = False
-    if attempt:
-        print(f'[VIEW_EXERCISE_DEBUG] Found attempt ID: {attempt.id}')
-        # Vérifier si l'exercice a été soumis (présence de feedback)
-        if attempt.feedback and attempt.feedback.strip():
-            show_answers = True
-            try:
-                # Récupérer les réponses de l'utilisateur depuis le feedback
+    user_answers = {}
+    
+    # Si une tentative existe et qu'elle a été soumise (score non nul)
+    if attempt and attempt.score is not None:
+        app.logger.debug(f'[VIEW_EXERCISE] Found submitted attempt ID: {attempt.id} with score: {attempt.score}')
+        # Ne montrer les réponses que si l'exercice a été noté (après soumission)
+        show_answers = True
+        try:
+            # Essayer de récupérer les réponses depuis le feedback
+            if attempt.feedback and attempt.feedback.strip():
                 feedback = json.loads(attempt.feedback) if attempt.feedback else []
-                for item in feedback:
-                    if 'student_answer' in item and 'blank_index' in item:
-                        user_answers[f'answer_{item["blank_index"]}'] = item['student_answer']
-                    elif 'student_answer' in item:
-                        # Pour les autres formats de feedback
-                        blank_counter = len(user_answers)
-                        user_answers[f'answer_{blank_counter}'] = item['student_answer']
-                print(f'[VIEW_EXERCISE_DEBUG] User answers: {user_answers}')
-            except Exception as e:
-                app.logger.error(f'Error parsing attempt feedback: {str(e)}')
-                print(f'[VIEW_EXERCISE_DEBUG] Error parsing feedback: {str(e)}')
-        else:
-            print(f'[VIEW_EXERCISE_DEBUG] Attempt exists but no feedback, not showing answers')
-            # Réinitialiser user_answers pour éviter d'afficher des réponses par défaut
-            user_answers = {}
+                if isinstance(feedback, dict) and 'details' in feedback:
+                    # Format de feedback structuré
+                    for item in feedback.get('details', []):
+                        if 'user_answer' in item and 'blank_index' in item:
+                            user_answers[f'answer_{item["blank_index"]}'] = item['user_answer']
+                        elif 'student_answer' in item and 'blank_index' in item:
+                            user_answers[f'answer_{item["blank_index"]}'] = item['student_answer']
+                elif isinstance(feedback, list):
+                    # Ancien format de feedback
+                    for item in feedback:
+                        if 'student_answer' in item and 'blank_index' in item:
+                            user_answers[f'answer_{item["blank_index"]}'] = item['student_answer']
+                        elif 'student_answer' in item:
+                            blank_counter = len(user_answers)
+                            user_answers[f'answer_{blank_counter}'] = item['student_answer']
+            app.logger.debug(f'[VIEW_EXERCISE] User answers to display: {user_answers}')
+        except Exception as e:
+            error_msg = f'Error parsing attempt feedback: {str(e)}'
+            app.logger.error(error_msg)
+            app.logger.exception('Error details:')
+    else:
+        app.logger.debug('[VIEW_EXERCISE] No submitted attempt found or exercise not yet graded')
+        # S'assurer que les champs sont vides pour une nouvelle tentative
+        user_answers = {}
     
     # Les enseignants peuvent accéder directement aux exercices
     # TEMPORAIREMENT DÉSACTIVÉ POUR TEST SANS AUTHENTIFICATION
@@ -1346,6 +1603,11 @@ def view_exercise(exercise_id, course_id=None):
     try:
         content = exercise.get_content()
         app.logger.info(f'Parsed content: {content}')
+        
+        # Vérifier si l'image existe physiquement et ajuster le chemin si nécessaire
+        if 'image' in content and content['image']:
+            content['image'] = get_image_url(content['image'])
+            app.logger.info(f'[VIEW_EXERCISE] Verified image URL: {content["image"]}')
         # Mélange des éléments de droite pour les appariements
         if exercise.exercise_type == 'pairs':
             # Support pour la nouvelle structure avec 'pairs'
@@ -1648,6 +1910,8 @@ def view_exercise(exercise_id, course_id=None):
         app.logger.error(f'Error rendering template: {str(e)}')
         app.logger.exception('Full template error:')
         return 'Une erreur est survenue lors de l\'affichage de l\'exercice.', 500
+
+# Route /get_cloudinary_url maintenant gérée par fix_image_display_routes.py
 
 @app.route('/exercise/<int:exercise_id>/teacher')
 @login_required
@@ -2734,7 +2998,16 @@ def submit_answer(exercise_id, course_id=0):
             print(f"  - Réponse étudiant (answer_{i}): {student_answer}")
             print(f"  - Réponse attendue: {expected_answer}")
             
-            if student_answer and student_answer.strip().lower() == expected_answer.strip().lower():
+            # Normaliser les réponses pour la comparaison
+            normalized_student_answer = student_answer.strip().lower() if student_answer else ""
+            normalized_expected_answer = expected_answer.strip().lower() if expected_answer else ""
+            
+            # Vérifier si la réponse est correcte
+            is_correct = normalized_student_answer == normalized_expected_answer
+            
+            print(f"  - Comparaison: '{normalized_student_answer}' == '{normalized_expected_answer}' => {is_correct}")
+            
+            if is_correct:
                 correct_count += 1
                 feedback.append({
                     'blank_index': i,
@@ -3898,12 +4171,13 @@ def handle_exercise_answer(exercise_id):
         else:
             flash(f'Vous avez obtenu {score:.1f}%. Continuez vos efforts !', 'warning')
         
-        # Rediriger vers l'exercice avec le feedback
-        return render_template('feedback.html', exercise=exercise, attempt=attempt, answers=answers, feedback=feedback_to_save)
+        # Rediriger vers la page de feedback dédiée
+        return redirect(url_for('view_feedback', exercise_id=exercise_id, attempt_id=attempt.id))
     
     except Exception as e:
         app.logger.error(f"Erreur lors de la soumission: {e}")
         return jsonify({'success': False, 'error': 'Une erreur est survenue'}), 500
+        return redirect(url_for('view_exercise', exercise_id=exercise_id))
 
 @app.route('/force-admin-setup')
 def force_admin_setup():
@@ -4056,6 +4330,36 @@ def edit_exercise(exercise_id):
             except:
                 content = {}
         
+        # Pour les exercices image_labeling, s'assurer que les structures de données sont correctes
+        if exercise.exercise_type == 'image_labeling':
+            # S'assurer que content.labels existe
+            if 'labels' not in content:
+                content['labels'] = []
+            
+            # S'assurer que content.zones existe
+            if 'zones' not in content:
+                content['zones'] = []
+            
+            # Vérifier que les zones ont le bon format
+            for i, zone in enumerate(content.get('zones', [])):
+                # S'assurer que chaque zone a les propriétés x, y et label
+                if not isinstance(zone, dict):
+                    content['zones'][i] = {'x': 0, 'y': 0, 'label': ''}
+                    continue
+                
+                if 'x' not in zone:
+                    zone['x'] = 0
+                if 'y' not in zone:
+                    zone['y'] = 0
+                if 'label' not in zone:
+                    zone['label'] = ''
+            
+            # Log pour le débogage
+            current_app.logger.info(f"[IMAGE_LABELING_EDIT] Contenu chargé: {content}")
+            current_app.logger.info(f"[IMAGE_LABELING_EDIT] Étiquettes: {content.get('labels', [])}")
+            current_app.logger.info(f"[IMAGE_LABELING_EDIT] Zones: {content.get('zones', [])}")
+
+        
         # Utiliser le template spécifique selon le type d'exercice
         if exercise.exercise_type == 'qcm':
             return render_template('exercise_types/qcm_edit.html', exercise=exercise, content=content)
@@ -4096,520 +4400,456 @@ def edit_exercise(exercise_id):
             exercise.description = request.form.get('description', exercise.description)
             exercise.subject = request.form.get('subject', exercise.subject)
             
-            # Gestion de l'image si présente
-            if 'exercise_image' in request.files:
-                file = request.files['exercise_image']
-                if file and file.filename != '' and allowed_file(file.filename):
-                    # Utiliser Cloudinary pour l'upload en production, stockage local en dev
-                    image_url = cloud_storage.upload_file(file, folder="exercises")
-                    if image_url:
-                        exercise.image_path = image_url
-                        app.logger.info(f"[EDIT_DEBUG] Image sauvegardée: {exercise.image_path}")
-            
-            # Traitement spécifique par type d'exercice
-            if exercise.exercise_type == 'qcm':
-                current_app.logger.info(f'[QCM_EDIT_DEBUG] Traitement du contenu QCM')
-                current_app.logger.info(f'[QCM_EDIT_DEBUG] Tous les champs du formulaire: {list(request.form.keys())}')
-                
-                # Récupérer les questions du formulaire
-                questions_data = request.form.getlist('questions[]')
-                current_app.logger.info(f'[QCM_EDIT_DEBUG] Questions trouvées: {questions_data}')
-                
-                # Validation des questions
-                if not questions_data or not any(q.strip() for q in questions_data):
-                    flash('Veuillez ajouter au moins une question.', 'error')
-                    return render_template('edit_exercise.html', exercise=exercise)
-                
-                questions = []
-                for i, question_text in enumerate(questions_data):
-                    if not question_text.strip():
-                        continue
-                    
-                    # Récupérer les options pour cette question
-                    options = []
-                    option_index = 0
-                    while True:
-                        option_key = f'option_{i}_{option_index}'
-                        if option_key in request.form:
-                            option_value = request.form[option_key].strip()
-                            if option_value:
-                                options.append(option_value)
-                            option_index += 1
-                        else:
-                            break
-                    
-                    # Récupérer la réponse correcte
-                    correct_key = f'correct_{i}'
-                    correct_answer = 0
-                    if correct_key in request.form:
+            # Gestion spéciale pour les exercices de type image_labeling
+            if exercise.exercise_type == 'image_labeling':
+                # Pour les exercices d'étiquetage d'image, on ne veut pas d'image d'exercice séparée
+                # car cela crée une confusion avec l'image principale à légender
+                if 'remove_exercise_image' in request.form and request.form['remove_exercise_image'] == 'true':
+                    # Supprimer l'image de l'exercice si elle existe
+                    if exercise.image_path:
                         try:
-                            correct_answer = int(request.form[correct_key])
-                        except (ValueError, TypeError):
-                            correct_answer = 0
-                    
-                    # Validation de la question
-                    if len(options) < 2:
-                        flash(f'La question {i+1} doit avoir au moins 2 options.', 'error')
-                        return render_template('edit_exercise.html', exercise=exercise)
-                    
-                    if correct_answer >= len(options):
-                        flash(f'La réponse correcte de la question {i+1} est invalide.', 'error')
-                        return render_template('edit_exercise.html', exercise=exercise)
-                    
-                    questions.append({
-                        'text': question_text.strip(),
-                        'choices': options,
-                        'correct_answer': correct_answer,
-                        'options': []  # Pour compatibilité avec l'ancien format
-                    })
+                            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], os.path.basename(exercise.image_path)))
+                        except Exception as e:
+                            app.logger.error(f"Erreur lors de la suppression de l'image : {str(e)}")
+                    exercise.image_path = None
+                    # Si l'image d'exercice existe, on la supprime
+                    if exercise.image_path:
+                        app.logger.info(f"[EDIT_DEBUG] Suppression de l'image d'exercice pour image_labeling: {exercise.image_path}")
+                        exercise.image_path = None
                 
-                if not questions:
-                    flash('Veuillez ajouter au moins une question valide.', 'error')
-                    return render_template('edit_exercise.html', exercise=exercise)
-                
-                # Mettre à jour le contenu
-                content = {'questions': questions}
-                exercise.content = json.dumps(content)
-                current_app.logger.info(f'[QCM_EDIT_DEBUG] Contenu sauvegardé: {len(questions)} questions')
-                
-            elif exercise.exercise_type == 'qcm_multichoix':
-                current_app.logger.info(f'[QCM_MULTICHOIX_EDIT_DEBUG] Traitement du contenu QCM Multichoix')
-                current_app.logger.info(f'[QCM_MULTICHOIX_EDIT_DEBUG] Tous les champs du formulaire: {list(request.form.keys())}')
-                
-                # Récupérer les questions du formulaire
-                questions_data = []
-                questions_list = request.form.getlist('questions[]')
-                
-                for question_index, question_text in enumerate(questions_list):
-                    if not question_text or not question_text.strip():
-                        continue
-                    
-                    # Récupérer les options pour cette question
-                    options_key = f'options_{question_index}[]'
-                    options = request.form.getlist(options_key)
-                    
-                    # Récupérer les réponses correctes pour cette question
-                    correct_key = f'correct_options_{question_index}[]'
-                    correct_indices = request.form.getlist(correct_key)
-                    
-                    # Convertir les indices en entiers et éliminer les doublons
+                # Gestion de la suppression de l'image principale si demandé
+                if 'remove_main_image' in request.form and request.form['remove_main_image'] == 'true':
                     try:
-                        correct_indices = [int(idx) for idx in correct_indices]
-                        correct_indices = list(dict.fromkeys(correct_indices))  # Éliminer les doublons
-                    except (ValueError, TypeError):
-                        correct_indices = []
-                    
-                    current_app.logger.info(f'[QCM_MULTICHOIX_EDIT_DEBUG] Question {question_index}: {question_text}')
-                    current_app.logger.info(f'[QCM_MULTICHOIX_EDIT_DEBUG] Options {question_index}: {options}')
-                    current_app.logger.info(f'[QCM_MULTICHOIX_EDIT_DEBUG] Correct indices {question_index}: {correct_indices}')
-                    
-                    # Filtrer les options vides
-                    filtered_options = [opt.strip() for opt in options if opt and opt.strip()]
-                    
-                    if len(filtered_options) >= 2 and correct_indices:
-                        questions_data.append({
-                            'question': question_text.strip(),
-                            'options': filtered_options,
-                            'correct_options': correct_indices
-                        })
+                        # Charger le contenu existant
+                        try:
+                            content = json.loads(exercise.content) if exercise.content else {}
+                        except:
+                            content = {}
+                        
+                        # S'assurer que content est un dictionnaire
+                        if not isinstance(content, dict):
+                            content = {}
+                            
+                        # Si l'image principale existe, la supprimer
+                        if 'main_image' in content:
+                            main_image_path = content['main_image']
+                            try:
+                                # Convertir le chemin relatif en chemin absolu si nécessaire
+                                if main_image_path and not os.path.isabs(main_image_path):
+                                    main_image_path = os.path.join(app.root_path, 'static', main_image_path.lstrip('/'))
+                                
+                                # Supprimer physiquement le fichier s'il existe
+                                if main_image_path and os.path.exists(main_image_path):
+                                    os.remove(main_image_path)
+                                    app.logger.info(f"[EDIT_DEBUG] Fichier image supprimé: {main_image_path}")
+                                
+                                # Si vous utilisez Cloudinary, décommentez cette ligne :
+                                # cloud_storage.delete_file(main_image_path)
+                                
+                            except Exception as e:
+                                app.logger.error(f"[EDIT_DEBUG] Erreur lors de la suppression du fichier {main_image_path}: {str(e)}")
+                            
+                            # Supprimer la référence à l'image dans le contenu
+                            del content['main_image']
+                            app.logger.info(f"[EDIT_DEBUG] Référence à l'image principale supprimée: {main_image_path}")
+                            
+                            # Sauvegarder le contenu mis à jour
+                            exercise.content = json.dumps(content)
+                    except Exception as e:
+                        app.logger.error(f"[EDIT_DEBUG] Erreur lors de la suppression de l'image principale: {str(e)}")
                 
-                if not questions_data:
-                    flash('Veuillez ajouter au moins une question avec des options et des réponses correctes.', 'error')
-                    return render_template('exercise_types/qcm_multichoix_edit.html', exercise=exercise, content=json.loads(exercise.content))
+                # Gestion de l'image principale à légender
+                app.logger.info(f"[EDIT_DEBUG] Clés des fichiers reçus: {list(request.files.keys())}")
+                if 'main_image' in request.files:
+                    main_image_file = request.files['main_image']
+                    app.logger.info(f"[EDIT_DEBUG] Fichier main_image reçu: {main_image_file.filename if main_image_file else 'None'}")
+                    if main_image_file and main_image_file.filename != '':
+                        if allowed_file(main_image_file.filename, main_image_file):
+                            try:
+                                # Charger le contenu existant pour récupérer l'ancienne image
+                                try:
+                                    content = json.loads(exercise.content) if exercise.content else {}
+                                except:
+                                    content = {}
+                                
+                                # Sauvegarder le chemin de l'ancienne image pour suppression ultérieure
+                                old_main_image = content.get('main_image')
+                                
+                                # Sauvegarder temporairement le fichier pour vérifier son intégrité
+                                temp_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(main_image_file.filename))
+                                main_image_file.save(temp_path)
+                                
+                                # Approche ultra-simplifiée pour l'upload d'image
+                                try:
+                                    # Utiliser directement le fichier original sans validation
+                                    app.logger.info(f"[EDIT_DEBUG] Tentative d'upload de l'image principale")
+                                    app.logger.info(f"[EDIT_DEBUG] Fichier temporaire: {temp_path}")
+                                    app.logger.info(f"[EDIT_DEBUG] Fichier existe: {os.path.exists(temp_path)}")
+                                    app.logger.info(f"[EDIT_DEBUG] Taille du fichier: {os.path.getsize(temp_path) if os.path.exists(temp_path) else 'N/A'}")
+                                    
+                                    # Créer le dossier de destination s'il n'existe pas
+                                    dest_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'exercises', 'image_labeling')
+                                    os.makedirs(dest_folder, exist_ok=True)
+                                    
+                                    # Générer un nom de fichier unique avec un timestamp pour éviter les conflits
+                                    timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+                                    file_ext = os.path.splitext(secure_filename(main_image_file.filename))[1].lower()
+                                    normalized_filename = f"image_{timestamp}{file_ext}"
+                                    dest_path = os.path.join(dest_folder, normalized_filename)
+                                    
+                                    # Copier le fichier vers le dossier de destination
+                                    import shutil
+                                    shutil.copy2(temp_path, dest_path)
+                                    app.logger.info(f"[EDIT_DEBUG] Fichier copié vers: {dest_path} (nom normalisé)")
+                                    
+                                    # Supprimer l'ancienne image si elle existe
+                                    if old_main_image:
+                                        try:
+                                            old_image_path = os.path.join(app.root_path, 'static', old_main_image.lstrip('/'))
+                                            if os.path.exists(old_image_path):
+                                                os.remove(old_image_path)
+                                                app.logger.info(f"[EDIT_DEBUG] Ancienne image supprimée: {old_image_path}")
+                                        except Exception as e:
+                                            app.logger.error(f"[EDIT_DEBUG] Erreur lors de la suppression de l'ancienne image: {str(e)}")
+                                    
+                                    # Générer l'URL normalisée pour la nouvelle image (URL publique servie par Flask)
+                                    main_image_url = f"/static/uploads/exercises/image_labeling/{normalized_filename}"
+                                    app.logger.info(f"[EDIT_DEBUG] Nouvelle URL d'image: {main_image_url}")
+                                    
+                                    # Supprimer le fichier temporaire
+                                    os.remove(temp_path)
+                                    
+                                    if main_image_url:
+                                        try:
+                                            # Charger le contenu existant ou créer un nouveau dictionnaire
+                                            try:
+                                                content = json.loads(exercise.content) if exercise.content else {}
+                                            except:
+                                                content = {}
+                                            
+                                            # S'assurer que content est un dictionnaire
+                                            if not isinstance(content, dict):
+                                                content = {}
+                                                
+                                            # Mettre à jour l'image principale dans le contenu
+                                            content['main_image'] = main_image_url
+
+                                            # S'assurer que l'URL est compatible avec le template
+                                            # Note: l'URL générée commence déjà par '/', aucune normalisation nécessaire ici.
+                                            if not main_image_url.startswith('/'):
+                                                app.logger.warning(f"[EDIT_DEBUG] URL d'image non standard détectée: {main_image_url}. Utilisation telle quelle.")
+                                            
+                                            # Sauvegarder le contenu mis à jour
+                                            exercise.content = json.dumps(content)
+                                            exercise.image_path = main_image_url  # Synchronisation avec content.main_image
+                                            app.logger.info(f"[EDIT_DEBUG] Image principale mise à jour pour image_labeling: {main_image_url}")
+                                        except Exception as e:
+                                            import traceback
+                                            app.logger.error(f"[EDIT_DEBUG] Erreur lors de la mise à jour de l'image principale: {str(e)}")
+                                            app.logger.error(traceback.format_exc())
+                                except Exception as e:
+                                    import traceback
+                                    app.logger.error(f"[EDIT_DEBUG] Erreur lors de la vérification de l'image: {str(e)}")
+                                    app.logger.error(traceback.format_exc())
+                                    flash("L'image téléversée n'est pas valide.", "danger")
+                                    if os.path.exists(temp_path):
+                                        os.remove(temp_path)
+                                    return redirect(url_for('edit_exercise', exercise_id=exercise_id))
+                            except Exception as e:
+                                app.logger.error(f"[EDIT_DEBUG] Erreur lors de la sauvegarde temporaire: {str(e)}")
+                                flash("Erreur lors du traitement de l'image.", "danger")
+                                return redirect(url_for('edit_exercise', exercise_id=exercise_id))
+                        else:
+                            flash("Format de fichier non autorisé. Utilisez JPG, PNG ou GIF.", "danger")
+                            return redirect(url_for('edit_exercise', exercise_id=exercise_id))
+
+            else:
+                # Gestion standard de l'image pour les autres types d'exercices
+                if 'exercise_image' in request.files:
+                    file = request.files['exercise_image']
+                    if file and file.filename != '' and allowed_file(file.filename, file):
+                        # Charger le contenu existant pour récupérer l'ancienne image
+                        try:
+                            content = json.loads(exercise.content) if exercise.content else {}
+                        except:
+                            content = {}
+                        
+                        # Récupérer l'ancien chemin d'image pour suppression ultérieure
+                        old_image_path = content.get('image') or exercise.image_path
+                            
+                        # Utiliser le nouveau système de gestion d'images
+                        from utils.image_utils_no_normalize import normalize_image_path
+                        
+                        # Déterminer le type d'exercice pour l'organisation des dossiers
+                        exercise_type = exercise.exercise_type or 'general'
+                        
+                        # Upload avec le nouveau système
+                        image_url = cloud_storage.upload_file(file, exercise_type=exercise_type)
+                        if image_url:
+                            # Normaliser le chemin de l'image pour assurer la cohérence
+                            # Passer le type d'exercice à la fonction de normalisation
+                            normalized_image_url = normalize_image_path(image_url, exercise_type=exercise_type)
+                            
+                            # Supprimer l'ancienne image si elle existe et est différente de la nouvelle
+                            if old_image_path and old_image_path != normalized_image_url:
+                                try:
+                                    # Supprimer l'ancienne image du stockage local si elle existe
+                                    if os.path.exists(old_image_path):
+                                        os.remove(old_image_path)
+                                        app.logger.info(f"[EDIT_DEBUG] Ancienne image locale supprimée: {old_image_path}")
+                                    
+                                    # Supprimer l'image de Cloudinary si configuré
+                                    if cloud_storage.cloudinary_configured:
+                                        try:
+                                            import cloudinary.uploader
+                                            # Extraire le public_id du chemin de l'ancienne image
+                                            # Le public_id est généralement le nom du fichier sans extension
+                                            public_id = os.path.splitext(os.path.basename(old_image_path))[0]
+                                            # Supprimer le préfixe du dossier s'il existe
+                                            if '/' in public_id:
+                                                public_id = public_id.split('/')[-1]
+                                            cloudinary.uploader.destroy(public_id)
+                                            app.logger.info(f"[EDIT_DEBUG] Ancienne image supprimée de Cloudinary: {public_id}")
+                                        except Exception as e:
+                                            app.logger.error(f"[EDIT_DEBUG] Erreur lors de la suppression de l'image sur Cloudinary: {str(e)}")
+                                            # Continuer même en cas d'échec de suppression sur Cloudinary
+                                            
+                                except Exception as e:
+                                    app.logger.error(f"[EDIT_DEBUG] Erreur lors de la suppression de l'ancienne image {old_image_path}: {str(e)}")
+                                    # Ne pas bloquer la mise à jour en cas d'échec de suppression
+                            
+                            # Mettre à jour les chemins d'image
+                            exercise.image_path = normalized_image_url
+                            app.logger.info(f"[EDIT_DEBUG] Nouvelle image enregistrée: {normalized_image_url}")
+                            
+                            # S'assurer que l'image est également enregistrée dans le contenu de l'exercice
+                            try:
+                                # Charger le contenu existant ou créer un nouveau dictionnaire
+                                try:
+                                    content = json.loads(exercise.content) if exercise.content else {}
+                                except:
+                                    content = {}
+                                
+                                # S'assurer que content est un dictionnaire
+                                if not isinstance(content, dict):
+                                    content = {}
+                                
+                                # Supprimer l'ancienne image du contenu si elle existe
+                                if 'image' in content and content['image'] != normalized_image_url:
+                                    old_content_image = content['image']
+                                    try:
+                                        if os.path.exists(old_content_image):
+                                            os.remove(old_content_image)
+                                            app.logger.info(f"[EDIT_DEBUG] Ancienne image du contenu supprimée: {old_content_image}")
+                                    except Exception as e:
+                                        app.logger.error(f"[EDIT_DEBUG] Erreur lors de la suppression de l'ancienne image du contenu: {str(e)}")
+                                
+                                # Mettre à jour avec la nouvelle image
+                                content['image'] = normalized_image_url
+                                
+                                # Sauvegarder le contenu mis à jour
+                                exercise.content = json.dumps(content)
+                                app.logger.info(f"[EDIT_DEBUG] Image ajoutée au contenu de l'exercice: {normalized_image_url}")
+                            except Exception as e:
+                                app.logger.error(f"[EDIT_DEBUG] Erreur lors de l'ajout de l'image au contenu: {str(e)}")
+                                # En cas d'erreur, on continue quand même pour ne pas bloquer la mise à jour
+                # Gérer la suppression d'image si demandée UNIQUEMENT si pas de nouvelle image
+                if ('remove_exercise_image' in request.form and 
+                    request.form['remove_exercise_image'] == 'true' and 
+                    not ('exercise_image' in request.files and request.files['exercise_image'].filename)):
+                    # Supprimer l'image à la fois de exercise.image_path et de content['image']
+                    app.logger.info(f"[EDIT_DEBUG] Suppression de l'image demandée (sans nouvelle image)")
+                    
+                    # Charger le contenu existant
+                    try:
+                        content = json.loads(exercise.content) if exercise.content else {}
+                    except:
+                        content = {}
+                    
+                    # S'assurer que content est un dictionnaire
+                    if not isinstance(content, dict):
+                        content = {}
+                    
+                    # Supprimer l'image du contenu
+                    if 'image' in content:
+                        del content['image']
+                        app.logger.info(f"[EDIT_DEBUG] Image supprimée de content['image']")
+                    
+                    # Supprimer l'image_path de l'exercice
+                    exercise.image_path = None
+                    app.logger.info(f"[EDIT_DEBUG] Image_path supprimé")
+                    
+                    # Sauvegarder le contenu mis à jour
+                    exercise.content = json.dumps(content)
                 
-                # Préserver l'image existante si pas de nouvelle image
-                current_content = json.loads(exercise.content) if exercise.content else {}
-                content = {'questions': questions_data}
-                
-                # Gestion de l'image optionnelle pour QCM Multichoix
-                if 'qcm_multichoix_image' in request.files:
-                    image_file = request.files['qcm_multichoix_image']
-                    if image_file and image_file.filename != '' and allowed_file(image_file.filename):
+                # Si aucune nouvelle image n'est téléchargée et qu'aucune suppression n'est demandée,
+                # synchroniser les chemins d'image entre exercise.image_path et content['image']
+                try:
+                    if exercise.image_path and not content.get('image'):
+                        # Si exercise.image_path existe mais pas content['image']
+                        content['image'] = exercise.image_path
+                        exercise.content = json.dumps(content)
+                        app.logger.info(f"[EDIT_DEBUG] Image copiée de exercise.image_path vers content['image']: {exercise.image_path}")
+                    
+                    # Si content['image'] existe mais pas exercise.image_path
+                    elif content.get('image') and not exercise.image_path:
+                        exercise.image_path = content['image']
+                        app.logger.info(f"[EDIT_DEBUG] Image copiée de content['image'] vers exercise.image_path: {content['image']}")
+                except Exception as e:
+                    app.logger.error(f"[EDIT_DEBUG] Erreur lors de la synchronisation des images: {str(e)}")
+                    # Ne pas bloquer le processus d'édition en cas d'erreur de synchronisation
+
+            # Gestion de l'image de l'exercice
+            if 'image' in request.files:
+                image_file = request.files['image']
+                if image_file and image_file.filename != '':
+                    if allowed_file(image_file.filename):
+                        filename = secure_filename(image_file.filename)
+                        unique_filename = generate_unique_filename(filename)
+                        
+                        # Créer le dossier de destination s'il n'existe pas
+                        dest_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'exercises')
+                        os.makedirs(dest_folder, exist_ok=True)
+                        
+                        # Sauvegarder le fichier localement
+                        filepath = os.path.join(dest_folder, unique_filename)
+                        image_file.save(filepath)
+                        
+                        # Mettre à jour le chemin de l'image
+                        exercise.image_path = f'/static/uploads/exercises/{unique_filename}'
+                        
+                        # Mettre à jour le contenu JSON si nécessaire
+                        if hasattr(exercise, 'content') and exercise.content:
+                            try:
+                                content = json.loads(exercise.content)
+                                content['image'] = exercise.image_path
+                                exercise.content = json.dumps(content)
+                            except json.JSONDecodeError:
+                                app.logger.error("Erreur de décodage du contenu JSON de l'exercice")
+                        
                         # Utiliser Cloudinary pour l'upload en production, stockage local en dev
                         image_url = cloud_storage.upload_file(image_file, folder="exercises/qcm_multichoix")
                         if image_url:
                             # Ajouter le chemin de l'image au contenu
-                            content['image'] = image_url
+                            content['image'] = f'/static/exercises/{unique_filename}'
                             current_app.logger.info(f'[QCM_MULTICHOIX_EDIT_DEBUG] Nouvelle image sauvegardée: {content["image"]}')
                     else:
                         # Conserver l'image existante
-                        if 'image' in current_content:
-                            content['image'] = current_content['image']
+                        if hasattr(exercise, 'content') and exercise.content:
+                            try:
+                                content = json.loads(exercise.content)
+                                if 'image' in content:
+                                    exercise.image_path = content['image']
+                            except json.JSONDecodeError:
+                                app.logger.error("Erreur de décodage du contenu JSON de l'exercice")
                 else:
-                    # Conserver l'image existante
-                    if 'image' in current_content:
-                        content['image'] = current_content['image']
-                
-                # Mettre à jour le contenu
-                exercise.content = json.dumps(content, ensure_ascii=False)
-                current_app.logger.info(f'[QCM_MULTICHOIX_EDIT_DEBUG] Contenu sauvegardé: {len(questions_data)} questions')
-                
-            elif exercise.exercise_type == 'fill_in_blanks':
-                print(f'[FILL_BLANKS_EDIT_DEBUG] Traitement du contenu Texte à trous')
-                print(f'[FILL_BLANKS_EDIT_DEBUG] Tous les champs du formulaire: {list(request.form.keys())}')
-
-                # Récupérer les phrases et mots du formulaire
-                sentences = request.form.getlist('sentences[]')
-                words = request.form.getlist('words[]')
-                
-                print(f'[FILL_BLANKS_EDIT_DEBUG] Phrases trouvées: {sentences}')
-                print(f'[FILL_BLANKS_EDIT_DEBUG] Mots trouvés: {words}')
-                
-                # Filtrer les phrases et mots vides
-                sentences = [s.strip() for s in sentences if s.strip()]
-                words = [w.strip() for w in words if w.strip()]
-                
-                if not sentences:
-                    flash('Veuillez ajouter au moins une phrase.', 'error')
-                    return render_template('edit_exercise.html', exercise=exercise)
-                
-                if not words:
-                    flash('Veuillez ajouter au moins un mot.', 'error')
-                    return render_template('edit_exercise.html', exercise=exercise)
-                
-                # Vérifier que chaque phrase contient au moins un trou
-                for i, sentence in enumerate(sentences):
-                    if '___' not in sentence:
-                        flash(f'La phrase {i+1} ne contient pas de trous (utilisez ___ pour marquer les trous).', 'error')
-                        return render_template('edit_exercise.html', exercise=exercise)
-                
-                # Vérifier qu'il y a assez de mots pour tous les trous
-                total_blanks = sum(sentence.count('___') for sentence in sentences)
-                if len(words) < total_blanks:
-                    flash(f'Il n\'y a pas assez de mots ({len(words)}) pour remplir tous les trous ({total_blanks}).', 'error')
-                    return render_template('edit_exercise.html', exercise=exercise)
-                
-                # Mettre à jour le contenu
-                content = {
-                    'sentences': sentences,
-                    'words': words
-                }
-                exercise.content = json.dumps(content)
-                print(f'[FILL_BLANKS_EDIT_DEBUG] Contenu sauvegardé: {len(sentences)} phrases, {len(words)} mots')
-            
-            elif exercise.exercise_type == 'word_placement':
-                print(f'[WORD_PLACEMENT_EDIT_DEBUG] Traitement du contenu Mots à placer')
-                print(f'[WORD_PLACEMENT_EDIT_DEBUG] Tous les champs du formulaire: {list(request.form.keys())}')
-
-                # Récupérer les phrases et mots du formulaire
-                sentences = request.form.getlist('sentences[]')
-                words = request.form.getlist('words[]')
-                
-                print(f'[WORD_PLACEMENT_EDIT_DEBUG] Phrases trouvées: {sentences}')
-                print(f'[WORD_PLACEMENT_EDIT_DEBUG] Mots trouvés: {words}')
-                
-                # Filtrer les phrases et mots vides
-                sentences = [s.strip() for s in sentences if s.strip()]
-                words = [w.strip() for w in words if w.strip()]
-                
-                if not sentences:
-                    flash('Veuillez ajouter au moins une phrase.', 'error')
-                    return render_template('exercise_types/word_placement_edit.html', exercise=exercise, content=exercise.get_content())
-                
-                if not words:
-                    flash('Veuillez ajouter au moins un mot.', 'error')
-                    return render_template('exercise_types/word_placement_edit.html', exercise=exercise, content=exercise.get_content())
-                
-                # Vérifier que chaque phrase contient au moins un espace à remplir
-                for i, sentence in enumerate(sentences):
-                    if '___' not in sentence:
-                        flash(f'La phrase {i+1} ne contient pas d\'espaces à remplir (utilisez ___ pour marquer les emplacements).', 'error')
-                        return render_template('exercise_types/word_placement_edit.html', exercise=exercise, content=exercise.get_content())
-                
-                # Compter le nombre total d'espaces à remplir
-                total_blanks = sum(sentence.count('___') for sentence in sentences)
-                
-                # Vérifier qu'il y a au moins autant de mots que d'espaces à remplir
-                if len(words) < total_blanks:
-                    flash(f'Il n\'y a pas assez de mots ({len(words)}) pour remplir tous les espaces ({total_blanks}). Ajoutez au moins {total_blanks - len(words)} mot(s) supplémentaire(s).', 'error')
-                    return render_template('exercise_types/word_placement_edit.html', exercise=exercise, content=exercise.get_content())
-                
-                # Créer les réponses correctes en ordre séquentiel
-                answers = []
-                for sentence in sentences:
-                    parts = sentence.split('___')
-                    # Pour chaque espace dans cette phrase, on aura besoin d'une réponse
-                    for i in range(len(parts) - 1):
-                        # Pour l'instant, on utilise les premiers mots comme réponses correctes
-                        # L'enseignant devra ajuster selon l'ordre logique
-                        if len(answers) < len(words):
-                            answers.append(words[len(answers)])
-                
-                # Mettre à jour le contenu
-                content = {
-                    'sentences': sentences,
-                    'words': words,
-                    'answers': answers  # Réponses correctes dans l'ordre séquentiel
-                }
-                
-                # Gestion de l'upload d'image (optionnel)
-                if 'image' in request.files:
-                    file = request.files['image']
-                    if file and file.filename:
-                        filename = secure_filename(file.filename)
-                        # Utiliser Cloudinary pour l'upload en production, stockage local en dev
-                        image_url = cloud_storage.upload_file(file, folder="exercises")
-                        if image_url:
-                            exercise.image_path = image_url
-                            current_app.logger.info(f"[WORD_PLACEMENT_DEBUG] Image sauvegardée: {exercise.image_path}")
-                
-                exercise.content = json.dumps(content, ensure_ascii=False)
-                print(f'[WORD_PLACEMENT_EDIT_DEBUG] Contenu sauvegardé: {len(sentences)} phrases, {len(words)} mots, {len(answers)} réponses')
-            
-            elif exercise.exercise_type == 'word_search':
-                print(f'[WORD_SEARCH_EDIT_DEBUG] Traitement du contenu Mots mêlés')
-                
-                # Récupérer les mots à trouver
-                words = request.form.getlist('words[]')
-                # Filtrer les mots vides
-                filtered_words = [word.strip().upper() for word in words if word.strip()]
-                
-                # Récupérer la taille de grille
-                grid_size_value = request.form.get('grid_size', '8')
-                try:
-                    grid_size = int(grid_size_value)
-                    if grid_size < 8 or grid_size > 20:
-                        grid_size = 12  # Valeur par défaut
-                except (ValueError, TypeError):
-                    grid_size = 12  # Valeur par défaut
-                
-                # Validation
-                if not filtered_words:
-                    flash('Veuillez ajouter au moins un mot.', 'error')
-                    return render_template('edit_exercise.html', exercise=exercise)
-                
-                # Vérifier que les mots ne sont pas trop longs pour la grille
-                max_word_length = max(len(word) for word in filtered_words)
-                if max_word_length > grid_size:
-                    flash(f'Le mot le plus long ({max_word_length} lettres) est trop grand pour une grille {grid_size}x{grid_size}.', 'error')
-                    return render_template('edit_exercise.html', exercise=exercise)
-                
-                # Mettre à jour le contenu
-                content = {
-                    'words': filtered_words,
-                    'grid_size': {'width': grid_size, 'height': grid_size},
-                    'instructions': 'Trouvez tous les mots cachés dans la grille ci-dessous.'
-                }
-                exercise.content = json.dumps(content)
-                print(f'[WORD_SEARCH_EDIT_DEBUG] Contenu sauvegardé: {len(filtered_words)} mots, grille {grid_size}x{grid_size}')
-            
-            elif exercise.exercise_type == 'drag_and_drop':
-                print(f'[DRAG_DROP_EDIT_DEBUG] Traitement du contenu Glisser-déposer')
-                
-                # Traitement pour glisser-déposer (édition)
-                drag_items = request.form.getlist('drag_items[]')
-                drop_zones = request.form.getlist('drop_zones[]')
-                correct_order_str = request.form.get('correct_order', '')
-                
-                # Filtrer les éléments vides
-                filtered_drag_items = [item.strip() for item in drag_items if item.strip()]
-                filtered_drop_zones = [zone.strip() for zone in drop_zones if zone.strip()]
-                
-                # Validation
-                if not filtered_drag_items:
-                    flash('Au moins un élément à glisser est requis.', 'error')
-                    return render_template('edit_exercise.html', exercise=exercise)
-                
-                if not filtered_drop_zones:
-                    flash('Au moins une zone de dépôt est requise.', 'error')
-                    return render_template('edit_exercise.html', exercise=exercise)
-                
-                if len(filtered_drag_items) != len(filtered_drop_zones):
-                    flash('Le nombre d\'éléments à glisser doit être égal au nombre de zones de dépôt.', 'error')
-                    return render_template('edit_exercise.html', exercise=exercise)
-                
-                # Parser l'ordre correct
-                try:
-                    if correct_order_str.strip():
-                        correct_order = [int(x.strip()) for x in correct_order_str.split(',') if x.strip()]
-                        if len(correct_order) != len(filtered_drag_items):
-                            flash('L\'ordre correct doit contenir autant d\'éléments que d\'éléments à glisser.', 'error')
-                            return render_template('edit_exercise.html', exercise=exercise)
-                    else:
-                        # Générer un ordre par défaut si vide
-                        correct_order = list(range(len(filtered_drag_items)))
-                except (ValueError, AttributeError):
-                    flash('L\'ordre correct doit être une liste de nombres séparés par des virgules (ex: 1,0,2,3).', 'error')
-                    return render_template('edit_exercise.html', exercise=exercise)
-                
-                # Mettre à jour le contenu
-                content = {
-                    'draggable_items': filtered_drag_items,
-                    'drop_zones': filtered_drop_zones,
-                    'correct_order': correct_order
-                }
-                exercise.content = json.dumps(content)
-                print(f'[DRAG_DROP_EDIT_DEBUG] Contenu sauvegardé: {len(filtered_drag_items)} éléments, {len(filtered_drop_zones)} zones')
-            
-            elif exercise.exercise_type == 'underline_words':
-                print(f'[UNDERLINE_EDIT_DEBUG] Traitement du contenu Souligner les mots')
-                
-                # Récupérer les instructions et phrases
-                instructions = request.form.get('instructions', '').strip()
-                sentences = request.form.getlist('sentences[]')
-                words_to_underline_all = request.form.getlist('words_to_underline[]')
-                
-                # Filtrer les éléments vides
-                sentences = [s.strip() for s in sentences if s.strip()]
-                words_to_underline_all = [w.strip() for w in words_to_underline_all if w.strip()]
-                
-                if not sentences:
-                    flash('Veuillez ajouter au moins une phrase.', 'error')
-                    return render_template('edit_exercise.html', exercise=exercise)
-                
-                if not words_to_underline_all:
-                    flash('Veuillez ajouter au moins un mot à souligner.', 'error')
-                    return render_template('edit_exercise.html', exercise=exercise)
-                
-                # CORRECTION: Mapper chaque phrase avec ses mots spécifiques
-                words_data = []
-                for i, sentence in enumerate(sentences):
-                    # Récupérer les mots spécifiques pour cette phrase (index i)
-                    if i < len(words_to_underline_all):
-                        # Séparer les mots par virgules pour cette phrase spécifique
-                        specific_words = [w.strip() for w in words_to_underline_all[i].split(',') if w.strip()]
-                    else:
-                        specific_words = []
-                    
-                    words_data.append({
-                        'sentence': sentence,
-                        'words_to_underline': specific_words
-                    })
-                    print(f'[UNDERLINE_EDIT_DEBUG] Phrase {i+1}: "{sentence}" -> Mots: {specific_words}')
-                
-                # Mettre à jour le contenu
-                content = {
-                    'instructions': instructions or 'Soulignez les mots demandés dans les phrases suivantes.',
-                    'words': words_data
-                }
-                exercise.content = json.dumps(content)
-                print(f'[UNDERLINE_EDIT_DEBUG] Contenu sauvegardé: {len(sentences)} phrases avec mots spécifiques par phrase')
-            
-            elif exercise.exercise_type == 'image_labeling':
-                current_app.logger.info(f'[IMAGE_LABELING_EDIT_DEBUG] Traitement du contenu Image Labeling (format compatible)')
-                current_app.logger.info(f'[IMAGE_LABELING_EDIT_DEBUG] Tous les champs du formulaire: {list(request.form.keys())}')
-                
-                # Récupérer les étiquettes (format compatible avec création)
-                labels = request.form.getlist('image_labels[]')
-                labels = [label.strip() for label in labels if label.strip()]
-                current_app.logger.info(f'[IMAGE_LABELING_EDIT_DEBUG] Étiquettes trouvées: {labels}')
-                
-                # Récupérer les zones (format compatible avec création)
-                zone_x_list = request.form.getlist('zone_x[]')
-                zone_y_list = request.form.getlist('zone_y[]')
-                zone_label_list = request.form.getlist('zone_label[]')
-                
-                current_app.logger.info(f'[IMAGE_LABELING_EDIT_DEBUG] Zones X: {zone_x_list}')
-                current_app.logger.info(f'[IMAGE_LABELING_EDIT_DEBUG] Zones Y: {zone_y_list}')
-                current_app.logger.info(f'[IMAGE_LABELING_EDIT_DEBUG] Zones Labels: {zone_label_list}')
-                
-                # Construire les zones
-                zones = []
-                for i in range(min(len(zone_x_list), len(zone_y_list), len(zone_label_list))):
-                    try:
-                        x = int(zone_x_list[i])
-                        y = int(zone_y_list[i])
-                        label = zone_label_list[i].strip()
-                        
-                        if label:  # Seulement ajouter si le label n'est pas vide
-                            zones.append({
-                                'x': x,
-                                'y': y,
-                                'label': label
-                            })
-                            current_app.logger.info(f'[IMAGE_LABELING_EDIT_DEBUG] Zone {i}: x={x}, y={y}, label="{label}"')
-                    except (ValueError, TypeError) as e:
-                        current_app.logger.error(f'[IMAGE_LABELING_EDIT_DEBUG] Erreur conversion zone {i}: {e}')
-                
-                # Gestion de l'image principale
-                main_image = exercise.content and json.loads(exercise.content).get('main_image', '') if exercise.content else ''
+                    if 'image' in request.files:
+                        image_file = request.files['image']
+                        if image_file and image_file.filename != '':
+                            if allowed_file(image_file.filename, image_file):
+                                filename = secure_filename(image_file.filename)
+                                unique_filename = generate_unique_filename(filename)
+                                
+                                # Créer le dossier de destination s'il n'existe pas
+                                dest_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'exercises')
+                                os.makedirs(dest_folder, exist_ok=True)
+                                
+                                # Sauvegarder le fichier localement
+                                filepath = os.path.join(dest_folder, unique_filename)
+                                image_file.save(filepath)
+                                
+                                # Mettre à jour le chemin de l'image
+                                exercise.image_path = f'/static/uploads/exercises/{unique_filename}'
+                                
+                                # Mettre à jour le contenu JSON si nécessaire
+                                if hasattr(exercise, 'content') and exercise.content:
+                                    try:
+                                        content = json.loads(exercise.content)
+                                        content['image'] = exercise.image_path
+                                        exercise.content = json.dumps(content)
+                                    except json.JSONDecodeError:
+                                        app.logger.error("Erreur de décodage du contenu JSON de l'exercice")
+                                if image_file and image_file.filename != '' and allowed_file(image_file.filename, image_file):
+                                    # Utiliser Cloudinary pour l'upload en production, stockage local en dev
+                                    image_url = cloud_storage.upload_file(image_file, folder="exercises/qcm_multichoix")
+                                    if image_url:
+                                        # Ajouter le chemin de l'image au contenu
+                                        content['image'] = f'/static/exercises/{unique_filename}'
+                                        current_app.logger.info(f'[QCM_MULTICHOIX_EDIT_DEBUG] Nouvelle image sauvegardée: {content["image"]}')
+                                else:
+                                    # Conserver l'image existante
+                                    if 'image' in current_content:
+                                        content['image'] = current_content['image']
+                            else:
+                                # Conserver l'image existante
+                                if 'image' in current_content:
+                                    content['image'] = current_content['image']
+                        else:
+                            # Conserver l'image existante
+                            if 'image' in current_content:
+                                content['image'] = current_content['image']
                 if 'main_image' in request.files:
                     file = request.files['main_image']
-                    if file and file.filename != '' and allowed_file(file.filename):
+                    if file and file.filename != '' and allowed_file(file.filename, file):
                         # Utiliser Cloudinary pour l'upload en production, stockage local en dev
                         main_image = cloud_storage.upload_file(file, folder="exercises")
-                        if main_image:
-                            current_app.logger.info(f"[IMAGE_LABELING_EDIT_DEBUG] Nouvelle image principale: {main_image}")
+                        main_image = f'/static/exercises/{filename}'
+                        current_app.logger.info(f"[IMAGE_LABELING_EDIT_DEBUG] Nouvelle image principale: {main_image}")
                 
                 # Validation
                 if not labels:
                     flash('Veuillez ajouter au moins une étiquette.', 'error')
                     return render_template('exercise_types/image_labeling_edit.html', exercise=exercise, content=json.loads(exercise.content) if exercise.content else {})
                 
-                if not zones:
-                    flash('Veuillez ajouter au moins une zone de placement.', 'error')
-                    return render_template('exercise_types/image_labeling_edit.html', exercise=exercise, content=json.loads(exercise.content) if exercise.content else {})
-                
-                if not main_image:
-                    flash('Veuillez ajouter une image principale.', 'error')
-                    return render_template('exercise_types/image_labeling_edit.html', exercise=exercise, content=json.loads(exercise.content) if exercise.content else {})
-                
-                # Validation critique : vérifier la cohérence entre étiquettes et zones
-                if len(labels) != len(zones):
-                    flash(f'Erreur de cohérence : {len(labels)} étiquettes mais {len(zones)} zones. Il faut le même nombre d\'étiquettes et de zones.', 'error')
-                    current_app.logger.error(f'[IMAGE_LABELING_EDIT_DEBUG] Incohérence: {len(labels)} étiquettes vs {len(zones)} zones')
-                    return render_template('exercise_types/image_labeling_edit.html', exercise=exercise, content=json.loads(exercise.content) if exercise.content else {})
-                
-                # Mettre à jour le contenu (format standard)
+                # Construire le contenu de l'exercice image_labeling
                 content = {
-                    'main_image': main_image,
+                    'mode': 'classic',
+                    'instructions': request.form.get('instructions', ''),
+                    'main_image': main_image if 'main_image' in locals() else current_content.get('main_image', ''),
                     'labels': labels,
                     'zones': zones
                 }
+                
                 exercise.content = json.dumps(content)
-                current_app.logger.info(f'[IMAGE_LABELING_EDIT_DEBUG] Contenu sauvegardé: {len(labels)} étiquettes, {len(zones)} zones (format compatible)')
+                current_app.logger.info(f"[IMAGE_LABELING_EDIT_DEBUG] Contenu sauvegardé avec succès")
             
             elif exercise.exercise_type == 'flashcards':
                 current_app.logger.info(f'[FLASHCARDS_EDIT_DEBUG] Traitement du contenu Flashcards')
                 
-                # Récupérer les questions et réponses
-                questions = request.form.getlist('card_questions[]')
-                answers = request.form.getlist('card_answers[]')
-                card_images = request.files.getlist('card_images[]')
-                existing_images = request.form.getlist('existing_card_images[]')
-                
-                # Filtrer les éléments vides
-                questions = [q.strip() for q in questions if q.strip()]
-                answers = [a.strip() for a in answers if a.strip()]
-                
-                if not questions:
-                    flash('Veuillez ajouter au moins une carte avec une question.', 'error')
-                    return render_template('exercise_types/flashcards_edit.html', exercise=exercise, content=json.loads(exercise.content) if exercise.content else {})
-                
-                if not answers:
-                    flash('Veuillez ajouter au moins une réponse.', 'error')
-                    return render_template('exercise_types/flashcards_edit.html', exercise=exercise, content=json.loads(exercise.content) if exercise.content else {})
-                
-                if len(questions) != len(answers):
-                    flash('Chaque carte doit avoir une question et une réponse.', 'error')
-                    return render_template('exercise_types/flashcards_edit.html', exercise=exercise, content=json.loads(exercise.content) if exercise.content else {})
-                
-                # Construire les données des cartes
                 cards_data = []
-                for i, (question, answer) in enumerate(zip(questions, answers)):
-                    card_data = {
-                        'question': question,
-                        'answer': answer,
-                        'image': None
-                    }
+                card_count = 0
+                
+                # Compter le nombre de cartes
+                for key in request.form:
+                    if key.startswith('card_question_'):
+                        card_count += 1
+                
+                # Traiter chaque carte
+                for i in range(card_count):
+                    question = request.form.get(f'card_question_{i}', '').strip()
+                    answer = request.form.get(f'card_answer_{i}', '').strip()
                     
-                    # Gestion de l'image pour cette carte
-                    # D'abord, conserver l'image existante si elle existe
-                    if i < len(existing_images) and existing_images[i]:
-                        card_data['image'] = existing_images[i]
-                    
-                    # Ensuite, remplacer par une nouvelle image si uploadée
-                    if i < len(card_images) and card_images[i] and card_images[i].filename != '':
-                        image_file = card_images[i]
-                        if allowed_file(image_file.filename):
-                            # Utiliser Cloudinary pour l'upload en production, stockage local en dev
-                            image_url = cloud_storage.upload_file(image_file, folder="flashcards")
-                            if image_url:
-                                card_data['image'] = image_url
-                                current_app.logger.info(f'[FLASHCARDS_EDIT_DEBUG] Nouvelle image carte {i+1}: {image_url}')
-                    
-                    cards_data.append(card_data)
-                    current_app.logger.info(f'[FLASHCARDS_EDIT_DEBUG] Carte {i+1}: "{question[:30]}..." -> "{answer}"')
+                    if question and answer:
+                        card_data = {
+                            'question': question,
+                            'answer': answer
+                        }
+                        
+                        # Gestion de l'image de la carte
+                        if f'card_image_{i}' in request.files:
+                            image_file = request.files[f'card_image_{i}']
+                            if image_file and image_file.filename and allowed_file(image_file.filename, image_file):
+                                try:
+                                    # Utiliser Cloudinary pour l'upload en production, stockage local en dev
+                                    image_url = cloud_storage.upload_file(image_file, folder="flashcards")
+                                    if image_url:
+                                        card_data['image'] = image_url
+                                        current_app.logger.info(f'[FLASHCARDS_EDIT_DEBUG] Nouvelle image carte {i+1}: {image_url}')
+                                except Exception as e:
+                                    current_app.logger.error(f'[FLASHCARDS_EDIT_DEBUG] Erreur upload image carte {i+1}: {str(e)}')
+                        
+                        cards_data.append(card_data)
+                        current_app.logger.info(f'[FLASHCARDS_EDIT_DEBUG] Carte {i+1}: "{question[:30]}..." -> "{answer}"')
                 
                 # Mettre à jour le contenu
                 content = {
@@ -4639,11 +4879,31 @@ def edit_exercise(exercise_id):
                     
                     # Gestion du contenu gauche (left)
                     if left_type == 'image':
+                        old_left_content = None
+                        # Récupérer l'ancien contenu si c'était une image
+                        if hasattr(exercise, 'content'):
+                            try:
+                                old_content = json.loads(exercise.content)
+                                if 'pairs' in old_content:
+                                    for old_pair in old_content['pairs']:
+                                        if str(old_pair.get('id')) == str(pair_id) and old_pair['left']['type'] == 'image':
+                                            old_left_content = old_pair['left']['content']
+                                            break
+                            except Exception as e:
+                                current_app.logger.error(f'[PAIRS_EDIT_DEBUG] Erreur lecture ancien contenu: {str(e)}')
+                        
                         if f'pair_left_image_{pair_id}' in request.files:
                             file = request.files[f'pair_left_image_{pair_id}']
-                            if file and file.filename and allowed_file(file.filename):
-                                # Utiliser Cloudinary pour l'upload en production, stockage local en dev
-                                left_content = cloud_storage.upload_file(file, folder="pairs")
+                            if file and file.filename and allowed_file(file.filename, file):
+                                # Supprimer l'ancienne image si elle existe
+                                if old_left_content:
+                                    try:
+                                        cloud_storage.delete_file(old_left_content)
+                                        current_app.logger.info(f'[PAIRS_EDIT_DEBUG] Ancienne image gauche supprimée: {old_left_content}')
+                                    except Exception as e:
+                                        current_app.logger.error(f'[PAIRS_EDIT_DEBUG] Erreur suppression ancienne image gauche: {str(e)}')
+                                # Uploader la nouvelle image
+                                left_content = cloud_storage.upload_file(file, folder="pairs", exercise_type="pairs")
                                 if not left_content:
                                     current_app.logger.error(f'[PAIRS_EDIT_DEBUG] Erreur upload image gauche {pair_id}')
                         if not left_content:
@@ -4653,11 +4913,31 @@ def edit_exercise(exercise_id):
                     
                     # Gestion du contenu droit (right)
                     if right_type == 'image':
+                        old_right_content = None
+                        # Récupérer l'ancien contenu si c'était une image
+                        if hasattr(exercise, 'content'):
+                            try:
+                                old_content = json.loads(exercise.content)
+                                if 'pairs' in old_content:
+                                    for old_pair in old_content['pairs']:
+                                        if str(old_pair.get('id')) == str(pair_id) and old_pair['right']['type'] == 'image':
+                                            old_right_content = old_pair['right']['content']
+                                            break
+                            except Exception as e:
+                                current_app.logger.error(f'[PAIRS_EDIT_DEBUG] Erreur lecture ancien contenu droit: {str(e)}')
+                        
                         if f'pair_right_image_{pair_id}' in request.files:
                             file = request.files[f'pair_right_image_{pair_id}']
-                            if file and file.filename and allowed_file(file.filename):
-                                # Utiliser Cloudinary pour l'upload en production, stockage local en dev
-                                right_content = cloud_storage.upload_file(file, folder="pairs")
+                            if file and file.filename and allowed_file(file.filename, file):
+                                # Supprimer l'ancienne image si elle existe
+                                if old_right_content:
+                                    try:
+                                        cloud_storage.delete_file(old_right_content)
+                                        current_app.logger.info(f'[PAIRS_EDIT_DEBUG] Ancienne image droite supprimée: {old_right_content}')
+                                    except Exception as e:
+                                        current_app.logger.error(f'[PAIRS_EDIT_DEBUG] Erreur suppression ancienne image droite: {str(e)}')
+                                # Uploader la nouvelle image
+                                right_content = cloud_storage.upload_file(file, folder="pairs", exercise_type="pairs")
                                 if not right_content:
                                     current_app.logger.error(f'[PAIRS_EDIT_DEBUG] Erreur upload image droite {pair_id}')
                         if not right_content:
@@ -4676,10 +4956,56 @@ def edit_exercise(exercise_id):
                     flash('Veuillez ajouter au moins une paire.', 'error')
                     return render_template('edit_exercise.html', exercise=exercise)
                 
+                # Identifier les paires supprimées pour nettoyer les images
+                if hasattr(exercise, 'content'):
+                    try:
+                        old_content = json.loads(exercise.content)
+                        if 'pairs' in old_content:
+                            # Créer un ensemble des IDs de paires actuelles
+                            current_pair_ids = {str(pair.get('id')) for pair in pairs}
+                            
+                            # Parcourir les anciennes paires pour trouver celles supprimées
+                            for old_pair in old_content['pairs']:
+                                old_pair_id = str(old_pair.get('id'))
+                                if old_pair_id not in current_pair_ids:
+                                    # Supprimer l'image de gauche si elle existe
+                                    if old_pair.get('left', {}).get('type') == 'image':
+                                        try:
+                                            cloud_storage.delete_file(old_pair['left']['content'])
+                                            current_app.logger.info(f'[PAIRS_EDIT_DEBUG] Ancienne image gauche supprimée (paire supprimée): {old_pair["left"]["content"]}')
+                                        except Exception as e:
+                                            current_app.logger.error(f'[PAIRS_EDIT_DEBUG] Erreur suppression ancienne image gauche (paire supprimée): {str(e)}')
+                                    # Supprimer l'image de droite si elle existe
+                                    if old_pair.get('right', {}).get('type') == 'image':
+                                        try:
+                                            cloud_storage.delete_file(old_pair['right']['content'])
+                                            current_app.logger.info(f'[PAIRS_EDIT_DEBUG] Ancienne image droite supprimée (paire supprimée): {old_pair["right"]["content"]}')
+                                        except Exception as e:
+                                            current_app.logger.error(f'[PAIRS_EDIT_DEBUG] Erreur suppression ancienne image droite (paire supprimée): {str(e)}')
+                    except Exception as e:
+                        current_app.logger.error(f'[PAIRS_EDIT_DEBUG] Erreur nettoyage des images des paires supprimées: {str(e)}')
+            
                 # Mettre à jour le contenu
                 content = {'pairs': pairs}
+                
+                # Normaliser les chemins d'images dans le contenu
+                content = normalize_pairs_exercise_content(content, exercise_type='pairs')
+                
                 exercise.content = json.dumps(content)
-                print(f'[PAIRS_EDIT_DEBUG] Contenu sauvegardé: {len(pairs)} paires')
+                print(f'[PAIRS_EDIT_DEBUG] Contenu sauvegardé et normalisé: {len(pairs)} paires')
+                
+                # Commit explicite pour sauvegarder les modifications
+                try:
+                    db.session.commit()
+                    flash(f'Exercice d\'association de paires modifié avec succès!', 'success')
+                    print(f'[PAIRS_EDIT_DEBUG] Modifications sauvegardées en base de données')
+                    # Rediriger vers la page de visualisation de l'exercice
+                    return redirect(url_for('view_exercise', exercise_id=exercise.id))
+                except Exception as e:
+                    db.session.rollback()
+                    print(f'[PAIRS_EDIT_DEBUG] Erreur lors de la sauvegarde en base de données: {str(e)}')
+                    flash(f'Erreur lors de la modification de l\'exercice: {str(e)}', 'error')
+                    return render_template('edit_exercise.html', exercise=exercise)
             
             elif exercise.exercise_type == 'dictation':
                 print(f'[DICTATION_EDIT_DEBUG] Traitement du contenu Dictée')
@@ -4760,7 +5086,7 @@ def edit_exercise(exercise_id):
                 main_image_path = None
                 if 'legend_main_image' in request.files:
                     image_file = request.files['legend_main_image']
-                    if image_file and image_file.filename != '' and allowed_file(image_file.filename):
+                    if image_file and image_file.filename != '' and allowed_file(image_file.filename, image_file):
                         # Utiliser Cloudinary pour l'upload en production, stockage local en dev
                         main_image_path = cloud_storage.upload_file(image_file, folder="legend")
                         if main_image_path:
@@ -4947,18 +5273,251 @@ def edit_exercise(exercise_id):
                 if main_image_path and (not exercise.image_path or exercise.image_path != main_image_path):
                     exercise.image_path = main_image_path
                     current_app.logger.info(f'[LEGEND_EDIT_DEBUG] Image path synchronisé: {exercise.image_path}')
-            
-            # Mettre à jour l'exercice en base (les champs de base sont déjà mis à jour au début de la fonction POST)
-            
-            db.session.commit()
-            
-            flash(f'Exercice "{exercise.title}" modifié avec succès!', 'success')
-            return redirect(url_for('view_exercise', exercise_id=exercise.id))
-            
+                
+                # Mettre à jour le contenu de l'exercice
+                exercise.content = json.dumps(content)
+                
+                # Mettre à jour l'exercice en base (les champs de base sont déjà mis à jour au début de la fonction POST)
+                try:
+                    # Synchronisation finale des chemins d'image avant le commit final
+                    content = json.loads(exercise.content) if exercise.content else {}
+                    if not isinstance(content, dict):
+                        content = {}
+                        
+                    # Mettre à jour l'image dans le contenu si nécessaire
+                    if exercise.image_path and not content.get('image'):
+                        content['image'] = exercise.image_path
+                        exercise.content = json.dumps(content)
+                    
+                    # Commit final avec toutes les modifications
+                    db.session.commit()
+                    flash(f'Exercice "{exercise.title}" modifié avec succès!', 'success')
+                    return redirect(url_for('view_exercise', exercise_id=exercise.id))
+                    
+                except Exception as e:
+                    print(f'Erreur lors de la modification: {e}')
+                    db.session.rollback()
+                    flash(f'Erreur lors de la modification de l\'exercice: {str(e)}', 'error')
+                    return render_template('edit_exercise.html', exercise=exercise)
+                finally:
+                    db.session.close()
+                        
+            elif exercise.exercise_type == 'qcm':
+                # Traitement spécifique pour le type QCM
+                current_app.logger.info(f'[QCM_EDIT_DEBUG] Traitement du contenu QCM')
+                
+                # Récupérer les questions
+                questions = []
+                question_count = int(request.form.get('question_count', 0))
+                current_app.logger.info(f'[QCM_EDIT_DEBUG] Nombre de questions: {question_count}')
+                
+                # Récupérer les questions via questions[]
+                questions_list = request.form.getlist('questions[]')
+                current_app.logger.info(f'[QCM_EDIT_DEBUG] Questions reçues: {questions_list}')
+                
+                for q_index, question_text in enumerate(questions_list):
+                    question_text = question_text.strip()
+                    if not question_text:
+                        continue
+                    
+                    # Récupérer les options pour cette question
+                    options = []
+                    option_index = 0
+                    while True:
+                        option_text = request.form.get(f'option_{q_index}_{option_index}', '').strip()
+                        if not option_text:
+                            break
+                        options.append(option_text)
+                        option_index += 1
+                    
+                    # Récupérer la réponse correcte
+                    correct_answer = request.form.get(f'correct_{q_index}', '0')
+                    try:
+                        correct_answer = int(correct_answer)
+                    except ValueError:
+                        correct_answer = 0
+                    
+                    if options:  # Ne garder que les questions avec au moins une option
+                        questions.append({
+                            'text': question_text,
+                            'choices': options,
+                            'correct_answer': correct_answer
+                        })
+                        current_app.logger.info(f'[QCM_EDIT_DEBUG] Question {q_index+1}: "{question_text}" avec {len(options)} options')
+                
+                if not questions:
+                    flash('Veuillez ajouter au moins une question avec des options.', 'error')
+                # Mettre à jour le contenu sans préserver l'image (fonctionnalité désactivée pour QCM)
+                content = {'questions': questions}
+                
+                # Supprimer toute référence à l'image dans le contenu
+                if 'image' in content:
+                    del content['image']
+                    current_app.logger.info(f'[QCM_EDIT_DEBUG] Référence à l\'image supprimée du contenu')
+                
+                # Supprimer l'image_path de l'exercice
+                if exercise.image_path:
+                    exercise.image_path = None
+                    current_app.logger.info(f'[QCM_EDIT_DEBUG] Image_path supprimé de l\'exercice')
+                
+                try:
+                    exercise.content = json.dumps(content)
+                    current_app.logger.info(f'[QCM_EDIT_DEBUG] Contenu QCM mis à jour sans image')
+                except Exception as e:
+                    current_app.logger.error(f'[QCM_EDIT_DEBUG] Erreur lors de la sauvegarde: {str(e)}')
+                    db.session.rollback()
+                    flash(f'Erreur lors de la modification de l\'exercice: {str(e)}', 'error')
+                    content = json.loads(exercise.content) if exercise.content else {}
+                    return render_template('exercise_types/qcm_edit.html', exercise=exercise, content=content)
+            elif exercise.exercise_type == 'fill_in_blanks':
+                current_app.logger.info(f'[EDIT_DEBUG] Traitement spécifique pour fill_in_blanks')
+                
+                # Récupérer les phrases et les mots du formulaire
+                sentences = request.form.getlist('sentences[]')
+                words = request.form.getlist('words[]')
+                
+                # Validation des données
+                if not sentences:
+                    flash('Veuillez ajouter au moins une phrase.', 'error')
+                    content = json.loads(exercise.content) if exercise.content else {}
+                    return render_template('exercise_types/fill_in_blanks_edit.html', exercise=exercise, content=content)
+                
+                if not words:
+                    flash('Veuillez ajouter au moins un mot.', 'error')
+                    content = json.loads(exercise.content) if exercise.content else {}
+                    return render_template('exercise_types/fill_in_blanks_edit.html', exercise=exercise, content=content)
+                
+                # Vérifier que chaque phrase contient au moins un trou
+                for i, sentence in enumerate(sentences):
+                    if '___' not in sentence:
+                        flash(f'La phrase {i+1} ne contient pas de trous (utilisez ___ pour marquer les trous).', 'error')
+                        content = json.loads(exercise.content) if exercise.content else {}
+                        return render_template('exercise_types/fill_in_blanks_edit.html', exercise=exercise, content=content)
+                
+                # Vérifier qu'il y a assez de mots pour tous les trous
+                total_blanks = sum(sentence.count('___') for sentence in sentences)
+                if len(words) < total_blanks:
+                    flash(f'Il n\'y a pas assez de mots ({len(words)}) pour remplir tous les trous ({total_blanks}).', 'error')
+                    content = json.loads(exercise.content) if exercise.content else {}
+                    return render_template('exercise_types/fill_in_blanks_edit.html', exercise=exercise, content=content)
+                
+                # Gestion de l'image
+                # 1. Vérifier si l'utilisateur veut supprimer l'image existante
+                if request.form.get('remove_exercise_image') == 'true' and exercise.image_path:
+                    try:
+                        # Supprimer l'ancienne image du système de fichiers
+                        old_image_path = os.path.join(app.config['UPLOAD_FOLDER'], os.path.basename(exercise.image_path))
+                        if os.path.exists(old_image_path):
+                            os.remove(old_image_path)
+                            current_app.logger.info(f'[EDIT_DEBUG] Image supprimée: {old_image_path}')
+                        
+                        # Mettre à jour le chemin de l'image dans l'exercice
+                        exercise.image_path = None
+                        current_app.logger.info('[EDIT_DEBUG] Chemin d\'image réinitialisé')
+                    except Exception as e:
+                        current_app.logger.error(f'[EDIT_DEBUG] Erreur lors de la suppression de l\'image: {str(e)}')
+                        flash('Erreur lors de la suppression de l\'image', 'error')
+                
+                # 2. Vérifier si l'utilisateur a téléversé une nouvelle image
+                if 'exercise_image' in request.files:
+                    file = request.files['exercise_image']
+                    if file and file.filename != '' and allowed_file(file.filename):
+                        try:
+                            # Supprimer l'ancienne image si elle existe
+                            if exercise.image_path:
+                                try:
+                                    old_image_path = os.path.join(app.config['UPLOAD_FOLDER'], os.path.basename(exercise.image_path))
+                                    if os.path.exists(old_image_path):
+                                        os.remove(old_image_path)
+                                        current_app.logger.info(f'[EDIT_DEBUG] Ancienne image supprimée: {old_image_path}')
+                                except Exception as e:
+                                    current_app.logger.error(f'[EDIT_DEBUG] Erreur suppression ancienne image: {str(e)}')
+                            
+                            # Sauvegarder la nouvelle image
+                            filename = generate_unique_filename(file.filename)
+                            # Créer le dossier de destination s'il n'existe pas
+                            dest_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'exercises')
+                            os.makedirs(dest_folder, exist_ok=True)
+                            file_path = os.path.join(dest_folder, filename)
+                            file.save(file_path)
+                            exercise.image_path = f'/static/uploads/exercises/{filename}'
+                            current_app.logger.info(f'[EDIT_DEBUG] Nouvelle image sauvegardée: {exercise.image_path}')
+                        except Exception as e:
+                            current_app.logger.error(f'[EDIT_DEBUG] Erreur lors de l\'upload de l\'image: {str(e)}')
+                            flash('Erreur lors de l\'upload de l\'image', 'error')
+                
+                # Mettre à jour le contenu JSON
+                content = json.loads(exercise.content) if exercise.content else {}
+                content['sentences'] = sentences
+                content['words'] = words
+                
+                # Sauvegarder le contenu JSON dans l'exercice
+                exercise.content = json.dumps(content)
+                current_app.logger.info(f'[EDIT_DEBUG] Contenu fill_in_blanks mis à jour: {exercise.content}')
+                
+                try:
+                    db.session.commit()
+                    flash(f'Exercice "{exercise.title}" modifié avec succès!', 'success')
+                    return redirect(url_for('view_exercise', exercise_id=exercise.id))
+                except Exception as e:
+                    current_app.logger.error(f'[EDIT_DEBUG] Erreur lors de la sauvegarde: {str(e)}')
+                    db.session.rollback()
+                    flash(f'Erreur lors de la modification de l\'exercice: {str(e)}', 'error')
+                    content = json.loads(exercise.content) if exercise.content else {}
+                    return render_template('exercise_types/fill_in_blanks_edit.html', exercise=exercise, content=content)
+            else:
+                # Gestion générique pour tous les autres types d'exercices
+                # (word_placement, drag_and_drop, etc.)
+                current_app.logger.info(f'[EDIT_DEBUG] Traitement générique pour le type: {exercise.exercise_type}')
+                
+                # Gestion de l'image d'exercice pour les types génériques
+                if 'exercise_image' in request.files:
+                    file = request.files['exercise_image']
+                    if file and file.filename != '' and allowed_file(file.filename, file):
+                        try:
+                            # Supprimer l'ancienne image si elle existe
+                            if exercise.image_path:
+                                try:
+                                    old_image_path = os.path.join(app.config['UPLOAD_FOLDER'], os.path.basename(exercise.image_path))
+                                    if os.path.exists(old_image_path):
+                                        os.remove(old_image_path)
+                                        current_app.logger.info(f'[EDIT_DEBUG] Ancienne image supprimée: {old_image_path}')
+                                except Exception as e:
+                                    current_app.logger.error(f'[EDIT_DEBUG] Erreur suppression ancienne image: {str(e)}')
+                            
+                            # Sauvegarder la nouvelle image
+                            filename = generate_unique_filename(file.filename)
+                            # Créer le dossier de destination s'il n'existe pas
+                            dest_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'exercises')
+                            os.makedirs(dest_folder, exist_ok=True)
+                            file_path = os.path.join(dest_folder, filename)
+                            file.save(file_path)
+                            exercise.image_path = f'/static/uploads/exercises/{filename}'
+                            current_app.logger.info(f'[EDIT_DEBUG] Nouvelle image sauvegardée: {exercise.image_path}')
+                        except Exception as e:
+                            current_app.logger.error(f'[EDIT_DEBUG] Erreur lors de l\'upload de l\'image: {str(e)}')
+                            flash('Erreur lors de l\'upload de l\'image', 'error')
+                
+                # Pour les types génériques, on ne modifie que les champs de base
+                # Le contenu spécifique reste inchangé car il est géré par les templates d'édition spécifiques
+                try:
+                    db.session.commit()
+                    flash(f'Exercice "{exercise.title}" modifié avec succès!', 'success')
+                    return redirect(url_for('view_exercise', exercise_id=exercise.id))
+                except Exception as e:
+                    current_app.logger.error(f'[EDIT_DEBUG] Erreur lors de la sauvegarde: {str(e)}')
+                    db.session.rollback()
+                    flash(f'Erreur lors de la modification de l\'exercice: {str(e)}', 'error')
+                    return render_template('edit_exercise.html', exercise=exercise)
+                
         except Exception as e:
-            print(f'Erreur lors de la modification: {e}')
-            flash(f'Erreur lors de la modification de l\'exercice: {str(e)}', 'error')
+            print(f'Erreur lors de la modification de l\'exercice: {e}')
+            db.session.rollback()
+            flash(f'Une erreur est survenue lors de la modification de l\'exercice: {str(e)}', 'error')
             return render_template('edit_exercise.html', exercise=exercise)
+        
+    # Si la méthode n'est ni GET ni POST
+    return redirect(url_for('exercise_library'))
 
 # ===== ROUTES STATISTIQUES ET EXPORT =====
 
@@ -5069,35 +5628,98 @@ def edit_exercise_blueprint(exercise_id):
             if 'description' in request.form:
                 exercise.description = request.form['description']
             
-            # TRAITEMENT SPÉCIFIQUE POUR LES EXERCICES LÉGENDE
-            if exercise.exercise_type == 'legend':
-                print(f'[LEGEND_EDIT_DEBUG] Traitement du contenu LÉGENDE')
-                print(f'[LEGEND_EDIT_DEBUG] Tous les champs du formulaire: {list(request.form.keys())}')
+            # Gestion de l'image de l'exercice
+            # Vérifier si l'utilisateur a demandé de supprimer l'image
+            if 'remove_exercise_image' in request.form and request.form['remove_exercise_image'] == 'true':
+                if exercise.image_path:
+                    # Supprimer le fichier physique si possible
+                    try:
+                        file_path = os.path.join(app.root_path, exercise.image_path.lstrip('/'))
+                        if os.path.exists(file_path):
+                            os.remove(file_path)
+                            print(f'[EDIT_DEBUG] Image supprimée du système de fichiers: {file_path}')
+                    except Exception as e:
+                        print(f'[EDIT_DEBUG] Erreur lors de la suppression du fichier: {e}')
+                    
+                    # Mettre à jour la base de données
+                    exercise.image_path = None
+                    print('[EDIT_DEBUG] Image supprimée de la base de données')
+            
+            # Vérifier si une nouvelle image a été téléversée
+            # Gérer à la fois 'legend_main_image' (pour les légendes) et 'exercise_image' (pour les autres types)
+            image_file = None
+            if 'legend_main_image' in request.files and request.files['legend_main_image'].filename:
+                image_file = request.files['legend_main_image']
+            elif 'exercise_image' in request.files and request.files['exercise_image'].filename:
+                image_file = request.files['exercise_image']
                 
-                current_content = json.loads(exercise.content) if exercise.content else {}
+            if image_file and image_file.filename != '' and allowed_file(image_file.filename):
+                # Sauvegarder la nouvelle image
+                filename = generate_unique_filename(image_file.filename)
+                # Créer le dossier de destination s'il n'existe pas
+                dest_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'exercises')
+                os.makedirs(dest_folder, exist_ok=True)
+                filepath = os.path.join(dest_folder, filename)
+                image_file.save(filepath)
                 
-                # Collecter toutes les zones depuis le formulaire
-                zone_indices = set()
-                for key in request.form.keys():
-                    print(f'[LEGEND_EDIT_DEBUG] Examen clé: {key}')
-                    if key.startswith('zone_') and key.endswith('_x'):
-                        # Extraction robuste de l'index de zone
-                        parts = key.split('_')
-                        print(f'[LEGEND_EDIT_DEBUG] Parts de {key}: {parts}')
-                        if len(parts) >= 3:
-                            try:
-                                zone_index = int(parts[1])
-                                zone_indices.add(zone_index)
-                                print(f'[LEGEND_EDIT_DEBUG] Zone détectée: {zone_index}')
-                            except ValueError:
-                                print(f'[LEGEND_EDIT_DEBUG] Index de zone invalide: {key}')
+                # Vérifier que le fichier n'est pas vide
+                if os.path.getsize(filepath) > 0:
+                    # Supprimer l'ancienne image si elle existe
+                    if exercise.image_path:
+                        try:
+                            old_file_path = os.path.join(app.root_path, exercise.image_path.lstrip('/'))
+                            if os.path.exists(old_file_path):
+                                os.remove(old_file_path)
+                                print(f'[EDIT_DEBUG] Ancienne image supprimée: {old_file_path}')
+                        except Exception as e:
+                            print(f'[EDIT_DEBUG] Erreur lors de la suppression de l\'ancienne image: {e}')
+                    
+                    exercise.image_path = f"/static/uploads/exercises/{filename}"
+                    print(f'[EDIT_DEBUG] Nouvelle image sauvegardée: {exercise.image_path}')
+                else:
+                    os.remove(filepath)  # Supprimer le fichier vide
+                    print('[EDIT_DEBUG] Fichier image vide supprimé')
+            
+            # Traitement pour tous les types d'exercices (pas seulement legend)
+            
+            # Traitement des questions QCM
+            questions = []
+            question_index = 1
+            
+            while f'question_{question_index}' in request.form:
+                question_text = request.form.get(f'question_{question_index}', '').strip()
+                if question_text:
+                    # Récupérer les options pour cette question
+                    options = []
+                    option_index = 0
+                    while f'question_{question_index}_option_{option_index}' in request.form:
+                        option_text = request.form.get(f'question_{question_index}_option_{option_index}', '').strip()
+                        is_correct = f'question_{question_index}_correct' in request.form and request.form[f'question_{question_index}_correct'] == str(option_index)
+                        
+                        if option_text:
+                            options.append({
+                                'text': option_text,
+                                'is_correct': is_correct
+                            })
+                        option_index += 1
+                    
+                    questions.append({
+                        'question': question_text,
+                        'options': options
+                    })
                 
-                print(f'[LEGEND_EDIT_DEBUG] Zones trouvées: {sorted(zone_indices)}')
-                
-                # Sauvegarder les modifications
-                db.session.commit()
-                flash('Exercice modifié avec succès !', 'success')
-                return redirect(url_for('view_exercise', exercise_id=exercise_id))
+                question_index += 1
+            
+            # Mise à jour du contenu avec les questions
+            content = {
+                'questions': questions
+            }
+            exercise.content = json.dumps(content)
+            
+            # Sauvegarder les modifications
+            db.session.commit()
+            flash('Exercice modifié avec succès !', 'success')
+            return redirect(url_for('view_exercise', exercise_id=exercise_id))
                 
         except Exception as e:
             print(f'[EDIT_ERROR] Erreur lors de la modification : {e}')
@@ -5673,6 +6295,151 @@ def init_production():
     except Exception as e:
         return f"<h2>❌ Erreur d'initialisation</h2><p>{str(e)}</p><p><a href='/'>Retour</a></p>"
 
+@app.route('/fix-all-image-paths')
+@login_required
+@admin_required
+def fix_all_image_paths():
+    """Route pour corriger automatiquement tous les chemins d'images incorrects"""
+    try:
+        import json
+        
+        # Récupérer tous les exercices avec des images
+        exercises = Exercise.query.filter(
+            Exercise.image_path.isnot(None),
+            Exercise.image_path != ""
+        ).all()
+        
+        if not exercises:
+            return """
+            <div style="padding: 20px; font-family: Arial;">
+                <h2>✅ Aucun exercice avec image trouvé</h2>
+                <p><a href="/admin/dashboard">Retour au dashboard</a></p>
+            </div>
+            """
+        
+        corrections_made = 0
+        results = []
+        
+        for exercise in exercises:
+            original_path = exercise.image_path
+            needs_correction = False
+            corrected_path = original_path
+            
+            # Vérifier si le chemin a besoin d'être corrigé
+            if original_path and (not original_path.startswith('/static/uploads/') or original_path.startswith('/static/exercises/')):
+                needs_correction = True
+                
+                if original_path.startswith('static/'):
+                    # Cas: static/uploads/filename -> /static/uploads/filename
+                    corrected_path = f"/{original_path}"
+                elif original_path.startswith('uploads/'):
+                    # Cas: uploads/filename -> /static/uploads/filename
+                    corrected_path = f"/static/{original_path}"
+                elif original_path.startswith('/static/exercises/'):
+                    # Cas: /static/exercises/filename -> /static/uploads/filename
+                    filename = os.path.basename(original_path)
+                    corrected_path = f"/static/uploads/{filename}"
+                elif original_path.startswith('static/exercises/'):
+                    # Cas: static/exercises/filename -> /static/uploads/filename
+                    filename = os.path.basename(original_path)
+                    corrected_path = f"/static/uploads/{filename}"
+                else:
+                    # Cas: filename seul -> /static/uploads/filename
+                    import os
+                    filename = os.path.basename(original_path)
+                    corrected_path = f"/static/uploads/{filename}"
+            
+            if needs_correction:
+                # Mettre à jour exercise.image_path
+                exercise.image_path = corrected_path
+                
+                # Mettre à jour content.image si le contenu existe
+                if exercise.content:
+                    try:
+                        content = json.loads(exercise.content)
+                        if 'image' in content:
+                            content['image'] = corrected_path
+                            exercise.content = json.dumps(content)
+                    except json.JSONDecodeError:
+                        pass
+                
+                corrections_made += 1
+                results.append({
+                    'id': exercise.id,
+                    'title': exercise.title,
+                    'original': original_path,
+                    'corrected': corrected_path,
+                    'status': 'corrigé'
+                })
+            else:
+                results.append({
+                    'id': exercise.id,
+                    'title': exercise.title,
+                    'original': original_path,
+                    'corrected': original_path,
+                    'status': 'déjà correct'
+                })
+        
+        # Sauvegarder les changements
+        if corrections_made > 0:
+            db.session.commit()
+        
+        # Générer le rapport HTML
+        html_results = ""
+        for result in results:
+            status_color = "#28a745" if result['status'] == 'déjà correct' else "#007bff"
+            html_results += f"""
+            <tr>
+                <td>{result['id']}</td>
+                <td>{result['title']}</td>
+                <td style="font-family: monospace; font-size: 12px;">{result['original']}</td>
+                <td style="font-family: monospace; font-size: 12px;">{result['corrected']}</td>
+                <td style="color: {status_color}; font-weight: bold;">{result['status']}</td>
+            </tr>
+            """
+        
+        return f"""
+        <div style="padding: 20px; font-family: Arial;">
+            <h2>🔧 Correction automatique des chemins d'images</h2>
+            
+            <div style="background: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                <h3 style="color: #155724; margin: 0;">✅ Correction terminée avec succès</h3>
+                <p style="margin: 10px 0 0 0;">
+                    <strong>{corrections_made}</strong> exercice(s) corrigé(s) sur <strong>{len(exercises)}</strong> total
+                </p>
+            </div>
+            
+            <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                <thead>
+                    <tr style="background: #f8f9fa;">
+                        <th style="border: 1px solid #dee2e6; padding: 10px;">ID</th>
+                        <th style="border: 1px solid #dee2e6; padding: 10px;">Titre</th>
+                        <th style="border: 1px solid #dee2e6; padding: 10px;">Chemin original</th>
+                        <th style="border: 1px solid #dee2e6; padding: 10px;">Chemin corrigé</th>
+                        <th style="border: 1px solid #dee2e6; padding: 10px;">Statut</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {html_results}
+                </tbody>
+            </table>
+            
+            <div style="margin: 30px 0;">
+                <a href="/admin/dashboard" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Retour au dashboard</a>
+                <a href="/exercise_library" style="background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-left: 10px;">Tester la bibliothèque</a>
+            </div>
+        </div>
+        """
+        
+    except Exception as e:
+        return f"""
+        <div style="padding: 20px; font-family: Arial;">
+            <h2>❌ Erreur lors de la correction</h2>
+            <p style="color: red;">{str(e)}</p>
+            <p><a href="/admin/dashboard">Retour au dashboard</a></p>
+        </div>
+        """
+
 @app.route('/admin/reject/<int:user_id>', methods=['POST'])
 @login_required
 @admin_required
@@ -6067,8 +6834,46 @@ def get_class_statistics(class_obj):
         'total_exercises': total_exercises
     }
 
-# Enregistrer les routes de synchronisation d\'images
+# Enregistrer les routes de synchronisation et correction des chemins d'images
 register_image_sync_routes(app)
+
+# Enregistrer les routes de diagnostic et correction d'images
+register_image_fix_routes(app)
+
+@app.route('/test_upload', methods=['GET', 'POST'])
+def test_upload():
+    """Page de test pour l'upload d'images"""
+    if request.method == 'POST':
+        if 'test_image' not in request.files:
+            flash('Aucun fichier sélectionné', 'error')
+            return redirect(request.url)
+        
+        file = request.files['test_image']
+        if file.filename == '':
+            flash('Aucun fichier sélectionné', 'error')
+            return redirect(request.url)
+        
+        if file and allowed_file(file.filename):
+            filename = generate_unique_filename(file.filename)
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            
+            # Sauvegarder le fichier directement
+            try:
+                file.save(filepath)
+                # Vérifier que le fichier n'est pas vide
+                if os.path.getsize(filepath) > 0:
+                    image_path = f'/static/exercises/{filename}'
+                    flash(f'Image uploadée avec succès: {image_path}', 'success')
+                    return render_template('test_upload.html', uploaded_image=image_path)
+                else:
+                    os.remove(filepath)  # Supprimer le fichier vide
+                    flash('Erreur: fichier uploadé est vide', 'error')
+            except Exception as e:
+                flash(f'Erreur lors de l\'upload: {str(e)}', 'error')
+        else:
+            flash('Type de fichier non autorisé', 'error')
+    
+    return render_template('test_upload.html')
 
 if __name__ == '__main__':
     app.debug = True
@@ -6079,19 +6884,8 @@ if __name__ == '__main__':
     app.run(debug=True)
 
 
-
-@app.route('/get_cloudinary_url')
-def get_cloudinary_url():
-    # Route pour obtenir l'URL Cloudinary d'une image depuis JavaScript
-    image_path = request.args.get('image_path')
-    if not image_path:
-        return jsonify({'error': 'Paramètre image_path manquant'}), 400
-        
-    # Utiliser la fonction cloud_storage.get_cloudinary_url pour obtenir l'URL
-    cloudinary_url = cloud_storage.get_cloudinary_url(image_path)
-    
-    # Rediriger vers l'URL obtenue
-    return redirect(cloudinary_url)
+# Route /get_cloudinary_url supprimée car elle est déjà définie dans fix_image_display_routes.py
+# et retourne le format JSON attendu par le JavaScript dans flashcards.html
 
 @app.route('/debug-form-data', methods=['GET', 'POST'])
 @login_required
@@ -6139,3 +6933,68 @@ def debug_form_data():
     
     # Afficher un formulaire de test pour les requêtes GET
     return render_template('debug/form_data.html')
+
+
+@app.route('/fix-image-labeling-paths')
+@login_required
+@admin_required
+def fix_image_labeling_paths():
+    # Route pour corriger les chemins d'images dans les exercices image_labeling
+    try:
+        from models import Exercise
+        import json
+        
+        # Récupérer tous les exercices de type image_labeling
+        exercises = Exercise.query.filter_by(exercise_type='image_labeling').all()
+        
+        results = []
+        fixed_count = 0
+        
+        for exercise in exercises:
+            try:
+                # Récupérer le contenu
+                content = json.loads(exercise.content) if exercise.content else {}
+                
+                # Vérifier si main_image existe
+                if 'main_image' in content:
+                    main_image = content['main_image']
+                    
+                    # Normaliser le chemin si nécessaire
+                    if main_image and not main_image.startswith('/static/'):
+                        if main_image.startswith('static/'):
+                            main_image = f"/{main_image}"
+                        elif main_image.startswith('uploads/'):
+                            main_image = f"/static/{main_image}"
+                        elif not main_image.startswith('/'):
+                            main_image = f"/static/uploads/{main_image}"
+                        
+                        # Mettre à jour content.main_image
+                        content['main_image'] = main_image
+                        exercise.content = json.dumps(content)
+                    
+                    # Synchroniser exercise.image_path avec content.main_image
+                    if exercise.image_path != main_image:
+                        old_path = exercise.image_path or "None"
+                        exercise.image_path = main_image
+                        fixed_count += 1
+                        results.append(f"Exercice #{exercise.id}: image_path mis à jour de '{old_path}' à '{main_image}'")
+                    else:
+                        results.append(f"Exercice #{exercise.id}: déjà synchronisé ('{main_image}')")
+                else:
+                    results.append(f"Exercice #{exercise.id}: Pas de main_image dans le contenu")
+            
+            except Exception as e:
+                results.append(f"Erreur pour l'exercice #{exercise.id}: {str(e)}")
+        
+        # Sauvegarder les modifications
+        db.session.commit()
+        
+        return render_template('admin/fix_results.html', 
+                              title="Correction des chemins d'images",
+                              results=results,
+                              fixed_count=fixed_count,
+                              total_count=len(exercises))
+    
+    except Exception as e:
+        db.session.rollback()
+        return f"<h2>ERREUR:</h2><p>{str(e)}</p>"
