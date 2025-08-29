@@ -46,18 +46,32 @@
                             
                             <!-- Affichage de l'image actuelle si elle existe -->
                             {% if exercise.image_path %}
-                            <div class="current-image mb-3">
+                            <div class="current-image mb-3" id="current-image-container">
                                 <p class="text-muted mb-2">Image actuelle :</p>
-                                <img src="{{ cloud_storage.get_cloudinary_url(exercise.image_path) }}" 
-                                     alt="Image actuelle" 
-                                     style="max-width: 300px; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                {% if exercise.image_path and exercise.image_path.startswith('http') %}
+                                    <img src="{{ exercise.image_path }}?v={{ range(100000, 999999) | random }}" 
+                                         alt="Image de l'exercice" 
+                                         onerror="this.onerror=null; this.src='/static/images/placeholder-image.png'; this.style.opacity='0.7';"
+                                         style="max-width: 300px; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                {% else %}
+                                    <img src="{{ exercise.image_path }}?v={{ range(100000, 999999) | random }}" 
+                                         alt="Image de l'exercice" 
+                                         onerror="tryAlternativeImagePaths(this, '{{ exercise.image_path }}')"
+                                         style="max-width: 300px; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                {% endif %}
                                 <div class="mt-2">
                                     <small class="text-muted">Fichier : {{ exercise.image_path }}</small>
                                 </div>
+                                <div class="mt-2">
+                                    <button type="button" class="btn btn-danger btn-sm" id="remove-exercise-image-btn">
+                                        <i class="fas fa-trash"></i> Supprimer l'image
+                                    </button>
+                                </div>
                             </div>
+                            <input type="hidden" name="remove_exercise_image" id="remove_exercise_image" value="false">
                             {% endif %}
                             
-                            <input type="file" class="form-control" id="exercise_image" name="exercise_image" accept="image/*">
+                            <input type="file" class="form-control" id="exercise_image" name="exercise_image" accept="image/*" onchange="previewExerciseImage(this)">
                             <div class="form-text">
                                 {% if exercise.image_path %}
                                     Sélectionnez une nouvelle image pour remplacer l'image actuelle, ou laissez vide pour conserver l'image existante.
@@ -65,6 +79,9 @@
                                     Ajoutez une image pour illustrer votre exercice (formats acceptés : JPG, PNG, GIF).
                                 {% endif %}
                             </div>
+                            
+                            <!-- Zone de prévisualisation pour nouvelle image -->
+                            <div id="exercise-image-preview" class="mt-3"></div>
                         </div>
                         
                         {% block exercise_content %}{% endblock %}
@@ -79,14 +96,19 @@
                             <label for="exercise_type" class="form-label">Type d'exercice *</label>
                             <select class="form-select" id="exercise_type" name="exercise_type" required>
                                 <option value="" selected disabled>Choisir un type d'exercice</option>
-                                <option value="file_upload" {% if exercise.exercise_type == 'file_upload' %}selected{% endif %}>Dépôt de fichier</option>
-                                <option value="pairs" {% if exercise.exercise_type == 'pairs' %}selected{% endif %}>Association de paires</option>
-                                <option value="word_search" {% if exercise.exercise_type == 'word_search' %}selected{% endif %}>Mots mêlés</option>
                                 <option value="qcm" {% if exercise.exercise_type == 'qcm' %}selected{% endif %}>QCM</option>
+                                <option value="qcm_multichoix" {% if exercise.exercise_type == 'qcm_multichoix' %}selected{% endif %}>QCM Multichoix</option>
+                                <option value="word_search" {% if exercise.exercise_type == 'word_search' %}selected{% endif %}>Mots mêlés</option>
+                                <option value="pairs" {% if exercise.exercise_type == 'pairs' %}selected{% endif %}>Association de paires</option>
                                 <option value="fill_in_blanks" {% if exercise.exercise_type == 'fill_in_blanks' %}selected{% endif %}>Texte à trous</option>
-                                <option value="drag_and_drop" {% if exercise.exercise_type == 'drag_and_drop' %}selected{% endif %}>Glisser-déposer</option>
+                                <option value="word_placement" {% if exercise.exercise_type == 'word_placement' %}selected{% endif %}>Mots à placer</option>
                                 <option value="underline_words" {% if exercise.exercise_type == 'underline_words' %}selected{% endif %}>Souligner les mots</option>
-                                <option value="image_labeling" {% if exercise.exercise_type == 'image_labeling' %}selected{% endif %}>Légender une image</option>
+                                <option value="drag_and_drop" {% if exercise.exercise_type == 'drag_and_drop' %}selected{% endif %}>Glisser-déposer</option>
+                                <option value="dictation" {% if exercise.exercise_type == 'dictation' %}selected{% endif %}>Dictée</option>
+                                <option value="image_labeling" {% if exercise.exercise_type == 'image_labeling' %}selected{% endif %}>Étiquetage d'image</option>
+                                <option value="flashcards" {% if exercise.exercise_type == 'flashcards' %}selected{% endif %}>Cartes mémoire</option>
+                                <option value="text" {% if exercise.exercise_type == 'text' %}selected{% endif %}>Réponse libre</option>
+                                <option value="file" {% if exercise.exercise_type == 'file' or exercise.exercise_type == 'file_upload' %}selected{% endif %}>Fichier à rendre</option>
                             </select>
                         </div>
                         
@@ -104,87 +126,258 @@
 </div>
 
 <script>
-function updateCorrectOptions(questionBlock) {
-    const options = Array.from(questionBlock.querySelectorAll('.options-container input')).map(input => input.value);
-    const correctSelect = questionBlock.querySelector('select[name^="correct_answers"]');
-    const currentValue = correctSelect.value;
-    
-    correctSelect.innerHTML = options.map((option, index) => 
-        `<option value="${index}" ${index.toString() === currentValue ? 'selected' : ''}>${option}</option>`
-    ).join('');
-}
+// VERSION QCM SIMPLIFIÉE FINALE - Cache Bypass 2025
+console.log('=== SCRIPT QCM FINAL CACHE BYPASS ===');
 
-function addQuestion() {
-    const container = document.getElementById('questionsContainer');
-    const questionBlocks = container.querySelectorAll('.question-block');
-    const newIndex = questionBlocks.length;
+// Attendre que la page soit complètement chargée
+window.addEventListener('load', function() {
+    console.log('=== PAGE QCM CHARGÉE - RECHERCHE BOUTON ===');
     
-    const newQuestionBlock = document.createElement('div');
-    newQuestionBlock.className = 'card mb-3 question-block';
-    newQuestionBlock.dataset.questionIndex = newIndex;
+    // Rechercher le bouton de suppression
+    const btn = document.getElementById('remove-exercise-image-btn');
+    console.log('Bouton QCM trouvé:', btn);
     
-    newQuestionBlock.innerHTML = `
-        <div class="card-body">
-            <h5 class="card-title">Question ${newIndex + 1}</h5>
-            <div class="mb-3">
-                <label class="form-label">Question</label>
-                <input type="text" class="form-control" name="questions[]" required>
-            </div>
-            <div class="mb-3">
-                <label class="form-label">Options</label>
-                <div class="options-container">
-                    <div class="input-group mb-2">
-                        <input type="text" class="form-control" name="options_${newIndex}[]" required>
-                        <button type="button" class="btn btn-outline-danger" onclick="removeOption(this)">×</button>
+    if (btn) {
+        console.log('=== AJOUT ÉVÉNEMENT CLIC QCM ===');
+        btn.onclick = function(e) {
+            e.preventDefault();
+            console.log('=== CLIC QCM DÉTECTÉ ===');
+            
+            // Suppression directe sans confirm() pour éviter les problèmes
+            console.log('=== SUPPRESSION QCM AUTOMATIQUE ===');
+            
+            // Marquer pour suppression
+            const hiddenField = document.getElementById('remove_exercise_image');
+            if (hiddenField) {
+                hiddenField.value = 'true';
+                console.log('Champ QCM marqué:', hiddenField.value);
+            }
+            
+            // Masquer l'image
+            const imageContainer = document.getElementById('current-image-container');
+            if (imageContainer) {
+                imageContainer.style.display = 'none';
+                console.log('Container QCM image masqué');
+            }
+            
+            // Masquer le bouton
+            btn.style.display = 'none';
+            
+            // Afficher message
+            const msg = document.createElement('div');
+            msg.className = 'alert alert-success';
+            msg.innerHTML = '✓ Image QCM marquée pour suppression';
+            btn.parentNode.appendChild(msg);
+            
+            console.log('=== SUPPRESSION QCM TERMINÉE ===');
+        };
+    } else {
+        console.log('=== BOUTON QCM NON TROUVÉ ===');
+    }
+});
+
+// Fonction de prévisualisation d'image pour tous les types d'exercices
+function previewExerciseImage(input) {
+    console.log('=== PRÉVISUALISATION IMAGE ===');
+    const preview = document.getElementById('exercise-image-preview');
+    
+    // Masquer l'image actuelle si une nouvelle est sélectionnée
+    const currentImageContainer = document.getElementById('current-image-container');
+    if (currentImageContainer && input.files && input.files[0]) {
+        currentImageContainer.style.opacity = '0.5';
+        const noticeDiv = document.createElement('div');
+        noticeDiv.className = 'alert alert-info mt-2';
+        noticeDiv.innerHTML = '<i class="fas fa-info-circle"></i> L\'image actuelle sera remplacée après sauvegarde';
+        currentImageContainer.appendChild(noticeDiv);
+    }
+    
+    if (input.files && input.files[0]) {
+        // Vérifier la taille du fichier (max 5MB)
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        if (input.files[0].size > maxSize) {
+            preview.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i> L'image est trop volumineuse (max: 5MB).
+                    Veuillez choisir une image plus petite.
+                </div>
+            `;
+            input.value = ''; // Réinitialiser l'input
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.innerHTML = `
+                <div class="border rounded p-3" style="background-color: #f8f9fa;">
+                    <p class="text-success small mb-2"><i class="fas fa-check-circle"></i> Nouvelle image sélectionnée :</p>
+                    <img src="${e.target.result}" class="img-thumbnail" style="max-height: 200px; max-width: 300px;">
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <p class="text-muted small mb-0">Cette image sera enregistrée après sauvegarde</p>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="cancelImageUpload()">Annuler</button>
                     </div>
                 </div>
-                <button type="button" class="btn btn-outline-secondary btn-sm mt-2" onclick="addOption(this)">+ Ajouter une option</button>
-            </div>
-            <div class="mb-3">
-                <label class="form-label">Réponse correcte</label>
-                <select class="form-control" name="correct_${newIndex}" required></select>
-            </div>
-            <button type="button" class="btn btn-outline-danger" onclick="removeQuestion(this)">Supprimer la question</button>
-        </div>
-    `;
-    
-    container.appendChild(newQuestionBlock);
-    updateCorrectOptions(newQuestionBlock);
-}
-
-function removeQuestion(btn) {
-    const questionBlock = btn.closest('.question-block');
-    questionBlock.remove();
-    
-    // Mettre à jour les indices
-    const allQuestions = document.querySelectorAll('.question-block');
-    allQuestions.forEach((block, index) => {
-        block.dataset.questionIndex = index;
-        block.querySelector('.card-title').textContent = `Question ${index + 1}`;
+            `;
+            console.log('=== PRÉVISUALISATION AFFICHÉE ===');
+        };
+        reader.readAsDataURL(input.files[0]);
+    } else {
+        preview.innerHTML = '';
+        console.log('=== PRÉVISUALISATION EFFACÉE ===');
         
-        // Mettre à jour les noms des champs
-        block.querySelectorAll('.options-container input').forEach(input => {
-            input.name = `options_${index}[]`;
-        });
-        block.querySelector('select').name = `correct_${index}`;
-    });
+        // Restaurer l'affichage de l'image actuelle
+        if (currentImageContainer) {
+            currentImageContainer.style.opacity = '1';
+            const noticeDiv = currentImageContainer.querySelector('.alert');
+            if (noticeDiv) {
+                noticeDiv.remove();
+            }
+        }
+    }
 }
 
-document.getElementById('exercise_type').addEventListener('change', function() {
-    const qcmContent = document.getElementById('qcmContent');
-    const fillInBlanksContent = document.getElementById('fillInBlanksContent');
-    qcmContent.style.display = this.value === 'qcm' ? 'block' : 'none';
-    fillInBlanksContent.style.display = this.value === 'fill_in_blanks' ? 'block' : 'none';
-});
+// Fonction pour annuler l'upload d'image
+function cancelImageUpload() {
+    const input = document.getElementById('exercise_image');
+    input.value = '';
+    const preview = document.getElementById('exercise-image-preview');
+    preview.innerHTML = '';
+    
+    // Restaurer l'affichage de l'image actuelle
+    const currentImageContainer = document.getElementById('current-image-container');
+    if (currentImageContainer) {
+        currentImageContainer.style.opacity = '1';
+        const noticeDiv = currentImageContainer.querySelector('.alert');
+        if (noticeDiv) {
+            noticeDiv.remove();
+        }
+    }
+}
 
-// Mettre à jour les options correctes au chargement
-document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.question-block').forEach(block => {
-        const inputs = block.querySelectorAll('.options-container input');
-        inputs.forEach(input => {
-            input.addEventListener('input', () => updateCorrectOptions(block));
-        });
-    });
-});
-</script>
+// Fonction pour essayer différents chemins d'images alternatifs
+function tryAlternativeImagePaths(imgElement, originalPath) {
+    console.log('Image non trouvée, essai de chemins alternatifs:', originalPath);
+    
+    // Si le chemin est vide ou null, utiliser l'image placeholder
+    if (!originalPath) {
+        console.log('Chemin d\'image vide ou null, utilisation du placeholder');
+        imgElement.src = '/static/images/placeholder-image.png';
+        imgElement.style.opacity = '0.7';
+        imgElement.onerror = null;
+        return;
+    }
+    
+    // Extraire le nom du fichier du chemin original
+    const filename = originalPath.split('/').pop();
+    console.log('Nom du fichier extrait:', filename);
+    
+    // Liste des chemins alternatifs à essayer
+    const alternativePaths = [];
+    
+    // Ajouter le chemin original avec cache-busting (priorité 0)
+    alternativePaths.push(originalPath);
+    
+    // Essayer dans uploads/qcm_multichoix (priorité 1)
+    alternativePaths.push(`/static/uploads/qcm_multichoix/${filename}`);
+    
+    // Essayer dans exercises/general (priorité 2)
+    alternativePaths.push(`/static/exercises/general/${filename}`);
+    
+    // Essayer dans uploads (priorité 3)
+    alternativePaths.push(`/static/uploads/${filename}`);
+    
+    // Essayer dans exercises/qcm (priorité 4)
+    alternativePaths.push(`/static/exercises/qcm/${filename}`);
+    
+    // Essayer dans exercises (priorité 5)
+    alternativePaths.push(`/static/exercises/${filename}`);
+    
+    // Essayer dans static/uploads/qcm_multichoix sans le slash initial (priorité 6)
+    alternativePaths.push(`static/uploads/qcm_multichoix/${filename}`);
+    
+    // Essayer sans le préfixe /static (priorité 7)
+    alternativePaths.push(originalPath.replace('/static/', '/'));
+    
+    // Essayer avec le préfixe /static si absent (priorité 8)
+    if (!originalPath.startsWith('/static/')) {
+        alternativePaths.push(`/static${originalPath.startsWith('/') ? '' : '/'}${originalPath}`);
+    }
+    
+    // Essayer avec des variations de casse (priorité 9)
+    if (filename !== filename.toLowerCase()) {
+        alternativePaths.push(`/static/exercises/general/${filename.toLowerCase()}`);
+        alternativePaths.push(`/static/uploads/qcm_multichoix/${filename.toLowerCase()}`);
+        alternativePaths.push(`/static/uploads/${filename.toLowerCase()}`);
+    }
+    
+    // Essayer avec des variations de chemin (priorité 10)
+    if (originalPath.includes('qcm_multichoix')) {
+        // Si le chemin contient qcm_multichoix, essayer aussi qcm-multichoix (avec tiret)
+        alternativePaths.push(originalPath.replace('qcm_multichoix', 'qcm-multichoix'));
+    } else if (originalPath.includes('qcm-multichoix')) {
+        // Si le chemin contient qcm-multichoix, essayer aussi qcm_multichoix (avec underscore)
+        alternativePaths.push(originalPath.replace('qcm-multichoix', 'qcm_multichoix'));
+    }
+    
+    // Essayer avec des variations de structure de dossier (priorité 11)
+    alternativePaths.push(`/static/exercises/qcm_multichoix/${filename}`);
+    alternativePaths.push(`/static/exercises/qcm-multichoix/${filename}`);
+    
+    console.log('Chemins alternatifs à essayer:', alternativePaths);
+    
+    // Fonction pour essayer le chemin suivant
+    function tryNextPath(index) {
+        if (index >= alternativePaths.length) {
+            // Si tous les chemins ont échoué, afficher l'image placeholder
+            console.log('Tous les chemins alternatifs ont échoué, utilisation du placeholder');
+            imgElement.src = '/static/images/placeholder-image.png';
+            imgElement.style.opacity = '0.7';
+            imgElement.onerror = null;
+            
+            // Afficher un message d'erreur dans la console
+            console.error('Impossible de charger l\'image:', originalPath);
+            console.error('Chemins alternatifs essayés:', alternativePaths);
+            
+            // Afficher un message d'erreur sous l'image
+            const container = imgElement.parentElement;
+            const errorMsg = document.createElement('div');
+            errorMsg.className = 'alert alert-warning mt-2';
+            errorMsg.innerHTML = `<small>Image introuvable: ${filename}<br>Essayez de téléverser une nouvelle image.</small>`;
+            container.appendChild(errorMsg);
+            return;
+        }
+        
+        // Essayer le chemin actuel
+        const path = alternativePaths[index];
+        console.log(`Essai du chemin alternatif (${index+1}/${alternativePaths.length}):`, path);
+        
+        // Ajouter un paramètre aléatoire pour éviter le cache
+        const cacheBuster = Math.floor(Math.random() * 1000000);
+        imgElement.src = `${path}?v=${cacheBuster}`;
+        
+        // Si ce chemin échoue, essayer le suivant
+        imgElement.onerror = function() {
+            console.log(`Chemin échoué: ${path}`);
+            tryNextPath(index + 1);
+        };
+        
+        // Si ce chemin réussit, mettre à jour l'affichage du chemin
+        imgElement.onload = function() {
+            console.log(`Chemin réussi: ${path}`);
+            // Mettre à jour l'affichage du chemin de fichier
+            const filePathDisplay = document.querySelector('.current-image .text-muted');
+            if (filePathDisplay) {
+                filePathDisplay.textContent = `Fichier : ${path}`;
+            }
+            
+            // Ajouter une classe pour indiquer que l'image est chargée
+            imgElement.classList.add('loaded');
+            
+            // Mettre à jour l'opacité
+            imgElement.style.opacity = '1';
+        };
+    }
+    
+    // Commencer à essayer les chemins alternatifs
+    tryNextPath(0);
+}</script>
 {% endblock %}
