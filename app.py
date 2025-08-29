@@ -167,7 +167,7 @@ def get_blank_location(global_blank_index, sentences):
     return -1, -1
 
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, session, current_app, abort, send_file
-from utils.image_fallback_middleware import register_image_fallback_middleware
+# DÉSACTIVÉ POUR RAILWAY - from utils.image_fallback_middleware import register_image_fallback_middleware
 from fix_image_paths import register_image_sync_routes
 from flask_login import login_user, login_required, logout_user, current_user
 from werkzeug.utils import secure_filename
@@ -265,14 +265,14 @@ from extensions import init_extensions
 init_extensions(app)
 
 # Initialiser le middleware de fallback d'images
-register_image_fallback_middleware(app)
+# DÉSACTIVÉ POUR RAILWAY - register_image_fallback_middleware(app)
 
 # Configuration de la gestion automatique des images
-# DÉSACTIVÉ - from image_fallback_middleware import setup_image_fallback
+# DÉSACTIVÉ - # DÉSACTIVÉ POUR RAILWAY - from image_fallback_middleware import setup_image_fallback
 from auto_image_handler import setup_auto_image_handler
 
 # Initialiser les composants de gestion automatique des images
-# DÉSACTIVÉ - setup_image_fallback(app)
+# DÉSACTIVÉ - # DÉSACTIVÉ POUR RAILWAY - setup_image_fallback(app)
 setup_auto_image_handler(app)
 app.logger.info("Gestion automatique des images configurée")
 
@@ -6877,6 +6877,14 @@ def test_upload():
             flash('Type de fichier non autorisé', 'error')
     
     return render_template('test_upload.html')
+
+
+# Configuration spécifique pour Railway
+if os.environ.get('RAILWAY_ENVIRONMENT'):
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', '').replace('postgres://', 'postgresql://')
+    app.config['PREFERRED_URL_SCHEME'] = 'https'
+    app.config['SERVER_NAME'] = os.environ.get('RAILWAY_PUBLIC_DOMAIN', 'classesnumerique-secondaire-production.up.railway.app')
+    app.logger.info(f"Configuration Railway activée avec SERVER_NAME: {app.config['SERVER_NAME']}")
 
 if __name__ == '__main__':
     app.debug = True
