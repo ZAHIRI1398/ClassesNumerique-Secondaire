@@ -264,12 +264,15 @@ else:
 from extensions import init_extensions
 init_extensions(app)
 
+# Initialiser le middleware de fallback d'images
+register_image_fallback_middleware(app)
+
 # Configuration de la gestion automatique des images
-from image_fallback_middleware import setup_image_fallback
+# DÉSACTIVÉ - from image_fallback_middleware import setup_image_fallback
 from auto_image_handler import setup_auto_image_handler
 
 # Initialiser les composants de gestion automatique des images
-setup_image_fallback(app)
+# DÉSACTIVÉ - setup_image_fallback(app)
 setup_auto_image_handler(app)
 app.logger.info("Gestion automatique des images configurée")
 

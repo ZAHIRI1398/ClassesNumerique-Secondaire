@@ -62,7 +62,12 @@ class ImageFallbackMiddleware:
                 return jsonify({'error': 'Accès non autorisé'}), 403
             
             # Exécuter la vérification
-            from verify_qcm_multichoix_images import verify_qcm_multichoix_images as run_verification
+            try:
+                from verify_qcm_multichoix_images_v2 import verify_qcm_multichoix_images as run_verification
+            except ImportError:
+                # Fallback si le module n'existe pas
+                def run_verification():
+                    return ["Module de vérification non disponible"]
             issues = run_verification()
             
             # Générer un rapport
